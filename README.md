@@ -1,2 +1,80 @@
 # mwaddlink
 MediaWiki AddLink Extension Model and API
+
+## Introduction
+This repository contains the necessary code to train a model for link recommendation tailored for Wikipedia.
+The method is context-free and can be scaled to (virtually) any language, provided that we have enough existing links to learn from.
+Once the model and all the utility files are computed, they can be loaded and used to build an API to add new links to a Wikipedia page automatically. The necessary code for such an API is available in the following notebook:
+
+```bash
+link_page_english.ipynb
+```
+
+The primary function will take a Wikipedia page_title, queries the API for its wikitext, and returns new wikitext.
+TODO: make it return an object containing information about the number of links added (if at all) and the confidence of the model on each link.
+
+## Data preparation
+
+To load, the API will need to pre-compute the following files for each target language.
+For now, the scripts support English (en).
+It is essential to follow these steps sequentially because some scripts may require the output of previous ones.
+
+### Nav2Vec: 
+This model how current Wikipedia readers navigate through Wikipedia.
+@MG has the current version of the code
+
+store in:
+```bash
+./data/en/word2vec_enwiki_params-cbow-50-5-0.1-10-5-20.bin
+```
+
+### Wikipedia2Vec: 
+This models semantic relationship. Get it from: https://github.com/wikipedia2vec/wikipedia2vec
+wikipedia2vec train --min-entity-count=0 --dim-size 100 enwiki-latest-pages-articles.xml.bz2 en.w2v.bin
+store in
+```bash
+./data/en/en.w2v.bin
+```
+store in:
+```bash
+./data/en/en.w2v.bin
+```
+
+### PageIds:
+We need a mapping between Page_ids and Page_title. This helps to process the navigation part.
+It can be obtained directly from Hive (that's what I did quickly)
+TODO: extract the mapping automatically when processing the full dump in ./scripts/generate_anchor_dictionary.py
+
+### Anchors Dictionary
+This is the main dictionary to find candidates and mentions; the bigger, the better (barring memory issues) for English, this is a ~2G pickle file.
+compute with: ./scripts/generate_anchor_dictionary.py
+store in:
+```bash
+./data/en/en.anchors.pkl
+```
+
+### Raw datasets:
+There is a backtesting dataset to a) test the accuracy of the model, and b) train the model.
+We mainly want to extract fully formed and linked sentences as our ultimate ground truth.
+compute with: ./scripts/generate_backtesting_data.py
+Datasets are then stored in:
+```bash
+./data/en/training/sentences_test.csv
+./data/en/training/sentences_train.csv
+```
+
+### Feature datasets:
+We need dataset with features and training labels (true link, false link)
+compute with: ./scripts/generate_training_data.py
+This is going to generate a file to be stored here:
+```bash
+./data/en/training/link_train.csv
+```
+
+### XGBoost Classification Model:
+This is the main prediction model it takes (Page_title, Mention, Candidate Link) and produces a probability of linking.
+compute with: ./scripts/generate_addlink_model.py
+store in:
+```bash
+./data/en/0001.link.bin
+```
