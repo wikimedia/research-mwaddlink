@@ -15,12 +15,13 @@ TODO: make it return an object containing information about the number of links 
 
 ## Data preparation
 
-To load, the API will need to pre-compute the following files for each target language.
-For now, the scripts support English (en).
+To load, the API will need to pre-compute the following files for each target language. For now, the scripts support English (en).
+
 It is essential to follow these steps sequentially because some scripts may require the output of previous ones.
 
 ### Nav2Vec: 
-This model how current Wikipedia readers navigate through Wikipedia.
+This models how current Wikipedia readers navigate through Wikipedia.
+
 @MG has the current version of the code
 
 store in:
@@ -29,25 +30,27 @@ store in:
 ```
 
 ### Wikipedia2Vec: 
-This models semantic relationship. Get it from: https://github.com/wikipedia2vec/wikipedia2vec
-wikipedia2vec train --min-entity-count=0 --dim-size 100 enwiki-latest-pages-articles.xml.bz2 en.w2v.bin
-store in
+This models semantic relationship. 
+Get it from: https://github.com/wikipedia2vec/wikipedia2vec then run:
 ```bash
-./data/en/en.w2v.bin
+wikipedia2vec train --min-entity-count=0 --dim-size 100 enwiki-latest-pages-articles.xml.bz2 en.w2v.bin
 ```
-store in:
+
+store in
 ```bash
 ./data/en/en.w2v.bin
 ```
 
 ### PageIds:
-We need a mapping between Page_ids and Page_title. This helps to process the navigation part.
-It can be obtained directly from Hive (that's what I did quickly)
+We need a mapping between Page_ids and Page_title. This helps to process the navigation part. It can be obtained directly from Hive (that's what I did personally).
+
 TODO: extract the mapping automatically when processing the full dump in ./scripts/generate_anchor_dictionary.py
 
 ### Anchors Dictionary
 This is the main dictionary to find candidates and mentions; the bigger, the better (barring memory issues) for English, this is a ~2G pickle file.
+
 compute with: ./scripts/generate_anchor_dictionary.py
+
 store in:
 ```bash
 ./data/en/en.anchors.pkl
@@ -56,7 +59,9 @@ store in:
 ### Raw datasets:
 There is a backtesting dataset to a) test the accuracy of the model, and b) train the model.
 We mainly want to extract fully formed and linked sentences as our ultimate ground truth.
+
 compute with: ./scripts/generate_backtesting_data.py
+
 Datasets are then stored in:
 ```bash
 ./data/en/training/sentences_test.csv
@@ -65,7 +70,9 @@ Datasets are then stored in:
 
 ### Feature datasets:
 We need dataset with features and training labels (true link, false link)
+
 compute with: ./scripts/generate_training_data.py
+
 This is going to generate a file to be stored here:
 ```bash
 ./data/en/training/link_train.csv
@@ -73,7 +80,9 @@ This is going to generate a file to be stored here:
 
 ### XGBoost Classification Model:
 This is the main prediction model it takes (Page_title, Mention, Candidate Link) and produces a probability of linking.
+
 compute with: ./scripts/generate_addlink_model.py
+
 store in:
 ```bash
 ./data/en/0001.link.bin
