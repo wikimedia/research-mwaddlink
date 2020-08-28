@@ -67,6 +67,11 @@ for p in paths:
 # It seems that the navigation embeddings are indexed on page_id
 
 # TODO 3: deal with special links (categories, files, etc.)
+# deal with this using a fixed list of actual links in Wikipedia (enwiki-latest-all-titles-in-ns0.gz)
+
+# TODO 4: compute the frequency of dictionary entries
+
+# TODO 5: Ideally.. change this whole process to Spark and work with mediawiki_wikitext
 
 
 
