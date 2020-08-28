@@ -13,3 +13,5 @@ Todos:
 # TODO 4: compute the frequency of dictionary entries
 
 # TODO 5: Ideally.. change this whole process to Spark and work with mediawiki_wikitext
+
+# TODO 6: Compute the frequency of words (Martin, ask Tiziano)
