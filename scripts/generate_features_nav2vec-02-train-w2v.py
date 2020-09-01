@@ -89,7 +89,7 @@ def main():
     ## sessions will be saved locally in filename_save
     PATH_data = os.path.abspath('../data/%s/'%lang)
     FILE_in = os.path.join(PATH_data,'%s.reading-sessions'%(lang))
-    FILE_out = os.path.join(PATH_data,'%s.nav'%(lang))
+    FILE_out = os.path.join(PATH_data,'%s.nav.bin'%(lang))
 
     mode = args.mode ## (if 1: skip-gram, else cbow)
     size = args.size ## number of dimensions
