@@ -19,18 +19,32 @@ To load, the API will need to pre-compute the following files for each target la
 
 It is essential to follow these steps sequentially because some scripts may require the output of previous ones.
 
-### Nav2Vec: 
+### Nav2Vec:
 This models how current Wikipedia readers navigate through Wikipedia.
 
-@MG has the current version of the code
+run the two scripts in that order for a given <LANG> (e.g. 'en'), located in ```./scripts```:
+```bash
+PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_features_nav2vec-01-get-sessions.py -l <LANG>
+```
+- gets reading sessions from webrequest from 1 week (this can be changed)
 
-store in:
+```bash
+python generate_features_nav2vec-02-train-w2v.py -l <LANG>
+```
+- fits a word2vec-model with 50 dimensions (this and other hyperparameters can also be changed)
+
+This will generate an embedding for <LANG> in 
+```bash
+./data/<LANG>/<LANG>.nav.bin
+```
+
+(The previous version was stored in:)
 ```bash
 ./data/en/word2vec_enwiki_params-cbow-50-5-0.1-10-5-20.bin
 ```
 
-### Wikipedia2Vec: 
-This models semantic relationship. 
+### Wikipedia2Vec:
+This models semantic relationship.
 Get it from: https://github.com/wikipedia2vec/wikipedia2vec then run:
 ```bash
 wikipedia2vec train --min-entity-count=0 --dim-size 100 enwiki-latest-pages-articles.xml.bz2 en.w2v.bin
