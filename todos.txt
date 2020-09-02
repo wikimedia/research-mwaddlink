@@ -10,7 +10,7 @@ Todos:
 # TODO 3: deal with special links (categories, files, etc.)
 # deal with this using a fixed list of actual links in Wikipedia (enwiki-latest-all-titles-in-ns0.gz) (Djellel)
 
-# TODO 4: compute the frequency of dictionary entries ( might be redundant with 5 )
+# TODO 4: Compute the frequency of mentions (Djellel can try an Algo he found.. but holding off: it might be resolved by Todo5 )
 
 # TODO 5: Compute the frequency of mentions (Martin, to check Tiziano code)
 
