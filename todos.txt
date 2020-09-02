@@ -10,8 +10,11 @@ Todos:
 # TODO 3: deal with special links (categories, files, etc.)
 # deal with this using a fixed list of actual links in Wikipedia (enwiki-latest-all-titles-in-ns0.gz) (Djellel)
 
-# TODO 4: compute the frequency of dictionary entries ( might be redundant with 6 )
+# TODO 4: compute the frequency of dictionary entries ( might be redundant with 5 )
 
-# TODO 5: Ideally.. change this whole process to Spark and work with mediawiki_wikitext
+# TODO 5: Compute the frequency of mentions (Martin, ask Tiziano)
 
-# TODO 6: Compute the frequency of mentions (Martin, ask Tiziano)
+
+Desired changes for the future:
+
+# Future 1: Ideally.. change this whole process to Spark and work with mediawiki_wikitext 
