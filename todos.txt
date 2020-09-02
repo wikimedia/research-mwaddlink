@@ -12,10 +12,11 @@ Todos:
 
 # TODO 4: compute the frequency of dictionary entries ( might be redundant with 5 )
 
-# TODO 5: Compute the frequency of mentions (Martin, ask Tiziano)
+# TODO 5: Compute the frequency of mentions (Martin, to check Tiziano code)
 
 # TODO 6: Add back levenstein distance. (Djellel)
 
+# TODO 7: Unified navigation using Wikidata. (Martin please refine?)
 
 Desired changes for the future:
 
