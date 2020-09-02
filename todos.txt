@@ -14,6 +14,8 @@ Todos:
 
 # TODO 5: Compute the frequency of mentions (Martin, ask Tiziano)
 
+# TODO 6: Add back levenstein distance. (Djellel)
+
 
 Desired changes for the future:
 
