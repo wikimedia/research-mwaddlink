@@ -112,6 +112,6 @@ with open(output_path+'.pkl', 'wb') as handle:
 
 ##################
 # store the dictionaries into the language data folder
-output_path = '../data/{0}/{0}.pageids'.format(lang)
+output_path = '../data/{0}/{0}.redirects'.format(lang)
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump(redirects, handle, protocol=pickle.HIGHEST_PROTOCOL)
