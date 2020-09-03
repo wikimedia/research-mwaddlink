@@ -18,6 +18,9 @@ Todos:
 
 # TODO 7: Unified navigation using Wikidata. (Martin please refine?)
 
+# TODO 8: get evaluation-metrics from backtesting dataset (Djellel?)
+
+
 Desired changes for the future:
 
 # Future 1: Ideally.. change this whole process to Spark and work with mediawiki_wikitext 
