@@ -13,7 +13,7 @@ import mwxml
 from tqdm import trange, tqdm
 from collections import Counter
 
-from utils import normalise_title, normalise_anchor
+from utils import wtpGetLinkAnchor, normalise_title
 
 paths = []
 
@@ -113,13 +113,9 @@ def process_dump_get_links(dump, path):
         ## for each link get anchortext and link
         for l in linklist:
             try:
-                ## normalise the article title (quote, first letter capital) 
-                link_tmp = l.title
-                link = normalise_title(link_tmp)
-                ## normalise the anchor text (strip and lowercase) 
-                anchor_tmp = l.text if l.text else link_tmp
-                anchor = normalise_anchor(anchor_tmp)
-
+                ## extract link and anchor from a wtp-wikilink
+                ## this includes some normalisation
+                link, anchor = wtpGetLinkAnchor(l)
                 ## resolve the redirect of link
                 link = redirects.get(link,link)
                 ## check if link is in main namespace
