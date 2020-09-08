@@ -1,7 +1,13 @@
 import urllib
 import urllib.parse as up
 def normalise_title(title):
-    """ Replace _ with space, remove anchor, capitalize """
+    """ 
+    Normalising title (links)
+    - deal with quotes
+    - strip()
+    - '_'--> ' '
+    - capitalize first letter
+    """
     title = up.unquote(title)
     title = title.strip()
     if len(title) > 0:
@@ -12,6 +18,12 @@ def normalise_title(title):
     return n_title
 
 def normalise_anchor(anchor):
+    '''
+    Normalising anchor  (text):
+    - strip()
+    - lowercase
+    Note that we do not do the other normalisations since we want to match the strings from the text
+    '''
     # anchor = up.unquote(anchor)
     n_anchor = anchor.strip()#.replace("_", " ")
     return n_anchor.lower()
