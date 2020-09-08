@@ -18,6 +18,8 @@ Todos:
 
 # TODO 7: Unified navigation using Wikidata. (Martin please refine?)
 
+# TODO 8: Finalize the backtest protocoel (Djellel is working on it)
+
 Desired changes for the future:
 
 # Future 1: Ideally.. change this whole process to Spark and work with mediawiki_wikitext 
