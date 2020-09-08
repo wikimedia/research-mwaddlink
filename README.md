@@ -55,32 +55,32 @@ store in
 ./data/en/en.w2v.bin
 ```
 
-### PageIds:
-We need a mapping between Page_ids and Page_title. This helps to process the navigation part. It can be obtained directly from Hive (that's what I did personally).
-
-compute with: ./scripts/generate_mapping-pageids-redirects.py <LANG>
-
-store in:
-```bash
-./data/<LANG>/<LANG>.pageids.pkl
-```
-- this is a dictionary of all main-namespace and non-redirect articles {page_title:page_id}
-
-```bash
-./data/<LANG>/<LANG>.redirects.pkl
-```
-- this is a dictionary of all main-namespace and redirect articles {page_title:page_title_rd}, where page_title_rd is the title of the redirected-to article.
-
-
 ### Anchors Dictionary
 This is the main dictionary to find candidates and mentions; the bigger, the better (barring memory issues) for English, this is a ~2G pickle file.
 
-compute with: ./scripts/generate_anchor_dictionary.py
+compute with: ./scripts/generate_anchor_dictionary.py <LANG>
 
 store in:
 ```bash
 ./data/en/en.anchors.pkl
 ```
+- normalising link-titles (e.g. capitalize first letter) and anchors (lowercase the anchor-string) via ```scripts/utils.py```
+- for candidate links, we resolve redirects and only keep main-namespace articles
+
+This also adds the two following helper-dictionaries
+```bash
+./data/<LANG>/<LANG>.pageids.pkl
+```
+- this is a dictionary of all main-namespace and non-redirect articles with the mapping of {page_title:page_id}
+
+```bash
+./data/<LANG>/<LANG>.redirects.pkl
+```
+- this is a dictionary of all main-namespace and redirect articles with the mapping {page_title:page_title_rd}, where page_title_rd is the title of the redirected-to article.
+
+
+All dictionaries are also stored as shelve-format (.db instead of .pkl).
+
 
 ### Raw datasets:
 There is a backtesting dataset to a) test the accuracy of the model, and b) train the model.
