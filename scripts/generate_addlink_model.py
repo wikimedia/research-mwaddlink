@@ -7,16 +7,21 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
-
+import sys
 
 ##################
 # This script can be used on any language
 # TODO: Add a LANG parameter
 
+if len(sys.argv) >= 2:
+    lang = sys.argv[1]
+else:
+    lang = 'en'
 
+wiki   = lang+'wiki'
 ##################
 # Read the training dataset
-df = pd.read_csv('../data/en/training/link_train_dataset.csv', names= ['page', 'form', 'candidate', 'gram', 'freq', 'ambig', 'kur', 'w2v', 'nav', 'label'], sep = '\t', header = None)
+df = pd.read_csv('../data/{0}/training/link_train.csv'.format(lang), names= ['page', 'form', 'candidate', 'gram', 'freq', 'ambig', 'kur', 'w2v', 'nav', 'label'], sep = '\t', header = None)
 
 # load data
 dataset = df.values
@@ -51,5 +56,5 @@ predictions = model.predict_proba(X_test)[:, 1]
 print('ROC AUC=%.3f' % roc_auc_score(y_test,predictions))
 
 # save the model
-model.save_model('../data/en/0001.link.bin')
+model.save_model('../data/{0}/0001.link.bin'.format(lang))
 
