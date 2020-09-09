@@ -1,13 +1,14 @@
 Todos:
 
-# TODO 4: Compute the frequency of mentions (Djellel can try an Algo he found.. but holding off: it might be resolved by Todo5 )
+# TODO 1:  Finalize the backtest protocoel (Djellel is working on it)
 
-# TODO 5: Compute the frequency of mentions (Martin, to check Tiziano code)
+# TODO 2: Compute the frequency of mentions (Djellel can try an Algo he found.. but holding off: it might be resolved by Todo5 )
+- Compute the frequency of mentions (Martin, to check Tiziano code)
 
-# TODO 7: Unified navigation using Wikidata. (Martin please refine?)
-
-# TODO 8: Finalize the backtest protocoel (Djellel is working on it)
+# TODO 3: memory-mapping of embeddings
 
 Desired changes for the future:
 
 # Future 1: Ideally.. change this whole process to Spark and work with mediawiki_wikitext 
+
+# Future 2: Unified navigation using Wikidata. (Martin please refine?)
