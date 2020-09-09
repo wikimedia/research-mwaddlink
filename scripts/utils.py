@@ -51,6 +51,7 @@ def wtpGetLinkAnchor(wikilink):
 ##########################
 from scipy.stats import kurtosis
 from Levenshtein import distance as levenshtein_distance
+from Levenshtein import jaro as levenshtein_score
 
 # Wikipedia2Vec distance
 def getW2VDst(ent_a, ent_b, word2vec):
@@ -94,4 +95,5 @@ def get_feature_set(page, text, link, anchors, word2vec, nav2vec, pageids):
     kur = kurtosis(sorted(list(anchors[text].values()), reverse = True) + [1] * (1000 - ambig)) # Skew of usage text/link distribution
     w2v = getW2VDst(page, link,word2vec) # W2V Distance between the source and target page
     nav = getNavDst(page, link, nav2vec, pageids) # Nav Distance between the source and target page
-    return (ngram, freq, ambig, kur, w2v, nav)
+    leven = levenshtein_score(text.lower(),link.lower())
+    return (ngram, freq, ambig, kur, w2v, nav, leven)
