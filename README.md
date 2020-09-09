@@ -97,19 +97,19 @@ Datasets are then stored in:
 ### Feature datasets:
 We need dataset with features and training labels (true link, false link)
 
-compute with: ./scripts/generate_training_data.py
+compute with: ./scripts/generate_training_data.py <LANG>
 
 This is going to generate a file to be stored here:
 ```bash
-./data/en/training/link_train.csv
+./data/<LANG>/training/link_train.csv
 ```
 
 ### XGBoost Classification Model:
 This is the main prediction model it takes (Page_title, Mention, Candidate Link) and produces a probability of linking.
 
-compute with: ./scripts/generate_addlink_model.py
+compute with: ./scripts/generate_addlink_model.py <LANG>
 
 store in:
 ```bash
-./data/en/0001.link.bin
+./data/<LANG>/0001.link.bin
 ```
