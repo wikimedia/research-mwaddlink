@@ -4,8 +4,6 @@ Todos:
 
 # TODO 5: Compute the frequency of mentions (Martin, to check Tiziano code)
 
-# TODO 6: Add back levenstein distance. (Djellel)
-
 # TODO 7: Unified navigation using Wikidata. (Martin please refine?)
 
 # TODO 8: Finalize the backtest protocoel (Djellel is working on it)
