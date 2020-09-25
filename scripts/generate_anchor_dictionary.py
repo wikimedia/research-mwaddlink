@@ -148,37 +148,19 @@ print("Number of anchors", len(anchors))
 
 # store the dictionaries into the language data folder
 output_path = '../data/{0}/{0}.pageids'.format(lang)
-shelf_db = shelve.open(output_path)
-for k,v in tqdm(pageids.items()):
-    shelf_db[k] = v
-shelf_db.close()
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump(pageids, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # store the dictionaries into the language data folder
 output_path = '../data/{0}/{0}.redirects'.format(lang)
-shelf_db = shelve.open(output_path)
-for k,v in tqdm(redirects.items()):
-    shelf_db[k] = v
-shelf_db.close()
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump(redirects, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
 
 # turn redundant pairs into Count
 # e.g., ['wmf', 'wmf', 'wmf'] -> {'wmf':3}
 print("Compressing the dictionary")
 for k,v in tqdm(anchors.items()):
     anchors[k] = dict(Counter(v))
-
-##################
-output_path = '../data/{0}/{0}.anchors'.format(lang)
-# print("Storing the dictionary as Shelve")
-# # shelve file will have an additional .db extension
-shelf_db = shelve.open(output_path)
-for k,v in tqdm(anchors.items()):
-    shelf_db[k] = v
-shelf_db.close()
 
 ##################
 # store the dictionary into the language data folder
