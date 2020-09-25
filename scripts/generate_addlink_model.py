@@ -21,7 +21,7 @@ else:
 wiki   = lang+'wiki'
 ##################
 # Read the training dataset
-df = pd.read_csv('../data/{0}/training/link_train.csv'.format(lang), names= ['page', 'form', 'candidate', 'gram', 'freq', 'ambig', 'kur', 'w2v', 'nav', 'leven','label'], sep = '\t', header = None)
+df = pd.read_csv('../data/{0}/training/link_train.csv'.format(lang), sep = '\t', header = None)
 
 # load data
 dataset = df.values
@@ -56,5 +56,5 @@ predictions = model.predict_proba(X_test)[:, 1]
 print('ROC AUC=%.3f' % roc_auc_score(y_test,predictions))
 
 # save the model
-model.save_model('../data/{0}/0001.link.bin'.format(lang))
+model.save_model('../data/{0}/{0}.linkmodel.bin'.format(lang))
 

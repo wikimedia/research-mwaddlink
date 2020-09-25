@@ -25,7 +25,7 @@ else:
 wiki   = lang+'wiki'
 
 dirpath = '/mnt/data/xmldatadumps/public/{0}/*'.format(wiki)
-threads  = 20
+threads  = 10
 # Get the penultimate dump directory (the dir "latest" can have some simlink issues")
 try:
     files = glob.glob(dirpath)
