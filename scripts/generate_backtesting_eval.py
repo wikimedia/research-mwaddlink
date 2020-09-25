@@ -63,7 +63,7 @@ def main():
     tot_ret = 0.
     count_doc = 0
 
-    N_interval = 10
+    N_interval = 100
 
     output_path = '../data/{0}/{0}.backtest.eval'.format(lang)
     with open(output_path,'w') as fout:
@@ -114,6 +114,12 @@ def main():
         print("micro_recall:\t",  micro_recall)
         str_write = '%s\t%s\t%s\n'%(count_doc,micro_precision,micro_recall)
         fout.write(str_write)
+
+        anchors.close()
+        pageids.close()
+        redirects.close()
+        word2vec.close()
+        nav2vec.close()
 
 if __name__ == "__main__":
     main()
