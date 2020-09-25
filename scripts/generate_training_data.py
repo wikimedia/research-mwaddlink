@@ -10,7 +10,7 @@ import numpy as np
 import sys
 import shelve
 from utils import wtpGetLinkAnchor
-from utils_features import get_feature_set
+from utils import get_feature_set
 import time
 if len(sys.argv) >= 2:
     lang = sys.argv[1]
