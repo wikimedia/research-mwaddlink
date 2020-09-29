@@ -24,7 +24,7 @@ mkdir ../data/$LANG/testing
 echo 'GETTING THE ANCHOR DICTIONARY'
 deactivate
 source /usr/lib/anaconda-wmf/bin/activate
-# PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $LANG
+PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $LANG
 conda deactivate
 
 source ../venv/bin/activate
