@@ -66,7 +66,7 @@ def main():
 
     N_interval = 100
 
-    output_path = '../data/{0}/testting/{0}.backtest.eval'.format(lang)
+    output_path = '../data/{0}/testing/{0}.backtest.eval'.format(lang)
     with open(output_path,'w') as fout:
         str_write = 'no-sents\tmicro-prec\tmicro-recall\n'
         fout.write(str_write)
