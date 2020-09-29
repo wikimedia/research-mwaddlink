@@ -1,4 +1,6 @@
 import shelve
+import pickle
+from sqlitedict import SqliteDict
 import argparse
 from utils import process_page
 from utils import getLinks
@@ -8,7 +10,7 @@ import time
 
 
 '''
-
+backtesting evlauation of trained model on held-out testset
 '''
 
 
@@ -38,20 +40,19 @@ def main():
 
     ## open datasets as shelve
     # Load the anchor dictionary (the main data structure)
-    anchors = shelve.open( "../data/{0}/{0}.anchors.db".format(lang), flag='r' )
-    pageids = shelve.open( "../data/{0}/{0}.pageids.db".format(lang), flag='r' )
-    redirects = shelve.open( "../data/{0}/{0}.redirects.db".format(lang), flag='r' )
-    ## load word2vec features
-    word2vec = shelve.open("../data/{0}/{0}.w2v.filtered.db".format(lang), flag='r' )
-    ## load navigation-vector features
-    nav2vec = shelve.open("../data/{0}/{0}.nav.filtered.db".format(lang), flag='r' )
+    anchors = SqliteDict("../data/{0}/{0}.anchors.sqlite".format(lang))
+    pageids = SqliteDict("../data/{0}/{0}.pageids.sqlite".format(lang)) 
+    redirects = SqliteDict("../data/{0}/{0}.redirects.sqlite".format(lang)) 
+    word2vec = SqliteDict("../data/{0}/{0}.w2v.filtered.sqlite".format(lang))
+    nav2vec = SqliteDict("../data/{0}/{0}.nav.filtered.sqlite".format(lang))
+
     ## load trained model
     model = xgb.XGBClassifier()  # init model
     model.load_model('../data/{0}/{0}.linkmodel.bin'.format(lang))  # load data
 
     ## load the test-set
     test_set = []
-    with open('../data/{0}/training/sentences_test.csv'.format(lang)) as fin:
+    with open('../data/{0}/testing/sentences_test.csv'.format(lang)) as fin:
         for line in fin:
             try:
                 title, sent = line.split('\t')
@@ -65,7 +66,7 @@ def main():
 
     N_interval = 100
 
-    output_path = '../data/{0}/{0}.backtest.eval'.format(lang)
+    output_path = '../data/{0}/testting/{0}.backtest.eval'.format(lang)
     with open(output_path,'w') as fout:
         str_write = 'no-sents\tmicro-prec\tmicro-recall\n'
         fout.write(str_write)

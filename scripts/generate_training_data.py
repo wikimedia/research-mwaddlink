@@ -3,6 +3,7 @@
 
 from tqdm import tqdm
 import pickle
+from sqlitedict import SqliteDict
 import csv
 import wikitextparser as wtp
 import wikipedia2vec
@@ -21,13 +22,13 @@ wiki   = lang+'wiki'
 
 t1=time.time()
 
-## open datasets as shelve
-anchors = shelve.open( "../data/{0}/{0}.anchors.db".format(lang), flag='r' )
-redirects = shelve.open( "../data/{0}/{0}.redirects.db".format(lang), flag='r' )
-pageids = shelve.open( "../data/{0}/{0}.pageids.db".format(lang), flag='r' )
-## embeddings
-word2vec = shelve.open("../data/{0}/{0}.w2v.filtered.db".format(lang), flag='r' )
-nav2vec = shelve.open("../data/{0}/{0}.nav.filtered.db".format(lang), flag='r' )
+## open datasets as sqlite-tables
+anchors = SqliteDict("../data/{0}/{0}.anchors.sqlite".format(lang))
+pageids = SqliteDict("../data/{0}/{0}.pageids.sqlite".format(lang)) 
+redirects = SqliteDict("../data/{0}/{0}.redirects.sqlite".format(lang)) 
+word2vec = SqliteDict("../data/{0}/{0}.w2v.filtered.sqlite".format(lang))
+nav2vec = SqliteDict("../data/{0}/{0}.nav.filtered.sqlite".format(lang))
+
 ####################
 # This scripts extracts examples from the backtesting protocol
 # and reduces them to gold triple: (page, mention, link)
@@ -87,6 +88,18 @@ with open(outfile, "w") as f:
                             ## page text candidate feature1 feature2 ... label
                 except:
                     pass
+
+## closing the sqlite files
+if isinstance(anchors,SqliteDict):
+    anchors.close()
+if isinstance(redirects,SqliteDict):
+    redirects.close()
+if isinstance(pageids,SqliteDict):
+    pageids.close()
+if isinstance(word2vec,SqliteDict):
+    word2vec.close()
+if isinstance(nav2vec,SqliteDict):
+    nav2vec.close()
 
 print("Building the model training dataset is DONE.")
 t2=time.time()

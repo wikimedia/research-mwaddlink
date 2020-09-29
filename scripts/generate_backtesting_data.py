@@ -230,6 +230,6 @@ with open("../data/{0}/training/sentences_train.csv".format(lang), "w") as f:
         f.write("%s\n" % "\t".join(row))
 
 # Store the sentences for back-testing
-with open("../data/{0}/training/sentences_test.csv".format(lang), "w") as f:
+with open("../data/{0}/testing/sentences_test.csv".format(lang), "w") as f:
     for row in wiki_links[LIMIT_SENTS_SPLIT:]:
         f.write("%s\n" % "\t".join(row))
