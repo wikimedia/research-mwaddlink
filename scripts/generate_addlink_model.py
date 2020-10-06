@@ -21,7 +21,7 @@ else:
 wiki   = lang+'wiki'
 ##################
 # Read the training dataset
-df = pd.read_csv('../data/{0}/training/link_train.csv'.format(lang), sep = '\t', header = None)
+df = pd.read_csv('../data/{0}/training/link_train.csv'.format(lang), sep = '\t', header = None, quoting=3,)
 
 # load data
 dataset = df.values
