@@ -129,6 +129,39 @@ def getWikitext(title, lang):
     wikitext = revision["slots"]["main"]["content"]
     return wikitext
 
+def getPageDict(title, lang):
+    '''
+    get the wikitext for a pagetitile for a lang
+    '''
+    params = {
+        "action": "query",
+        "prop": "revisions",
+        "rvprop": "content|ids",
+        "rvslots": "main",
+        "rvlimit": 1,
+        "titles": title,
+        "format": "json",
+        "formatversion": "2",
+    }
+    API_URL = "https://{0}.wikipedia.org/w/api.php".format(lang)
+    headers = {"User-Agent": "mwaddlink"}
+    req = requests.get(API_URL, headers=headers, params=params)
+    res = req.json()
+    res_page = res["query"]["pages"][0]
+    res_rev = res_page["revisions"][0]
+
+    wikitext = res_rev["slots"]["main"]["content"]
+    revid = res_rev['revid']
+    pageid = res_page["pageid"]
+    result = {
+        'pagetitle':title,
+        'lang':lang,
+        'wikitext':wikitext,
+        'pageid':pageid,
+        'revid':revid,
+    }
+    return result
+
 ##########################
 ## getting feature-dataset
 ##########################
@@ -192,7 +225,7 @@ def classify_links(page, text, anchors, word2vec, nav2vec, model, threshold=0.95
     return top_candidate
 
 # Actual Linking function
-def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, model, threshold = 0.8, pr = True):
+def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, model, threshold = 0.8, pr = True, return_wikitext=True):
     '''
     returns updated wikitext
     '''
@@ -210,17 +243,22 @@ def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, 
     linked_links.add(normalise_title(page))
     
     tested_mentions = set()
-    for gram_length in range(10, 0, -1):
-        #print("Scanning ", gram_length, "Grams")
-        # Parsing the tree can be done once
-        for node in page_wikicode.filter(recursive= False):
-            if isinstance(node, Text):
-                lines = node.split("\n")
-                for line in lines:
+    added_links = []
 
-                    for sent in tokenizeSent(line):
-                        grams = list(ngrams(sent.split(), gram_length))
-    
+
+    for node in page_wikicode.filter(recursive= False):
+        # Parsing the tree can be done once 
+        ## this is the most out loop to make sure the offset-calculations matches throughout
+        if isinstance(node, Text):
+            ## check the offset of the node in the wikitext_init
+            node_val = node.value
+            i1_node_init = page_wikicode_init.find(node_val)
+            i2_node_init = i1_node_init + len(node_val)
+            lines = node.split("\n")
+            for line in lines:
+                for sent in tokenizeSent(line):
+                    for gram_length in range(10, 0, -1):
+                        grams = list(ngrams(sent.split(), gram_length))                
                         for gram in grams:
                             mention = ' '.join(gram).lower()
                             mention_original = ' '.join(gram)
@@ -228,18 +266,10 @@ def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, 
                             # it was not previously linked (or part of a link)
                             # none of its candidate links is already used
                             # it was not tested before (for efficiency)
-                            # if mention == 'finland':
-                            #     print(mention)
-                            #     print(mention in anchors)
-                            #     print(not any(mention in s for s in linked_mentions))
-                            #     print(not bool(set(anchors[mention].keys()) & linked_links))
-                            #     print(mention not in tested_mentions)
                             if (mention in anchors and
                                 not any(mention in s for s in linked_mentions) and
                                 not bool(set(anchors[mention].keys()) & linked_links) and
                                 mention not in tested_mentions):
-
-
                                 #logic
                                 #print("testing:", mention, len(anchors[mention]))
                                 candidate = classify_links(page, mention, anchors,word2vec,nav2vec, model, threshold=threshold)
@@ -260,7 +290,24 @@ def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, 
                                     # Book-keeping
                                     linked_mentions.add(mention)
                                     linked_links.add(candidate)
+                                    if found==1:
+                                        page_wikicode_init_substr = page_wikicode_init[i1_node_init:i2_node_init]
+                                        i1_sub = page_wikicode_init_substr.lower().find(mention)
+                                        startOffset = i1_node_init+i1_sub
+                                        endOffset = startOffset+len(mention)
+                                        new_link = {
+                                            'linkTarget':candidate_link,
+                                            'anchor':mention_original,
+                                            'probability':float(candidate_proba),
+                                            'startOffset':startOffset,
+                                            'endOffset':endOffset,
+                                        }
+                                        added_links += [new_link]
                                 # More Book-keeping
                                 tested_mentions.add(mention)
-
-    return page_wikicode
+    ## if yes, we return the adapted wikitext
+    ## else just return list of links with offsets
+    if return_wikitext == True:
+        return page_wikicode
+    else:
+        return added_links
