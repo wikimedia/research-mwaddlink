@@ -13,7 +13,6 @@ import re
 
 import nltk
 from nltk.util import ngrams
-
 ######################
 ## parsing titles
 ######################
@@ -171,10 +170,16 @@ from Levenshtein import jaro as levenshtein_score
 
 def getDistEmb(ent_a, ent_b, embd):
     dst = 0
-    try:
+    try:## try if entities are in embd
         a = embd[ent_a]
         b = embd[ent_b]
-        dst = (np.dot(a, b) / np.linalg.norm(a) / np.linalg.norm(b))
+        norm_ab = np.linalg.norm(b)*np.linalg.norm(a)
+        ## if norm of any vector is 0, we assign dst=0 (maximum dst)
+        if norm_ab==0:
+            dst = 0.
+        else:
+            dst = np.dot(a,b)/norm_ab
+#         dst = (np.dot(a, b) / np.linalg.norm(a) / np.linalg.norm(b))
     except:
         pass
     if np.isnan(dst):
