@@ -2,18 +2,39 @@
 MediaWiki AddLink Extension Model and API
 
 ## Introduction
-This repository contains the necessary code to train a model for link recommendation tailored for Wikipedia.
+This repository contains the necessary code for the link recommendation model for Wikipedia articles. This consists of code to, both, train the model (including all the necessary pre-processing) and how to query the model to get link recommendations for an individual articles.
 The method is context-free and can be scaled to (virtually) any language, provided that we have enough existing links to learn from.
-Once the model and all the utility files are computed, they can be loaded and used to build an API to add new links to a Wikipedia page automatically. The necessary code for such an API is available in the following notebook:
 
+## Querying the model
+
+Once the model and all the utility files are computed (see "Training the model" below), they can be loaded and used to build an API to add new links to a Wikipedia page automatically.
+For this we have the following utilites
+
+* command-line tool:
 ```bash
-link_page_simple.ipynb
+python addlink-query_links.py -l de -p Garnet_Carter
 ```
+This will return all recommended links for a given page (-p) in a given wiki (-l). You can also specify the threshold for the probability of the link (-t, default=0.9)
 
-The primary function will take a Wikipedia page_title, queries the API for its wikitext, and returns new wikitext.
-TODO: make it return an object containing information about the number of links added (if at all) and the confidence of the model on each link.
+* interactive notebook:
+```bash
+addlink-query_notebook.ipynb
+```
+This allows you to inspect the recommendations in a notebook.
 
-## Data preparation
+**Notes**:
+- we need set up a python virtual environment:
+```bash
+virtualenv -p /usr/bin/python3 venv_query/
+source venv_query/bin/activate
+pip install -r requirements_query.txt
+```
+This contains only the packages required for querying the model and is thus lighter than the environment for training the model.
+
+- on the stat-machines, make sure you have the http-proxy set up https://wikitech.wikimedia.org/wiki/HTTP_proxy
+- you might have to install the following nltk-package manually: ```python -m nltk.downloader punkt```
+
+## Training the model
 
 To load, the API will need to pre-compute the some datasets for each target language.
 
@@ -25,19 +46,19 @@ You can run the pipeline for a given language (change the variable ```LANG```)
 ./run-pipeline.sh
 ```
 
-Note1: we need set up a python virtual environment:
+**Notes**:
+- we need set up a python virtual environment:
 ```bash
 virtualenv -p /usr/bin/python3 venv/
 source venv/bin/activate
 pip install -r requirements.txt
-deactivate
 ```
 
-Note2: some parts in the script rely on using the spark cluster using a specific conda-environment from a specific stat-machine (stat1008).
+- some parts in the script rely on using the spark cluster using a specific conda-environment from a specific stat-machine (stat1008).
+- on the stat-machines, make sure you have the http-proxy set up https://wikitech.wikimedia.org/wiki/HTTP_proxy
+- you might have to install the following nltk-package manually: ```python -m nltk.downloader punkt```
 
-Specifically, the script is creating the following datasets.
-
-### Anchors Dictionary
+#### Anchors Dictionary
 This is the main dictionary to find candidates and mentions; the bigger, the better (barring memory issues) for English, this is a ~2G pickle file.
 
 compute with:
@@ -71,7 +92,7 @@ python ./scripts/generate_anchor_dictionary.py <LANG>
 ```
 
 
-### Wikipedia2Vec:
+#### Wikipedia2Vec:
 This models semantic relationship.
 Get it from: https://github.com/wikipedia2vec/wikipedia2vec then run:
 ```bash
@@ -83,7 +104,17 @@ store in
 ./data/<LANG>/<LANG>.w2v.bin
 ```
 
-### Nav2Vec:
+We filter only those vectors from articles in the main-namespace that are not redirects by running
+```bash
+python filter_dict_w2v.py $LANG
+```
+and storing the resulting dictionary as a pickle
+```bash
+./data/<LANG>/<LANG>.w2v.filtered.pkl
+```
+
+
+#### Nav2Vec:
 This models how current Wikipedia readers navigate through Wikipedia.
 
 compute via:
@@ -102,31 +133,16 @@ This will generate an embedding for <LANG> in
 ./data/<LANG>/<LANG>.nav.bin
 ```
 
-### Filtering and memory-mapping
-The pickle-dictionaries (anchors, pageids, redirects) are converted to sqlite-databases using the [sqlitedict-package](https://pypi.org/project/sqlitedict/) in order to reduce memory-footprint when reading these dictionaries later.
-
-computed via
+We filter only those vectors from articles in the main-namespace that are not redirects by running
 ```bash
-python ./scripts/generate_sqlite_data.py $LANG
+python filter_dict_nav.py $LANG
+```
+and storing the resulting dictionary as a pickle
+```bash
+./data/<LANG>/<LANG>.nav.filtered.pkl
 ```
 
-stored in
-```bash
-./data/<LANG>/<LANG>.anchors.sqlite
-./data/<LANG>/<LANG>.pageids.sqlite
-./data/<LANG>/<LANG>.redirects.sqlite
-```
-
-Similarly, we store the embeddings from wikiepdia2vec and nav2vec into sqlite-databases; at the same time we are filtering to keep only pages from main-namespace that are not redirects to reduce the size of these files.
-
-stored in
-```bash
-./data/<LANG>/<LANG>.w2v.filtered.sqlite
-./data/<LANG>/<LANG>.nav.filtered.sqlite
-```
-
-
-### Raw datasets:
+#### Raw datasets:
 There is a backtesting dataset to a) test the accuracy of the model, and b) train the model.
 We mainly want to extract fully formed and linked sentences as our ultimate ground truth.
 
@@ -142,7 +158,7 @@ Datasets are then stored in:
 
 ```
 
-### Feature datasets:
+#### Feature datasets:
 We need dataset with features and training labels (true link, false link)
 
 compute with:
@@ -155,7 +171,7 @@ This is going to generate a file to be stored here:
 ./data/<LANG>/training/link_train.csv
 ```
 
-### XGBoost Classification Model:
+#### XGBoost Classification Model:
 This is the main prediction model it takes (Page_title, Mention, Candidate Link) and produces a probability of linking.
 
 compute with:
@@ -167,7 +183,7 @@ store in:
 ./data/<LANG>/<LANG>.linkmodel.bin
 ```
 
-### Backtesting evaluation:
+#### Backtesting evaluation:
 Evaluate the prediction algorithm on a set of sentences in the training set using micro-precision and micro-recall.
 
 compute with (first 10000 sentences):
@@ -177,4 +193,21 @@ python generate_backtesting_eval.py -l $LANG -nmax 10000
 store in:
 ```bash
 ./data/<LANG>/<LANG>.backtest.eval
+```
+
+#### memory-mapping
+The pickle-dictionaries (anchors, pageids, redirects, w2v,nav) are converted to sqlite-databases using the [sqlitedict-package](https://pypi.org/project/sqlitedict/) in order to reduce memory-footprint when reading these dictionaries when getting link-recommendations for individual articles.
+
+computed via
+```bash
+python ./scripts/generate_sqlite_data.py $LANG
+```
+
+stored in
+```bash
+./data/<LANG>/<LANG>.anchors.sqlite
+./data/<LANG>/<LANG>.pageids.sqlite
+./data/<LANG>/<LANG>.redirects.sqlite
+./data/<LANG>/<LANG>.w2v.filtered.sqlite
+./data/<LANG>/<LANG>.nav.filtered.sqlite
 ```

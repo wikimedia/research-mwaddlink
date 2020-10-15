@@ -1,18 +1,14 @@
-import shelve
 import pickle
-from sqlitedict import SqliteDict
 import argparse
 from utils import process_page
 from utils import getLinks
 import mwparserfromhell as mwph
 import xgboost as xgb
-import time
-
+import multiprocessing
 
 '''
 backtesting evlauation of trained model on held-out testset
 '''
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -37,17 +33,17 @@ def main():
     threshold = args.threshold
     N_max = args.nmax
 
-
-    ## open datasets as shelve
-    # Load the anchor dictionary (the main data structure)
-    anchors = SqliteDict("../data/{0}/{0}.anchors.sqlite".format(lang))
-    pageids = SqliteDict("../data/{0}/{0}.pageids.sqlite".format(lang)) 
-    redirects = SqliteDict("../data/{0}/{0}.redirects.sqlite".format(lang)) 
-    word2vec = SqliteDict("../data/{0}/{0}.w2v.filtered.sqlite".format(lang))
-    nav2vec = SqliteDict("../data/{0}/{0}.nav.filtered.sqlite".format(lang))
+    ## open dataset-dicts from pickle files
+    anchors = pickle.load( open("../data/{0}/{0}.anchors.pkl".format(lang),'rb') ) 
+    pageids = pickle.load( open("../data/{0}/{0}.pageids.pkl".format(lang),'rb') ) 
+    redirects = pickle.load( open("../data/{0}/{0}.redirects.pkl".format(lang),'rb') ) 
+    word2vec = pickle.load( open("../data/{0}/{0}.w2v.filtered.pkl".format(lang),'rb') ) 
+    nav2vec = pickle.load( open("../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb') ) 
 
     ## load trained model
-    model = xgb.XGBClassifier()  # init model
+    ## use a fourth of the cpus, at most 8
+    n_cpus_max = min([int(multiprocessing.cpu_count()/4),8])
+    model = xgb.XGBClassifier(n_jobs=n_cpus_max)  # init model
     model.load_model('../data/{0}/{0}.linkmodel.bin'.format(lang))  # load data
 
     ## load the test-set
@@ -64,7 +60,7 @@ def main():
     tot_ret = 0.
     count_doc = 0
 
-    N_interval = 100
+    N_interval = 1000
 
     output_path = '../data/{0}/testing/{0}.backtest.eval'.format(lang)
     with open(output_path,'w') as fout:
@@ -115,12 +111,6 @@ def main():
         print("micro_recall:\t",  micro_recall)
         str_write = '%s\t%s\t%s\n'%(count_doc,micro_precision,micro_recall)
         fout.write(str_write)
-
-        anchors.close()
-        pageids.close()
-        redirects.close()
-        word2vec.close()
-        nav2vec.close()
 
 if __name__ == "__main__":
     main()

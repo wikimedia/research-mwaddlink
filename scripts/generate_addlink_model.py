@@ -8,10 +8,10 @@ from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
 import sys
+import multiprocessing
 
 ##################
 # This script can be used on any language
-# TODO: Add a LANG parameter
 
 if len(sys.argv) >= 2:
     lang = sys.argv[1]
@@ -42,7 +42,8 @@ test_size = 0.33
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, label_encoded_y, test_size=test_size, random_state=seed)
 
 # Fit model to the training data
-model = xgboost.XGBClassifier()
+n_cpus_max = min([int(multiprocessing.cpu_count()/4),8])
+model = xgboost.XGBClassifier(n_cpus_max)
 model.fit(X_train, y_train)
 print(model)
 

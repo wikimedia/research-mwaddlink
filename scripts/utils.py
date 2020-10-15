@@ -294,7 +294,7 @@ def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, 
                                     ######################################
                                     # Book-keeping
                                     linked_mentions.add(mention)
-                                    linked_links.add(candidate)
+                                    linked_links.add(candidate_link)
                                     if found==1:
                                         page_wikicode_init_substr = page_wikicode_init[i1_node_init:i2_node_init]
                                         i1_sub = page_wikicode_init_substr.lower().find(mention)
