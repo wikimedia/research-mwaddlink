@@ -43,7 +43,7 @@ X_train, X_test, y_train, y_test = model_selection.train_test_split(X, label_enc
 
 # Fit model to the training data
 n_cpus_max = min([int(multiprocessing.cpu_count()/4),8])
-model = xgboost.XGBClassifier(n_cpus_max)
+model = xgboost.XGBClassifier(n_jobs=n_cpus_max)
 model.fit(X_train, y_train)
 print(model)
 
