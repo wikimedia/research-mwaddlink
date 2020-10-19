@@ -4,3 +4,4 @@ port=29418
 project=research/mwaddlink.git
 track=1
 defaultrebase=0
+defaultbranch=main
