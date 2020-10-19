@@ -26,7 +26,7 @@ def main():
                         help="language (wiki) for which to get recommendations (e.g. enwiki or en)")
 
     parser.add_argument("--threshold","-t",
-                        default=0.9,
+                        default=0.5,
                         type = float,
                         help="threshold value for links to be recommended")
 
