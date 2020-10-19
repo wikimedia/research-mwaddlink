@@ -4,11 +4,16 @@
 from tqdm import tqdm
 import pickle
 import csv
-import wikitextparser as wtp
 import numpy as np
 import sys
+import mwparserfromhell as mwph
+
 from utils import wtpGetLinkAnchor
 from utils import get_feature_set
+from utils import getLinks, normalise_title, normalise_anchor, tokenizeSent
+import nltk
+from nltk.util import ngrams
+
 import time
 if len(sys.argv) >= 2:
     lang = sys.argv[1]
@@ -31,7 +36,7 @@ nav2vec = pickle.load( open("../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb'
 # and reduces them to gold triple: (page, mention, link)
 # We turn the gold triple into features and generate negatives examples
 # Positive example: The correct link
-# Negative example: A randomly picked link from the list of candidates
+# Negative example: identified mentions and all candidate links
 
 infile  = "../data/{0}/training/sentences_train.csv".format(lang)
 outfile = "../data/{0}/training/link_train.csv".format(lang)
@@ -54,37 +59,60 @@ print("Processing #", lines, " lines")
 # We write the training samples directly into the outputfile
 with open(outfile, "w") as f:
     with open(infile) as csvfile:
-        readCSV = csv.reader(csvfile, delimiter='\t')
+        readCSV = csv.reader(csvfile, delimiter='\t',quoting=csv.QUOTE_NONE)
         for row in tqdm(readCSV, total = lines):
             if len(row) != 2:
                 continue
             page = row[0]
+            wikitext = row[1]
             # a link is [[link | text]]
-            labels = wtp.parse(row[1]).wikilinks
-            for l in labels:
-                try:
-                    true_link, text = wtpGetLinkAnchor(l)
-                    ## resolve redirect and check if in main namespace
-                    true_link = redirects.get(true_link,true_link)
-                    if true_link not in pageids:
-                        continue
 
-                    if text in anchors:
-                        # For each candidate link add a datapoint to the training data 
-                        # (the true link is 1, false link is 0)
-                        for candidate in anchors[text].keys():
-                            label = True if candidate == true_link else False
-                            features = get_feature_set(page, text, candidate, anchors, word2vec, nav2vec)
-                            str_write = "%s\t%s\t%s"%(page, text, candidate)
-                            for feature in features:
-                                str_write+="\t%s"%feature
-                            str_write+="\t%s"%label
-                            str_write+="\n"
-                            f.write(str_write)
-                            ## write the data as features
-                            ## page text candidate feature1 feature2 ... label
-                except:
-                    pass
+
+            inp_pairs = getLinks(wikitext, redirects=redirects, pageids=pageids)
+            set_inp_pairs = set(inp_pairs.items())
+
+            ## get all possible mentions
+            wikitext_nolinks = mwph.parse(wikitext).strip_code()
+            tested_mentions = set()
+            for sent in tokenizeSent(wikitext_nolinks):
+                for gram_length in range(10, 0, -1):
+                    grams = list(ngrams(sent.split(), gram_length))
+                    for gram in grams:
+                        mention = ' '.join(gram).lower()
+                        mention_original = ' '.join(gram)
+                        # if the mention exist in the DB 
+                        # it was not previously linked (or part of a link)
+                        # none of its candidate links is already used
+                        # it was not tested before (for efficiency)
+                        if (mention in anchors and
+                            mention not in tested_mentions):  
+                            tested_mentions.add(mention)
+            ##we also add the mentions inp_pairs to make sure we have positive examples
+            for mention in inp_pairs.keys():
+                if mention in anchors:
+                    tested_mentions.add(mention)
+            ## add (mention,link)-pairs as positive or negative examples
+            for mention in tested_mentions:
+                mention = normalise_anchor(mention)
+                candidates_link = anchors[mention]
+                for link in candidates_link:
+                    link = normalise_title(link)
+                    if (mention,link) in set_inp_pairs:
+                        label = True
+                    else:
+                        label = False
+                    try:
+                        features = get_feature_set(page, mention, link, anchors, word2vec, nav2vec)
+                        str_write = "%s\t%s\t%s"%(page, mention, link)
+                        for feature in features:
+                            str_write+="\t%s"%feature
+                        str_write+="\t%s"%label
+                        str_write+="\n"
+                        f.write(str_write)
+                        ## write the data as features
+                        ## page text candidate feature1 feature2 ... label
+                    except:
+                        pass
 
 print("Building the model training dataset is DONE.")
 t2=time.time()
