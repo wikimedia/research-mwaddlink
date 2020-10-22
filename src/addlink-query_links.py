@@ -50,15 +50,15 @@ def main():
     ## open the trained model
     logger.info('Loading the trained model')
     try:
-        anchors = SqliteDict(os.path.join(PATH_mwaddlink,"data/{0}/{0}.anchors.sqlite".format(lang))  )
-        pageids = SqliteDict(os.path.join(PATH_mwaddlink,"data/{0}/{0}.pageids.sqlite".format(lang)))
-        redirects = SqliteDict(os.path.join(PATH_mwaddlink,"data/{0}/{0}.redirects.sqlite".format(lang)) )
-        word2vec = SqliteDict(os.path.join(PATH_mwaddlink,"data/{0}/{0}.w2v.filtered.sqlite".format(lang)) )
-        nav2vec = SqliteDict(os.path.join(PATH_mwaddlink,"data/{0}/{0}.nav.filtered.sqlite".format(lang)) )
+        anchors = SqliteDict(os.path.join(PATH_mwaddlink,"../data/{0}/{0}.anchors.sqlite".format(lang))  )
+        pageids = SqliteDict(os.path.join(PATH_mwaddlink,"../data/{0}/{0}.pageids.sqlite".format(lang)))
+        redirects = SqliteDict(os.path.join(PATH_mwaddlink,"../data/{0}/{0}.redirects.sqlite".format(lang)) )
+        word2vec = SqliteDict(os.path.join(PATH_mwaddlink,"../data/{0}/{0}.w2v.filtered.sqlite".format(lang)) )
+        nav2vec = SqliteDict(os.path.join(PATH_mwaddlink,"../data/{0}/{0}.nav.filtered.sqlite".format(lang)) )
         ## load trained model
         n_cpus_max = min([int(multiprocessing.cpu_count()/4),8])
         model = xgb.XGBClassifier(n_jobs =n_cpus_max )  # init model
-        model.load_model(os.path.join(PATH_mwaddlink,"data/{0}/{0}.linkmodel_v2.bin".format(lang)))  # load data
+        model.load_model(os.path.join(PATH_mwaddlink,"../data/{0}/{0}.linkmodel_v2.bin".format(lang)))  # load data
     except:
         # logging
         logger.error('Could not open trained model in %swiki. try another language.'%lang)
