@@ -21,8 +21,9 @@ variants:
       packages: [python3.7,build-essential]
   production:
     includes: [production-build]
+    entrypoint: ["gunicorn","src.api:app","-b","0.0.0.0:8000"]
     python:
-      requirements: [requirements_query.txt]
+      requirements: [requirements-query.txt]
   codehealth:
     base: docker-registry.wikimedia.org/releng/sonar-scanner:1.0.1
     copies: [build]

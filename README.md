@@ -27,7 +27,7 @@ This allows you to inspect the recommendations in a notebook.
 ```bash
 virtualenv -p /usr/bin/python3 venv_query/
 source venv_query/bin/activate
-pip install -r requirements_query.txt
+pip install -r requirements-query.txt
 ```
 This contains only the packages required for querying the model and is thus lighter than the environment for training the model.
 

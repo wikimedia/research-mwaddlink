@@ -137,9 +137,9 @@ def getWikitext(title, lang):
     return wikitext
 
 
-def getPageDict(title, lang):
+def getPageDict(title: str, lang: str) -> dict:
     '''
-    get the wikitext for a pagetitile for a lang
+    get the wikitext for a pagetitle for a lang
     '''
     params = {
         "action": "query",
@@ -161,14 +161,13 @@ def getPageDict(title, lang):
     wikitext = res_rev["slots"]["main"]["content"]
     revid = res_rev['revid']
     pageid = res_page["pageid"]
-    result = {
+    return {
         'pagetitle': title,
         'lang': lang,
         'wikitext': wikitext,
         'pageid': pageid,
         'revid': revid,
     }
-    return result
 
 
 ##########################
