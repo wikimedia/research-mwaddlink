@@ -1,0 +1,41 @@
+pipelines:
+  test:
+    blubberfile: blubber.yaml
+    stages:
+      - name: run-test
+        build: test
+        run: true
+      - name: codehealth_built
+        build: codehealth
+      - name: coverage
+        run:
+          image: '${codehealth_built.imageID}'
+          env:
+            SONAR_BRANCH_TARGET: ${ZUUL_BRANCH}
+            SONAR_BRANCH_NAME: '${ZUUL_CHANGE}-${ZUUL_PATCHSET}'
+          credentials:
+            - id: SONAR_API_KEY
+              name: SONAR_API_KEY
+  publish:
+    blubberfile: blubber.yaml
+    stages:
+      - name: codehealth_built
+        build: codehealth
+      - name: coverage
+        run:
+          image: '${codehealth_built.imageID}'
+          env:
+            SONAR_BRANCH_NAME: ${ZUUL_BRANCH}
+          credentials:
+            - id: SONAR_API_KEY
+              name: SONAR_API_KEY
+      - name: production-model
+        build: production-model
+        publish:
+          image:
+            tags: [stable]
+      - name: production-query
+        build: production-query
+        publish:
+          image:
+            tags: [stable]

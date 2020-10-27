@@ -12,7 +12,7 @@ For this we have the following utilites
 
 * command-line tool:
 ```bash
-python addlink-query_links.py -l de -p Garnet_Carter
+python src/addlink-query_links.py -l de -p Garnet_Carter
 ```
 This will return all recommended links for a given page (-p) in a given wiki (-l). You can also specify the threshold for the probability of the link (-t, default=0.9)
 
@@ -211,3 +211,7 @@ stored in
 ./data/<LANG>/<LANG>.w2v.filtered.sqlite
 ./data/<LANG>/<LANG>.nav.filtered.sqlite
 ```
+
+#### Development
+
+Run lint checks with `flake8`: `.venv_query/bin/flake8` or `tox`

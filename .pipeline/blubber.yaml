@@ -1,0 +1,37 @@
+version: v4
+base: docker-registry.wikimedia.org/python3
+variants:
+  build:
+    base: docker-registry.wikimedia.org/python3-devel
+    apt:
+      packages: [python3-setuptools]
+    copies: [local]
+    python:
+      version: python3
+  test:
+    includes: [build]
+    python:
+      requirements: [requirements-test.txt]
+      use-system-flag: true
+  production-build:
+    includes: [build]
+    base: docker-registry.wikimedia.org/python3-build-buster
+    apt:
+      packages: [python3.7,build-essential]
+  production-model:
+    includes: [production-build]
+    python:
+      requirements: [requirements.txt]
+  production-query:
+    includes: [production-build]
+    python:
+      requirements: [requirements_query.txt]
+  codehealth:
+    base: docker-registry.wikimedia.org/releng/sonar-scanner:1.0.1
+    copies: [build]
+    runs:
+      environment: { SONAR_API_KEY: "SONAR_API_KEY" }
+      insecurely: true
+    entrypoint:
+      - /bin/bash
+      - utils/run_sonar.sh
