@@ -1,3 +1,7 @@
+from Levenshtein import jaro as levenshtein_score
+from Levenshtein import distance as levenshtein_distance
+from scipy.stats import kurtosis
+import requests
 import operator
 import numpy as np
 
@@ -8,17 +12,18 @@ import nltk
 import wikitextparser as wtp
 import mwparserfromhell
 from mwparserfromhell.nodes.text import Text
-from mwparserfromhell.nodes.wikilink import Wikilink 
+from mwparserfromhell.nodes.wikilink import Wikilink
 import re
 
 import nltk
 from nltk.util import ngrams
 ######################
-## parsing titles
+# parsing titles
 ######################
 
+
 def normalise_title(title):
-    """ 
+    """
     Normalising title (links)
     - deal with quotes
     - strip()
@@ -34,6 +39,7 @@ def normalise_title(title):
         n_title = n_title.split('#')[0]
     return n_title
 
+
 def normalise_anchor(anchor):
     '''
     Normalising anchor  (text):
@@ -42,7 +48,7 @@ def normalise_anchor(anchor):
     Note that we do not do the other normalisations since we want to match the strings from the text
     '''
     # anchor = up.unquote(anchor)
-    n_anchor = anchor.strip()#.replace("_", " ")
+    n_anchor = anchor.strip()  # .replace("_", " ")
     return n_anchor.lower()
 
 
@@ -51,34 +57,33 @@ def wtpGetLinkAnchor(wikilink):
     extract anchor and link from a wikilink from wikitextparser.
     normalise title and anchor
     '''
-    ## normalise the article title (quote, first letter capital) 
+    # normalise the article title (quote, first letter capital)
     link_tmp = wikilink.title
     link = normalise_title(link_tmp)
-    ## normalise the anchor text (strip and lowercase) 
+    # normalise the anchor text (strip and lowercase)
     anchor_tmp = wikilink.text if wikilink.text else link_tmp
     anchor = normalise_anchor(anchor_tmp)
     return link, anchor
-
-
 
 
 def getLinks(wikicode, redirects=None, pageids=None):
     '''
     get all links in a page
     '''
-    link_dict={}
+    link_dict = {}
     linklist = wtp.parse(str(wikicode)).wikilinks
     for l in linklist:
-        link,anchor = wtpGetLinkAnchor(l)
-        ## if redirects is not None, resolve the redirect
-        if redirects != None:
-            link = resolveRedirect(link,redirects)
-        ## if pageids is not None, keep only links appearing as key in pageids
-        if pageids !=None:
+        link, anchor = wtpGetLinkAnchor(l)
+        # if redirects is not None, resolve the redirect
+        if redirects is not None:
+            link = resolveRedirect(link, redirects)
+        # if pageids is not None, keep only links appearing as key in pageids
+        if pageids is not None:
             if link not in pageids:
                 continue
         link_dict[anchor] = link
     return link_dict
+
 
 def resolveRedirect(link, redirects):
     '''
@@ -86,9 +91,11 @@ def resolveRedirect(link, redirects):
     check whether in pageids (main namespace)
 
     '''
-    return redirects.get(link,link)
+    return redirects.get(link, link)
 
 # Split a MWPFH node <TEXT> into sentences
+
+
 def tokenizeSent(text):
     SENT_ENDS = [u".", u"!", u"?"]
     for line in text.split("\n"):
@@ -103,9 +110,10 @@ def tokenizeSent(text):
 
 
 ##########################
-## getting the wikitexct from the API
+# getting the wikitexct from the API
 ##########################
-import requests
+
+
 def getWikitext(title, lang):
     '''
     get the wikitext for a pagetitile for a lang
@@ -127,6 +135,7 @@ def getWikitext(title, lang):
     revision = res["query"]["pages"][0]["revisions"][0]
     wikitext = revision["slots"]["main"]["content"]
     return wikitext
+
 
 def getPageDict(title, lang):
     '''
@@ -153,53 +162,55 @@ def getPageDict(title, lang):
     revid = res_rev['revid']
     pageid = res_page["pageid"]
     result = {
-        'pagetitle':title,
-        'lang':lang,
-        'wikitext':wikitext,
-        'pageid':pageid,
-        'revid':revid,
+        'pagetitle': title,
+        'lang': lang,
+        'wikitext': wikitext,
+        'pageid': pageid,
+        'revid': revid,
     }
     return result
 
+
 ##########################
-## getting feature-dataset
+# getting feature-dataset
 ##########################
-from scipy.stats import kurtosis
-from Levenshtein import distance as levenshtein_distance
-from Levenshtein import jaro as levenshtein_score
+
 
 def getDistEmb(ent_a, ent_b, embd):
     dst = 0
-    try:## try if entities are in embd
+    try:  # try if entities are in embd
         a = embd[ent_a]
         b = embd[ent_b]
-        norm_ab = np.linalg.norm(b)*np.linalg.norm(a)
-        ## if norm of any vector is 0, we assign dst=0 (maximum dst)
-        if norm_ab==0:
+        norm_ab = np.linalg.norm(b) * np.linalg.norm(a)
+        # if norm of any vector is 0, we assign dst=0 (maximum dst)
+        if norm_ab == 0:
             dst = 0.
         else:
-            dst = np.dot(a,b)/norm_ab
+            dst = np.dot(a, b) / norm_ab
 #         dst = (np.dot(a, b) / np.linalg.norm(a) / np.linalg.norm(b))
-    except:
+    except BaseException:
         pass
     if np.isnan(dst):
-        dst=0
+        dst = 0
     return dst
 
 # Return the features for each link candidate in the context of the text and the page
+
+
 def get_feature_set(page, text, link, anchors, word2vec, nav2vec):
-    ngram = len(text.split()) # simple space based tokenizer to compute n-grams
-    freq = anchors[text][link] # How many times was the link use with this text 
-    ambig = len(anchors[text]) # home many different links where used with this text
-    kur = kurtosis(sorted(list(anchors[text].values()), reverse = True) + [1] * (1000 - ambig)) # Skew of usage text/link distribution
-    w2v = getDistEmb(page, link,word2vec) # W2V Distance between the source and target page
-    nav = getDistEmb(page, link, nav2vec) # Nav Distance between the source and target page
-    leven = levenshtein_score(text.lower(),link.lower())
+    ngram = len(text.split())  # simple space based tokenizer to compute n-grams
+    freq = anchors[text][link]  # How many times was the link use with this text
+    ambig = len(anchors[text])  # home many different links where used with this text
+    kur = kurtosis(sorted(list(anchors[text].values()), reverse=True) + [1]
+                   * (1000 - ambig))  # Skew of usage text/link distribution
+    w2v = getDistEmb(page, link, word2vec)  # W2V Distance between the source and target page
+    nav = getDistEmb(page, link, nav2vec)  # Nav Distance between the source and target page
+    leven = levenshtein_score(text.lower(), link.lower())
     return (ngram, freq, ambig, kur, w2v, nav, leven)
 
 
 ##########################
-## evaluation classification
+# evaluation classification
 ##########################
 # Main decision function.
 # for a given page X and a piece of text "lipsum".. check all the candidate and make inference
@@ -211,18 +222,18 @@ def classify_links(page, text, anchors, word2vec, nav2vec, model, threshold=0.95
     # Work with the 10 most frequent candidates
     limited_cands = anchors[text]
     if len(limited_cands) > 10:
-        limited_cands = dict(sorted(anchors[text].items(), key = operator.itemgetter(1), reverse = True)[:10]) 
+        limited_cands = dict(sorted(anchors[text].items(), key=operator.itemgetter(1), reverse=True)[:10])
     for cand in limited_cands:
         # get the features
-#         cand_feats = get_feature_set(page, text, cand, anchors, word2vec,nav2vec,pageids)
-        cand_feats = get_feature_set(page, text, cand, anchors, word2vec,nav2vec)
+        #         cand_feats = get_feature_set(page, text, cand, anchors, word2vec,nav2vec,pageids)
+        cand_feats = get_feature_set(page, text, cand, anchors, word2vec, nav2vec)
 
         # compute the model probability
-        cand_prediction[cand] = model.predict_proba(np.array(cand_feats).reshape((1,-1)))[0,1]
-    
+        cand_prediction[cand] = model.predict_proba(np.array(cand_feats).reshape((1, -1)))[0, 1]
+
     # Compute the top candidate
     top_candidate = max(cand_prediction.items(), key=operator.itemgetter(1))
-    
+
     # Check if the max probability meets the threshold before returning
     if top_candidate[1] < threshold:
         return None
@@ -230,32 +241,44 @@ def classify_links(page, text, anchors, word2vec, nav2vec, model, threshold=0.95
     return top_candidate
 
 # Actual Linking function
-def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, model, threshold = 0.8, pr = True, return_wikitext=True):
+
+
+def process_page(
+        wikitext,
+        page,
+        anchors,
+        pageids,
+        redirects,
+        word2vec,
+        nav2vec,
+        model,
+        threshold=0.8,
+        pr=True,
+        return_wikitext=True):
     '''
     returns updated wikitext
     '''
-    ## parse the wikicode
+    # parse the wikicode
     page_wikicode = mwparserfromhell.parse(wikitext)
-    
-    page_wikicode_init= str(page_wikicode) # save the initial state
-    
-    ## get all existing links
-    dict_links = getLinks(page_wikicode, redirects=redirects,pageids=pageids) ## get all links, resolve redirects
+
+    page_wikicode_init = str(page_wikicode)  # save the initial state
+
+    # get all existing links
+    dict_links = getLinks(page_wikicode, redirects=redirects, pageids=pageids)  # get all links, resolve redirects
     linked_mentions = set(dict_links.keys())
     linked_links = set(dict_links.values())
     # inlcude also current pagetitle
     linked_mentions.add(normalise_anchor(page))
     linked_links.add(normalise_title(page))
-    
+
     tested_mentions = set()
     added_links = []
 
-
-    for node in page_wikicode.filter(recursive= False):
-        # Parsing the tree can be done once 
-        ## this is the most out loop to make sure the offset-calculations matches throughout
+    for node in page_wikicode.filter(recursive=False):
+        # Parsing the tree can be done once
+        # this is the most out loop to make sure the offset-calculations matches throughout
         if isinstance(node, Text):
-            ## check the offset of the node in the wikitext_init
+            # check the offset of the node in the wikitext_init
             node_val = node.value
             i1_node_init = page_wikicode_init.find(node_val)
             i2_node_init = i1_node_init + len(node_val)
@@ -263,31 +286,33 @@ def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, 
             for line in lines:
                 for sent in tokenizeSent(line):
                     for gram_length in range(10, 0, -1):
-                        grams = list(ngrams(sent.split(), gram_length))                
+                        grams = list(ngrams(sent.split(), gram_length))
                         for gram in grams:
                             mention = ' '.join(gram).lower()
                             mention_original = ' '.join(gram)
-                            # if the mention exist in the DB 
+                            # if the mention exist in the DB
                             # it was not previously linked (or part of a link)
                             # none of its candidate links is already used
                             # it was not tested before (for efficiency)
                             if (mention in anchors and
                                 not any(mention in s for s in linked_mentions) and
                                 not bool(set(anchors[mention].keys()) & linked_links) and
-                                mention not in tested_mentions):
-                                #logic
+                                    mention not in tested_mentions):
+                                # logic
                                 #print("testing:", mention, len(anchors[mention]))
-                                candidate = classify_links(page, mention, anchors,word2vec,nav2vec, model, threshold=threshold)
+                                candidate = classify_links(
+                                    page, mention, anchors, word2vec, nav2vec, model, threshold=threshold)
                                 if candidate:
                                     candidate_link, candidate_proba = candidate
                                     #print(">> ", mention, candidate)
                                     ############## Critical ##############
                                     # Insert The Link in the current wikitext
-                                    match = re.compile(r'(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])'.format(re.escape(mention_original)))
-                                    new_str = "[[" + candidate_link  +  "|" + mention_original
-                                    ## add the probability
-                                    if pr == True:
-                                        new_str+="|pr=" + str(candidate_proba) 
+                                    match = re.compile(
+                                        r'(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])'.format(re.escape(mention_original)))
+                                    new_str = "[[" + candidate_link + "|" + mention_original
+                                    # add the probability
+                                    if pr:
+                                        new_str += "|pr=" + str(candidate_proba)
                                     new_str += "]]"
                                     newval, found = match.subn(new_str, node.value, 1)
                                     node.value = newval
@@ -295,24 +320,24 @@ def process_page(wikitext, page, anchors, pageids, redirects, word2vec,nav2vec, 
                                     # Book-keeping
                                     linked_mentions.add(mention)
                                     linked_links.add(candidate_link)
-                                    if found==1:
+                                    if found == 1:
                                         page_wikicode_init_substr = page_wikicode_init[i1_node_init:i2_node_init]
                                         i1_sub = page_wikicode_init_substr.lower().find(mention)
-                                        startOffset = i1_node_init+i1_sub
-                                        endOffset = startOffset+len(mention)
+                                        startOffset = i1_node_init + i1_sub
+                                        endOffset = startOffset + len(mention)
                                         new_link = {
-                                            'linkTarget':candidate_link,
-                                            'anchor':mention_original,
-                                            'probability':float(candidate_proba),
-                                            'startOffset':startOffset,
-                                            'endOffset':endOffset,
+                                            'linkTarget': candidate_link,
+                                            'anchor': mention_original,
+                                            'probability': float(candidate_proba),
+                                            'startOffset': startOffset,
+                                            'endOffset': endOffset,
                                         }
                                         added_links += [new_link]
                                 # More Book-keeping
                                 tested_mentions.add(mention)
-    ## if yes, we return the adapted wikitext
-    ## else just return list of links with offsets
-    if return_wikitext == True:
+    # if yes, we return the adapted wikitext
+    # else just return list of links with offsets
+    if return_wikitext:
         return page_wikicode
     else:
         return added_links

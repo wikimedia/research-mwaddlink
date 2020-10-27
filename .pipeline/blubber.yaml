@@ -10,6 +10,7 @@ variants:
       version: python3
   test:
     includes: [build]
+    entrypoint: [tox]
     python:
       requirements: [requirements-test.txt]
       use-system-flag: true
