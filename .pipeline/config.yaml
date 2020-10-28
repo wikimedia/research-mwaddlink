@@ -29,13 +29,8 @@ pipelines:
           credentials:
             - id: SONAR_API_KEY
               name: SONAR_API_KEY
-      - name: production-model
-        build: production-model
-        publish:
-          image:
-            tags: [stable]
-      - name: production-query
-        build: production-query
+      - name: production
+        build: production
         publish:
           image:
             tags: [stable]

@@ -19,11 +19,7 @@ variants:
     base: docker-registry.wikimedia.org/python3-build-buster
     apt:
       packages: [python3.7,build-essential]
-  production-model:
-    includes: [production-build]
-    python:
-      requirements: [requirements.txt]
-  production-query:
+  production:
     includes: [production-build]
     python:
       requirements: [requirements_query.txt]
