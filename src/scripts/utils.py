@@ -109,34 +109,6 @@ def tokenizeSent(text):
             yield " ".join(tok_acc)
 
 
-##########################
-# getting the wikitexct from the API
-##########################
-
-
-def getWikitext(title, lang):
-    '''
-    get the wikitext for a pagetitile for a lang
-    '''
-    params = {
-        "action": "query",
-        "prop": "revisions",
-        "rvprop": "content",
-        "rvslots": "main",
-        "rvlimit": 1,
-        "titles": title,
-        "format": "json",
-        "formatversion": "2",
-    }
-    API_URL = "https://{0}.wikipedia.org/w/api.php".format(lang)
-    headers = {"User-Agent": "My-Bot-Name/1.0"}
-    req = requests.get(API_URL, headers=headers, params=params)
-    res = req.json()
-    revision = res["query"]["pages"][0]["revisions"][0]
-    wikitext = revision["slots"]["main"]["content"]
-    return wikitext
-
-
 def getPageDict(title: str, lang: str) -> dict:
     '''
     get the wikitext for a pagetitle for a lang
