@@ -2,6 +2,7 @@ from flask import Flask, request
 import json_logging
 import logging
 from sys import stdout
+from src.DatasetLoader import DatasetLoader
 from src.query import Query
 from webargs import fields
 from webargs.flaskparser import parser
@@ -22,7 +23,6 @@ def main():
 
 @app.route('/query', methods=['POST'])
 def query():
-    query_instance = Query(logger)
     query_args = {
         "wikitext": fields.Str(required=True),
         "revid": fields.Int(required=True),
@@ -32,6 +32,9 @@ def query():
         "page_title": fields.Str(required=True)
     }
     args = parser.parse(query_args, request)
+    # TODO: Make backend configurable for the HTTP API.
+    datasetloader = DatasetLoader(backend='mysql', lang=args["lang"])
+    query_instance = Query(logger, datasetloader)
     return query_instance.run(
         wikitext=args["wikitext"],
         revid=args["revid"],

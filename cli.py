@@ -5,6 +5,7 @@ import json_logging
 from sys import stdout
 from src.scripts.utils import getPageDict, normalise_title
 from src.query import Query
+from src.DatasetLoader import DatasetLoader
 
 LOG_LEVEL = logging.DEBUG
 json_logging.init_non_web(enable_json=True)
@@ -39,12 +40,18 @@ def main():
                         type=float,
                         help="Threshold value for links to be recommended")
 
+    parser.add_argument("--database-backend", "-db",
+                        default="mysql",
+                        type=str,
+                        help="Database backend to use for querying. One of 'mysql' or 'sqlite'")
+
     args = parser.parse_args()
     lang = args.lang.replace('wiki', '')
     page_title = normalise_title(args.page_title)
     threshold = args.threshold
     page_dict = getPageDict(page_title, lang)
-    query = Query(logger)
+    datasetloader = DatasetLoader(args.database_backend, lang)
+    query = Query(logger, datasetloader)
     dict_result = query.run(
         wikitext=page_dict['wikitext'],
         page_title=page_title,
