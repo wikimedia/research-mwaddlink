@@ -32,7 +32,7 @@ for title in pageids.keys():
     except KeyError:
         pass
 ## dump as pickle
-output_path = '../../data/{0}/{0}.w2v.filtered'.format(lang)
+output_path = '../../data/{0}/{0}.w2vfiltered'.format(lang)
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump(word2vec_filter, handle, protocol=pickle.HIGHEST_PROTOCOL)
 

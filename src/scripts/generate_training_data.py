@@ -28,8 +28,8 @@ t1=time.time()
 anchors = pickle.load( open("../../data/{0}/{0}.anchors.pkl".format(lang),'rb') )
 pageids = pickle.load( open("../../data/{0}/{0}.pageids.pkl".format(lang),'rb') )
 redirects = pickle.load( open("../../data/{0}/{0}.redirects.pkl".format(lang),'rb') )
-word2vec = pickle.load( open("../../data/{0}/{0}.w2v.filtered.pkl".format(lang),'rb') )
-nav2vec = pickle.load( open("../../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb') )
+word2vec = pickle.load( open("../../data/{0}/{0}.w2vfiltered.pkl".format(lang),'rb') )
+nav2vec = pickle.load( open("../../data/{0}/{0}.navfiltered.pkl".format(lang),'rb') )
 
 ####################
 # This scripts extracts examples from the backtesting protocol

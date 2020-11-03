@@ -57,5 +57,5 @@ predictions = model.predict_proba(X_test)[:, 1]
 print('ROC AUC=%.3f' % roc_auc_score(y_test,predictions))
 
 # save the model
-model.save_model('../../data/{0}/{0}.linkmodel.bin'.format(lang))
+model.save_model('../../data/{0}/{0}.linkmodel.json'.format(lang))
 

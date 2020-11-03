@@ -1,20 +1,26 @@
-# mwaddlink
-MediaWiki AddLink Extension Model and API
+# research/mwaddlink
 
-## Introduction
-This repository contains the necessary code for the link recommendation model for Wikipedia articles. This consists of code to, both, train the model (including all the necessary pre-processing) and how to query the model to get link recommendations for an individual articles.
-The method is context-free and can be scaled to (virtually) any language, provided that we have enough existing links to learn from.
+This is the repository that backs the [Wikimedia Link Recommendation service](https://wikitech.wikimedia.org/wiki/Add_Link). 
+It contains code for training a model and generating datasets, as well as an HTTP API and command line interface for 
+fetching link recommendations for Wikipedia articles.
+
+The method is context-free and can be scaled to (virtually) any language, provided that we have enough existing links 
+to learn from.
 
 ## Querying the model
 
-Once the model and all the utility files are computed (see "Training the model" below), they can be loaded and used to build an API to add new links to a Wikipedia page automatically.
-For this we have the following utilites
+Once the model and all the utility files are computed (see "Training the model" below), they can be loaded and used to 
+build an API to add new links to a Wikipedia page automatically.
+
+For this we have the following utilities
 
 * command-line tool:
+
 ```bash
-python src/addlink-query_links.py -l de -p Garnet_Carter
+python cli.py -id de -p Garnet_Carter
 ```
-This will return all recommended links for a given page (-p) in a given wiki (-l). You can also specify the threshold for the probability of the link (-t, default=0.9)
+This will return all recommended links for a given page (-p) in a given wiki ID (-id). You can also specify the 
+threshold for the probability of the link (-t, default=0.9)
 
 * interactive notebook:
 ```bash
@@ -22,13 +28,38 @@ addlink-query_notebook.ipynb
 ```
 This allows you to inspect the recommendations in a notebook.
 
-**Notes**:
-- we need set up a python virtual environment:
+* HTTP API
+``` bash
+DB_USER=root \
+DB_PASSWORD=password \
+DB_PORT=3306 \
+DB_HOST=127.0.0.1 \
+DB_DATABASE=addlink \
+FLASK_DEBUG=1 \
+DB_BACKEND=mysql \
+FLASK_APP=api \
+flask run
+```
+
+In production we use `gunicorn` to serve the Flask app.
+
+### Database backends
+
+You can use MySQL (preferred) or SQLite for querying. Set `DB_BACKEND` to `mysql` or `sqlite` for Flask, and for the 
+command line scripts there is a flag you can use (`--database-backend`) for specifying which backend to use.
+
+Note that for the CLI, you will still need to pass in the `DB_*` variables referenced above.
+
+### Notes
+
+- You need set up a python virtual environment:
+
 ```bash
 virtualenv -p /usr/bin/python3 venv_query/
 source venv_query/bin/activate
 pip install -r requirements-query.txt
 ```
+
 This contains only the packages required for querying the model and is thus lighter than the environment for training the model.
 
 - on the stat-machines, make sure you have the http-proxy set up https://wikitech.wikimedia.org/wiki/HTTP_proxy
@@ -110,7 +141,7 @@ python filter_dict_w2v.py $LANG
 ```
 and storing the resulting dictionary as a pickle
 ```bash
-./data/<LANG>/<LANG>.w2v.filtered.pkl
+./data/<LANG>/<LANG>.w2vfiltered.pkl
 ```
 
 
@@ -139,7 +170,7 @@ python filter_dict_nav.py $LANG
 ```
 and storing the resulting dictionary as a pickle
 ```bash
-./data/<LANG>/<LANG>.nav.filtered.pkl
+./data/<LANG>/<LANG>.navfiltered.pkl
 ```
 
 #### Raw datasets:
@@ -180,7 +211,7 @@ python ./scripts/generate_addlink_model.py <LANG>
 ```
 store in:
 ```bash
-./data/<LANG>/<LANG>.linkmodel.bin
+./data/<LANG>/<LANG>.linkmodel.json
 ```
 
 #### Backtesting evaluation:
@@ -208,8 +239,8 @@ stored in
 ./data/<LANG>/<LANG>.anchors.sqlite
 ./data/<LANG>/<LANG>.pageids.sqlite
 ./data/<LANG>/<LANG>.redirects.sqlite
-./data/<LANG>/<LANG>.w2v.filtered.sqlite
-./data/<LANG>/<LANG>.nav.filtered.sqlite
+./data/<LANG>/<LANG>.w2vfiltered.sqlite
+./data/<LANG>/<LANG>.navfiltered.sqlite
 ```
 
 #### Development

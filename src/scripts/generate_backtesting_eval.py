@@ -44,14 +44,14 @@ def main():
     anchors = pickle.load( open("../../data/{0}/{0}.anchors.pkl".format(lang),'rb') )
     pageids = pickle.load( open("../../data/{0}/{0}.pageids.pkl".format(lang),'rb') )
     redirects = pickle.load( open("../../data/{0}/{0}.redirects.pkl".format(lang),'rb') )
-    word2vec = pickle.load( open("../../data/{0}/{0}.w2v.filtered.pkl".format(lang),'rb') )
-    nav2vec = pickle.load( open("../../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb') )
+    word2vec = pickle.load( open("../../data/{0}/{0}.w2vfiltered.pkl".format(lang),'rb') )
+    nav2vec = pickle.load( open("../../data/{0}/{0}.navfiltered.pkl".format(lang),'rb') )
 
     ## load trained model
     ## use a fourth of the cpus, at most 8
     n_cpus_max = min([int(multiprocessing.cpu_count()/4),8])
     model = xgb.XGBClassifier(n_jobs=n_cpus_max)  # init model
-    model.load_model('../../data/{0}/{0}.linkmodel.bin'.format(lang))  # load data
+    model.load_model('../../data/{0}/{0}.linkmodel.json'.format(lang))  # load data
 
     ## load the test-set
     test_set = []

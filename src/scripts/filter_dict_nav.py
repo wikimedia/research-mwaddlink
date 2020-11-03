@@ -32,7 +32,7 @@ for title in pageids.keys():
     except KeyError:
         pass
 
-output_path = '../../data/{0}/{0}.nav.filtered'.format(lang)
+output_path = '../../data/{0}/{0}.navfiltered'.format(lang)
 ## dump as pickle
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump(nav2vec_filter, handle, protocol=pickle.HIGHEST_PROTOCOL)

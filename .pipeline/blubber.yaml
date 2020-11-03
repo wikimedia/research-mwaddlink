@@ -21,7 +21,7 @@ variants:
       packages: [python3.7,build-essential]
   production:
     includes: [production-build]
-    entrypoint: ["gunicorn","src.api:app","-b","0.0.0.0:8000"]
+    entrypoint: ["gunicorn","api:app","-b","0.0.0.0:8000"]
     python:
       requirements: [requirements-query.txt]
   codehealth:

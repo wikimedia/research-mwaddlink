@@ -15,7 +15,7 @@ wiki   = lang+'wiki'
 
 
 ## convert pickle dictionaries into sqlite-tables
-list_fname = ['anchors','pageids','redirects','w2v.filtered','nav.filtered']
+list_fname = ['anchors','pageids','redirects','w2vfiltered','navfiltered']
 for fname in list_fname:
     filename =  "../../data/{0}/{0}.{1}.pkl".format(lang,fname)
     output_path = "../../data/{0}/{0}.{1}.sqlite".format(lang,fname)

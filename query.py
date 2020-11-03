@@ -29,11 +29,11 @@ def main():
                         required=False,
                         help="Page ID to use in the query.")
 
-    parser.add_argument("--lang", "-l",
+    parser.add_argument("--wiki-id", "-id",
                         default=None,
                         type=str,
                         required=True,
-                        help="Language (wiki) for which to get recommendations (e.g. enwiki or en)")
+                        help="Wiki ID for which to get recommendations. Use shortform (i.e. en and not enwiki)")
 
     parser.add_argument("--threshold", "-t",
                         default=0.5,
@@ -43,14 +43,14 @@ def main():
     parser.add_argument("--database-backend", "-db",
                         default="mysql",
                         type=str,
-                        help="Database backend to use for querying. One of 'mysql' or 'sqlite'")
+                        choices=['mysql', 'sqlite'],
+                        help="Database backend to use for querying.")
 
     args = parser.parse_args()
-    lang = args.lang.replace('wiki', '')
     page_title = normalise_title(args.page_title)
     threshold = args.threshold
-    page_dict = getPageDict(page_title, lang)
-    datasetloader = DatasetLoader(args.database_backend, lang)
+    page_dict = getPageDict(page_title, args.wiki_id)
+    datasetloader = DatasetLoader(args.database_backend, args.wiki_id)
     query = Query(logger, datasetloader)
     dict_result = query.run(
         wikitext=page_dict['wikitext'],
@@ -58,10 +58,9 @@ def main():
         pageid=page_dict['pageid'],
         revid=page_dict['revid'],
         threshold=threshold,
-        lang=lang
+        wiki_id=args.wiki_id
     )
     json_out = json.dumps(dict_result, indent=4)
-    logger.info('Recommended links: %s', json_out)
     print(json_out)
 
 

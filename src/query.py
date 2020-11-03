@@ -8,34 +8,41 @@ class Query:
     def __init__(self, logger, datasetloader: DatasetLoader):
         self.logger = logger
         self.datasetloader = datasetloader
-        n_cpus_max = min([int(multiprocessing.cpu_count() / 4), 8])
-        self.model = xgb.XGBClassifier(n_jobs=n_cpus_max)
+        self.model = xgb.XGBClassifier(n_jobs=min([int(multiprocessing.cpu_count() / 4), 8]))
 
-    def run(self, wikitext: str, page_title: str, pageid: int, revid: int, lang: str, threshold: float) -> dict:
+    def run(self, wikitext: str, page_title: str, pageid: int, revid: int, wiki_id: str, threshold: float) -> dict:
         self.logger.info(
             'Getting link recommendations for article %s in %swiki with link-threshold %s' %
-            (page_title, lang, threshold))
+            (page_title, wiki_id, threshold))
 
         self.logger.info('Loading the trained model')
-        self.model.load_model("./model/{0}.bin".format(lang))
-
+        self.model.load_model(self.datasetloader.get_model_path())
+        anchors = self.datasetloader.get('anchors')
+        pageids = self.datasetloader.get('pageids')
+        redirects = self.datasetloader.get('redirects')
+        word2vec = self.datasetloader.get('w2vfiltered')
+        nav2vec = self.datasetloader.get('navfiltered')
         self.logger.info('Processing wikitext to get link recommendations')
         added_links = process_page(
-            wikitext,
-            page_title,
-            self.datasetloader.get('anchors'),
-            self.datasetloader.get('pageids'),
-            self.datasetloader.get('redirects'),
-            self.datasetloader.get('word2vec'),
-            self.datasetloader.get('nav2vec'),
-            self.model,
+            wikitext=wikitext,
+            page=page_title,
+            anchors=anchors,
+            pageids=pageids,
+            redirects=redirects,
+            word2vec=word2vec,
+            nav2vec=nav2vec,
+            model=self.model,
             threshold=threshold,
             return_wikitext=False)
 
+        anchors.close()
+        pageids.close()
+        redirects.close()
+        word2vec.close()
+        nav2vec.close()
         self.logger.info('Number of links from recommendation model: %s' % len(added_links))
         return {
             'page_title': page_title,
-            'lang': lang,
             'pageid': pageid,
             'revid': revid,
             'no_added_links': len(added_links),
