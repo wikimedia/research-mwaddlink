@@ -225,7 +225,8 @@ def process_page(
         model,
         threshold=0.8,
         pr=True,
-        return_wikitext=True):
+        return_wikitext=True,
+        context=10):
     '''
     returns updated wikitext
     '''
@@ -296,12 +297,29 @@ def process_page(
                                         i1_sub = page_wikicode_init_substr.lower().find(mention)
                                         startOffset = i1_node_init + i1_sub
                                         endOffset = startOffset + len(mention)
+                                        ## provide context of the mention (+/- c characters in substring and wikitext)
+                                        if context == None:
+                                            context_wikitext = mention_original
+                                            context_substring = mention_original
+                                        else:
+                                            ## context substring
+                                            str_context = page_wikicode_init_substr
+                                            i1_c = max([0, i1_sub - context])
+                                            i2_c = min([len(str_context), i1_sub + len(mention_original) + context])
+                                            context_substring = str_context[i1_c:i2_c]
+                                            ## wikitext substring
+                                            str_context = wikitext
+                                            i1_c = max([0, startOffset - context])
+                                            i2_c = min([len(str_context), endOffset + context])
+                                            context_wikitext = str_context[i1_c:i2_c]
                                         new_link = {
                                             'linkTarget': candidate_link,
                                             'anchor': mention_original,
                                             'probability': float(candidate_proba),
                                             'startOffset': startOffset,
                                             'endOffset': endOffset,
+                                            'context_wikitext': context_wikitext,
+                                            'context_plaintext': context_substring
                                         }
                                         added_links += [new_link]
                                 # More Book-keeping
