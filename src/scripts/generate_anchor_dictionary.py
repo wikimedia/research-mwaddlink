@@ -37,7 +37,7 @@ try:
     snapshot = files[-1].split('/')[-1]
 except:
     snapshot = 'latest'
-    
+
 dump_fn = '/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles.xml.bz2'.format(wiki,snapshot)
 for infile in glob.glob('/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles*.xml*.bz2'.format(wiki,snapshot) ):
     if infile == dump_fn:
@@ -119,13 +119,13 @@ def process_dump_get_links(dump, path):
                 ## resolve the redirect of link
                 link = redirects.get(link,link)
                 ## check if link is in main namespace
-                if link in pageids:      
+                if link in pageids:
                     yield link, anchor
             except:
                 # TODO: log the exception. I've seen some encoding errors.
                 continue
     print("Done processing path:", path)
-   
+
 ##################
 # mwxml parallelism
 # this might apply to english only

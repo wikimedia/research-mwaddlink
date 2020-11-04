@@ -13,12 +13,12 @@ else:
 wiki   = lang+'wiki'
 
 ## filter the embeddings and save as sqlite-tables
-FILE_PAGEIDS = "../data/{0}/{0}.pageids.pkl".format(lang)
+FILE_PAGEIDS = "../../data/{0}/{0}.pageids.pkl".format(lang)
 pageids = pickle.load( open( FILE_PAGEIDS, "rb" ) )
 
 
 # embeddings from fasttext
-navfile = '../data/{0}/{0}.nav.bin'.format(lang)
+navfile = '../../data/{0}/{0}.nav.bin'.format(lang)
 nav2vec = fasttext.load_model(navfile)
 
 N_kept = 0
@@ -32,7 +32,7 @@ for title in pageids.keys():
     except KeyError:
         pass
 
-output_path = '../data/{0}/{0}.nav.filtered'.format(lang)
+output_path = '../../data/{0}/{0}.nav.filtered'.format(lang)
 ## dump as pickle
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump(nav2vec_filter, handle, protocol=pickle.HIGHEST_PROTOCOL)

@@ -25,11 +25,11 @@ wiki   = lang+'wiki'
 t1=time.time()
 
 ## open dataset-dicts from pickle files
-anchors = pickle.load( open("../data/{0}/{0}.anchors.pkl".format(lang),'rb') ) 
-pageids = pickle.load( open("../data/{0}/{0}.pageids.pkl".format(lang),'rb') ) 
-redirects = pickle.load( open("../data/{0}/{0}.redirects.pkl".format(lang),'rb') ) 
-word2vec = pickle.load( open("../data/{0}/{0}.w2v.filtered.pkl".format(lang),'rb') ) 
-nav2vec = pickle.load( open("../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb') ) 
+anchors = pickle.load( open("../../data/{0}/{0}.anchors.pkl".format(lang),'rb') )
+pageids = pickle.load( open("../../data/{0}/{0}.pageids.pkl".format(lang),'rb') )
+redirects = pickle.load( open("../../data/{0}/{0}.redirects.pkl".format(lang),'rb') )
+word2vec = pickle.load( open("../../data/{0}/{0}.w2v.filtered.pkl".format(lang),'rb') )
+nav2vec = pickle.load( open("../../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb') )
 
 ####################
 # This scripts extracts examples from the backtesting protocol
@@ -38,8 +38,8 @@ nav2vec = pickle.load( open("../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb'
 # Positive example: The correct link
 # Negative example: identified mentions and all candidate links
 
-infile  = "../data/{0}/training/sentences_train.csv".format(lang)
-outfile = "../data/{0}/training/link_train.csv".format(lang)
+infile  = "../../data/{0}/training/sentences_train.csv".format(lang)
+outfile = "../../data/{0}/training/link_train.csv".format(lang)
 
 ####################
 # Bunch of utility function that need to be factored out
@@ -80,12 +80,12 @@ with open(outfile, "w") as f:
                     for gram in grams:
                         mention = ' '.join(gram).lower()
                         mention_original = ' '.join(gram)
-                        # if the mention exist in the DB 
+                        # if the mention exist in the DB
                         # it was not previously linked (or part of a link)
                         # none of its candidate links is already used
                         # it was not tested before (for efficiency)
                         if (mention in anchors and
-                            mention not in tested_mentions):  
+                            mention not in tested_mentions):
                             tested_mentions.add(mention)
             ##we also add the mentions inp_pairs to make sure we have positive examples
             for mention in inp_pairs.keys():

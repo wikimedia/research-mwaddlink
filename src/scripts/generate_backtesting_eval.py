@@ -41,21 +41,21 @@ def main():
     # N_interval = args.nint
 
     ## open dataset-dicts from pickle files
-    anchors = pickle.load( open("../data/{0}/{0}.anchors.pkl".format(lang),'rb') ) 
-    pageids = pickle.load( open("../data/{0}/{0}.pageids.pkl".format(lang),'rb') ) 
-    redirects = pickle.load( open("../data/{0}/{0}.redirects.pkl".format(lang),'rb') ) 
-    word2vec = pickle.load( open("../data/{0}/{0}.w2v.filtered.pkl".format(lang),'rb') ) 
-    nav2vec = pickle.load( open("../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb') ) 
+    anchors = pickle.load( open("../../data/{0}/{0}.anchors.pkl".format(lang),'rb') )
+    pageids = pickle.load( open("../../data/{0}/{0}.pageids.pkl".format(lang),'rb') )
+    redirects = pickle.load( open("../../data/{0}/{0}.redirects.pkl".format(lang),'rb') )
+    word2vec = pickle.load( open("../../data/{0}/{0}.w2v.filtered.pkl".format(lang),'rb') )
+    nav2vec = pickle.load( open("../../data/{0}/{0}.nav.filtered.pkl".format(lang),'rb') )
 
     ## load trained model
     ## use a fourth of the cpus, at most 8
     n_cpus_max = min([int(multiprocessing.cpu_count()/4),8])
     model = xgb.XGBClassifier(n_jobs=n_cpus_max)  # init model
-    model.load_model('../data/{0}/{0}.linkmodel.bin'.format(lang))  # load data
+    model.load_model('../../data/{0}/{0}.linkmodel.bin'.format(lang))  # load data
 
     ## load the test-set
     test_set = []
-    with open('../data/{0}/testing/sentences_test.csv'.format(lang)) as fin:
+    with open('../../data/{0}/testing/sentences_test.csv'.format(lang)) as fin:
         for line in fin:
             try:
                 title, sent = line.split('\t')
@@ -82,14 +82,14 @@ def main():
                 input_code = page_wikicode
                 ## get links from original wikitext (resolve redirects, and )
                 inp_pairs = getLinks(input_code, redirects=redirects, pageids=pageids)
-                
+
                 ## if no links in main namespace, go to next item
                 if len(inp_pairs)==0:
                     continue
 
                 input_code_nolinks = mwph.parse(page_wikicode).strip_code()
                 output_code = process_page(input_code_nolinks, page, anchors, pageids, redirects, word2vec,nav2vec, model, threshold = threshold, pr=False )
-               
+
                 ## get links from predicted wikitext
                 out_pairs = getLinks(output_code, redirects=redirects, pageids=pageids)
 
@@ -121,7 +121,7 @@ def main():
         dict_eval['micro_precision'] = micro_precision
         dict_eval['micro_recall'] = micro_recall
         list_result.append(dict_eval)
-    output_path = '../data/{0}/testing/{0}.backtest.eval'.format(lang)
+    output_path = '../../data/{0}/testing/{0}.backtest.eval'.format(lang)
     df = pd.DataFrame.from_dict(list_result).sort_values(by='threshold')
     df.to_csv(output_path+'.csv')
 

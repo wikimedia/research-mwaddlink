@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import mwparserfromhell 
+import mwparserfromhell
 from mwparserfromhell.nodes import Wikilink, Text, Tag
 import wikitextparser as wtp
 import bz2, subprocess
@@ -39,7 +39,7 @@ try:
     snapshot = files[-1].split('/')[-1]
 except:
     snapshot = 'latest'
-    
+
 dump_fn = '/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles.xml.bz2'.format(wiki,snapshot)
 for infile in glob.glob('/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles*.xml*.bz2'.format(wiki,snapshot) ):
     if infile == dump_fn:
@@ -187,12 +187,12 @@ def process_dump(dump, path):
         code = next(page).text
         if not page.title.startswith("Wikipedia:"):
             #yield linked_sents_extractor(page.title, code)
-            sent = linked_sents_extractor(page.title, code) 
+            sent = linked_sents_extractor(page.title, code)
             if sent:
-                yield page.title, sent 
+                yield page.title, sent
 
-                
-            
+
+
 ##################
 # Global variables
 # TODO: if necessary, parametrize the script to take these as input
@@ -209,7 +209,7 @@ wiki_links = []
 pbar = tqdm(total = LIMIT_SENTS)
 for title, sentence in mwxml.map(process_dump, paths, threads=10):
     wiki_links.append((title, sentence))
-    count += 1 
+    count += 1
     if count >= LIMIT_SENTS:
         break
     pbar.update(1)
@@ -225,11 +225,11 @@ LIMIT_SENTS_SPLIT = len(wiki_links) //2
 print(LIMIT_SENTS_SPLIT)
 
 # Store the sentences for training
-with open("../data/{0}/training/sentences_train.csv".format(lang), "w") as f:
+with open("../../data/{0}/training/sentences_train.csv".format(lang), "w") as f:
     for row in wiki_links[:LIMIT_SENTS_SPLIT]:
         f.write("%s\n" % "\t".join(row))
 
 # Store the sentences for back-testing
-with open("../data/{0}/testing/sentences_test.csv".format(lang), "w") as f:
+with open("../../data/{0}/testing/sentences_test.csv".format(lang), "w") as f:
     for row in wiki_links[LIMIT_SENTS_SPLIT:]:
         f.write("%s\n" % "\t".join(row))

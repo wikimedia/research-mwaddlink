@@ -48,31 +48,31 @@ def main():
     parser.add_argument("--window","-ws",
                         default=5,
                         type = int,
-                        help="w2v option: size of context window")    
+                        help="w2v option: size of context window")
     parser.add_argument("--sample","-t",
                         default=0.0001,
                         type = float,
-                        help="w2v option: sampling threshold")   
+                        help="w2v option: sampling threshold")
     parser.add_argument("--negative","-n",
                         default=10,
                         type = int,
-                        help="w2v option: number of negative samples")  
+                        help="w2v option: number of negative samples")
     parser.add_argument("--min_count","-min",
                         default=1,
                         type = int,
-                        help="w2v option: minimum number of times a word has to appear in the corpus")  
+                        help="w2v option: minimum number of times a word has to appear in the corpus")
     parser.add_argument("--epochs","-e",
                         default=10,
                         type = int,
-                        help="w2v option: number of iterations")  
+                        help="w2v option: number of iterations")
     parser.add_argument("--workers","-w",
                         default=10,
                         type = int,
-                        help="how many cpus to use")  
+                        help="how many cpus to use")
     parser.add_argument("--remove_fin","-rfin",
                         default=False,
                         type = bool,
-                        help="put yes if you want to remove the reading sessions-file (default:False")  
+                        help="put yes if you want to remove the reading sessions-file (default:False")
 
 
     args = parser.parse_args()
@@ -87,7 +87,7 @@ def main():
     wiki_db = lang+'wiki'
 
     ## sessions will be saved locally in filename_save
-    PATH_data = os.path.abspath('../data/%s/'%lang)
+    PATH_data = os.path.abspath('../../data/%s/'%lang)
     FILE_in = os.path.join(PATH_data,'%s.reading-sessions'%(lang))
     FILE_out = os.path.join(PATH_data,'%s.nav.bin'%(lang))
 

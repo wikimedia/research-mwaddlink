@@ -1,29 +1,24 @@
 #!/bin/bash
-## note that some files still have an extension _simple
-## this refers to scripts not yet adapted
 
-# activate the venv
-# go to scripts folder
-# cd scripts/
+# on stat-machine you might have to "kinit" first
 
 
-# # WIKI=simple
 ## TODO add lang as parameter
 LANG=simple
 
 ## go to scripts directory
-cd scripts/
+cd src/scripts/
 
 # # create folder for data
 echo 'CREATING FOLDERS for data in ../data/'$LANG
-mkdir ../data/$LANG
-mkdir ../data/$LANG/training
-mkdir ../data/$LANG/testing
+mkdir ../../data/$LANG
+mkdir ../../data/$LANG/training
+mkdir ../../data/$LANG/testing
 
 
 echo 'GETTING THE ANCHOR DICTIONARY'
 deactivate
-source ../venv/bin/activate
+source ../../venv/bin/activate
 deactivate
 
 
@@ -31,7 +26,7 @@ source /usr/lib/anaconda-wmf/bin/activate
 PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $LANG
 conda deactivate
 
-source ../venv/bin/activate
+source ../../venv/bin/activate
 # alternatively, one can get the anchor-dictionary by processing the xml-dumps
 # note that this does not filter by link-probability
 # python generate_anchor_dictionary.py $LANG
@@ -39,7 +34,7 @@ source ../venv/bin/activate
 
 ## get wikipedia2vec-mebddingq
 echo 'RUNNING wikipedia2vec on dump'
-wikipedia2vec train --min-entity-count=0 --dim-size 50 --pool-size 10 "/mnt/data/xmldatadumps/public/"$LANG"wiki/latest/"$LANG"wiki-latest-pages-articles.xml.bz2" "../data/"$LANG"/"$LANG".w2v.bin"
+wikipedia2vec train --min-entity-count=0 --dim-size 50 --pool-size 10 "/mnt/data/xmldatadumps/public/"$LANG"wiki/latest/"$LANG"wiki-latest-pages-articles.xml.bz2" "../../data/"$LANG"/"$LANG".w2v.bin"
 python filter_dict_w2v.py $LANG
 
 

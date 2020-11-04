@@ -11,7 +11,7 @@ import urllib
 # from utils_parse import normalise_title, normalise_anchor
 
 def normalise_title(title):
-    """ 
+    """
     Normalising title (links)
     - deal with quotes
     - strip()
@@ -75,7 +75,7 @@ def get_plain_text_without_links(row):
 
 ## get chunks
 def get_chunks(row):
-    return [T.Row(pid=row.pid,chunk=blocks.strip()) for blocks in re.split('[\n\.,;:()!"]', row.text) 
+    return [T.Row(pid=row.pid,chunk=blocks.strip()) for blocks in re.split('[\n\.,;:()!"]', row.text)
             if len(blocks.strip())>0]
 
 def get_ngrams(txt, n):
@@ -140,7 +140,7 @@ redirects = spark.createDataFrame(
     wikipedia
     .where(F.col('title_rd')!='')
     .rdd.map(lambda r: T.Row(
-        title_from=r.title, 
+        title_from=r.title,
         title_to=r.title_rd)
             )
 ).distinct()
@@ -174,7 +174,7 @@ links_resolved = (
         'anchor',
         ## resolved link: if redirect use title_to otherwise original link
         F.coalesce(F.col('title_to'),F.col('link') ).alias('link'),
-        
+
     )
 )
 
@@ -203,7 +203,7 @@ chunks = (
     articles.rdd
     .map(get_plain_text_without_links)
     .flatMap(get_chunks)
-) 
+)
 matched_ngrams = (
     spark.createDataFrame(
         chunks
@@ -274,7 +274,7 @@ df_pd = links_formatted.toPandas()
 df_pd['candidates'] = df_pd['candidates'].apply(lambda x: dict(x))
 dict_anchors = df_pd.set_index('anchor')['candidates'].to_dict()
 # store the dictionaries into the language data folder
-output_path = '../data/{0}/{0}.anchors'.format(lang)
+output_path = '../../data/{0}/{0}.anchors'.format(lang)
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump(dict_anchors, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -288,7 +288,7 @@ df_articles = (
     )
 ).toPandas()
 # store the dictionaries into the language data folder
-output_path = '../data/{0}/{0}.pageids'.format(lang)
+output_path = '../../data/{0}/{0}.pageids'.format(lang)
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump(df_articles.set_index('title')['pid'].to_dict(), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -301,6 +301,6 @@ df_redirects = (
     )
 ).toPandas()
 # store the dictionaries into the language data folder
-output_path = '../data/{0}/{0}.redirects'.format(lang)
+output_path = '../../data/{0}/{0}.redirects'.format(lang)
 with open(output_path+'.pkl', 'wb') as handle:
     pickle.dump( df_redirects.set_index('title_from')['title_to'].to_dict(), handle, protocol=pickle.HIGHEST_PROTOCOL)

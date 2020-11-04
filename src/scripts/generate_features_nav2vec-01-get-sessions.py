@@ -12,7 +12,7 @@ from pyspark.sql import functions as F, types as T, Window, SparkSession
 process webrequest table to get reading sessions
 - returns filename where reading sessions are stored locally
     - ../data/<LANG>/<LANG>.reading-sessions
-    
+
 - USAGE:
 PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_features_nav2vec-01-get-sessions.py -l simple
 
@@ -28,7 +28,7 @@ def main():
                         default="enwiki",
                         type = str,
                         help="language to parse (en or enwiki)")
-    
+
     parser.add_argument("--start","-t1",
                         default=None,
                         type = str,
@@ -56,7 +56,7 @@ def main():
 
         date_start = datetime.date.today()-datetime.timedelta(days=8)
         date_end = datetime.date.today()
-    
+
 
     date_start_str = date_start.strftime('%Y-%m-%d')
     date_end_str = date_end.strftime('%Y-%m-%d')
@@ -74,7 +74,7 @@ def main():
     nlen_max = 30 ## max length of session
 
     ## sessions will be saved locally in filename_save
-    path_save = os.path.abspath('../data/%s/'%lang)
+    path_save = os.path.abspath('../../data/%s/'%lang)
     # filename_save = '%s.reading-sessions-%s--%s'%(lang,date_start_str,date_end_str)
     filename_save = '%s.reading-sessions'%(lang)
 
@@ -95,7 +95,7 @@ def main():
     ts_start = calendar.timegm(date_start.timetuple())
     ts_end = calendar.timegm(date_end.timetuple())
     row_timestamp = F.unix_timestamp(F.concat(
-        F.col('year'), F.lit('-'), F.col('month'), F.lit('-'), F.col('day'), 
+        F.col('year'), F.lit('-'), F.col('month'), F.lit('-'), F.col('day'),
         F.lit(' '), F.col('hour'), F.lit(':00:00')))
 
     ## window for counting pageviews per actor per day
@@ -126,7 +126,7 @@ def main():
         pass
     else:
         df_actor = df_actor.where(F.col('wiki_db')==wiki_db)
-        
+
     ## checkpoint for inspecting table
     # df_actor.limit(10).write.mode('overwrite').parquet('/user/mgerlach/sessions/test.parquet')
 
@@ -136,7 +136,7 @@ def main():
         df_actor
         .withColumn('n_p', F.sum(F.lit(1)).over(w_p) )
         .where(F.col('n_p') >= n_p_min)
-        .where(F.col('n_p') <= n_p_max)    
+        .where(F.col('n_p') <= n_p_max)
     )
 
     ## join the wikidata-item to each pageview
@@ -203,12 +203,12 @@ def main():
 
     ## apply filter to the sessions
     try:
-        os.mkdir(path_save) 
+        os.mkdir(path_save)
     except FileExistsError:
         pass
     PATH_TMP = os.path.join(path_save,'tmp')
     try:
-        os.mkdir(PATH_TMP) 
+        os.mkdir(PATH_TMP)
     except FileExistsError:
         pass
 
@@ -305,7 +305,7 @@ def filter_blacklist_qid(requests):
         if r['qid'] in black_list:
             return False
     return True
-   
+
 
 def sessionize(requests, dt = 3600):
     """
@@ -324,7 +324,7 @@ def sessionize(requests, dt = 3600):
             session.append(r)
 
     sessions.append(session)
-    return sessions    
+    return sessions
 
 
 if __name__ == "__main__":
