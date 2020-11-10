@@ -1,3 +1,4 @@
+black
 flake8
 tox
 PyMySQL~=0.10.1

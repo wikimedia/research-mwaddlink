@@ -2,7 +2,7 @@ version: v4
 base: docker-registry.wikimedia.org/python3
 variants:
   build:
-    base: docker-registry.wikimedia.org/python3-devel
+    base: docker-registry.wikimedia.org/python3-build-buster
     apt:
       packages: [python3-setuptools]
     copies: [local]
@@ -13,7 +13,7 @@ variants:
     entrypoint: [tox]
     python:
       requirements: [requirements-test.txt]
-      use-system-flag: true
+      use-system-flag: false
   production-build:
     includes: [build]
     base: docker-registry.wikimedia.org/python3-build-buster

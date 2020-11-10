@@ -245,4 +245,6 @@ stored in
 
 #### Development
 
-Run lint checks with `flake8`: `.venv_query/bin/flake8` or `tox`
+Run lint checks with `flake8`: `.venv_query/bin/flake8` or `tox`.
+
+Formt your code with [`black`](https://pypi.org/project/black/).
