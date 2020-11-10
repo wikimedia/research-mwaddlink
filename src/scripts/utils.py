@@ -17,6 +17,7 @@ import re
 
 import nltk
 from nltk.util import ngrams
+
 ######################
 # parsing titles
 ######################
@@ -35,28 +36,28 @@ def normalise_title(title):
     if len(title) > 0:
         title = title[0].upper() + title[1:]
     n_title = title.replace("_", " ")
-    if '#' in n_title:
-        n_title = n_title.split('#')[0]
+    if "#" in n_title:
+        n_title = n_title.split("#")[0]
     return n_title
 
 
 def normalise_anchor(anchor):
-    '''
+    """
     Normalising anchor  (text):
     - strip()
     - lowercase
     Note that we do not do the other normalisations since we want to match the strings from the text
-    '''
+    """
     # anchor = up.unquote(anchor)
     n_anchor = anchor.strip()  # .replace("_", " ")
     return n_anchor.lower()
 
 
 def wtpGetLinkAnchor(wikilink):
-    '''
+    """
     extract anchor and link from a wikilink from wikitextparser.
     normalise title and anchor
-    '''
+    """
     # normalise the article title (quote, first letter capital)
     link_tmp = wikilink.title
     link = normalise_title(link_tmp)
@@ -67,9 +68,9 @@ def wtpGetLinkAnchor(wikilink):
 
 
 def getLinks(wikicode, redirects=None, pageids=None):
-    '''
+    """
     get all links in a page
-    '''
+    """
     link_dict = {}
     linklist = wtp.parse(str(wikicode)).wikilinks
     for l in linklist:
@@ -86,12 +87,13 @@ def getLinks(wikicode, redirects=None, pageids=None):
 
 
 def resolveRedirect(link, redirects):
-    '''
+    """
     resolve the redirect.
     check whether in pageids (main namespace)
 
-    '''
+    """
     return redirects.get(link, link)
+
 
 # Split a MWPFH node <TEXT> into sentences
 
@@ -110,9 +112,9 @@ def tokenizeSent(text):
 
 
 def getPageDict(title: str, lang: str) -> dict:
-    '''
+    """
     get the wikitext for a pagetitle for a lang
-    '''
+    """
     params = {
         "action": "query",
         "prop": "revisions",
@@ -131,14 +133,14 @@ def getPageDict(title: str, lang: str) -> dict:
     res_rev = res_page["revisions"][0]
 
     wikitext = res_rev["slots"]["main"]["content"]
-    revid = res_rev['revid']
+    revid = res_rev["revid"]
     pageid = res_page["pageid"]
     return {
-        'pagetitle': title,
-        'lang': lang,
-        'wikitext': wikitext,
-        'pageid': pageid,
-        'revid': revid,
+        "pagetitle": title,
+        "lang": lang,
+        "wikitext": wikitext,
+        "pageid": pageid,
+        "revid": revid,
     }
 
 
@@ -155,15 +157,16 @@ def getDistEmb(ent_a, ent_b, embd):
         norm_ab = np.linalg.norm(b) * np.linalg.norm(a)
         # if norm of any vector is 0, we assign dst=0 (maximum dst)
         if norm_ab == 0:
-            dst = 0.
+            dst = 0.0
         else:
             dst = np.dot(a, b) / norm_ab
-#         dst = (np.dot(a, b) / np.linalg.norm(a) / np.linalg.norm(b))
+    #         dst = (np.dot(a, b) / np.linalg.norm(a) / np.linalg.norm(b))
     except BaseException:
         pass
     if np.isnan(dst):
         dst = 0
     return dst
+
 
 # Return the features for each link candidate in the context of the text and the page
 
@@ -172,10 +175,15 @@ def get_feature_set(page, text, link, anchors, word2vec, nav2vec):
     ngram = len(text.split())  # simple space based tokenizer to compute n-grams
     freq = anchors[text][link]  # How many times was the link use with this text
     ambig = len(anchors[text])  # home many different links where used with this text
-    kur = kurtosis(sorted(list(anchors[text].values()), reverse=True) + [1]
-                   * (1000 - ambig))  # Skew of usage text/link distribution
-    w2v = getDistEmb(page, link, word2vec)  # W2V Distance between the source and target page
-    nav = getDistEmb(page, link, nav2vec)  # Nav Distance between the source and target page
+    kur = kurtosis(
+        sorted(list(anchors[text].values()), reverse=True) + [1] * (1000 - ambig)
+    )  # Skew of usage text/link distribution
+    w2v = getDistEmb(
+        page, link, word2vec
+    )  # W2V Distance between the source and target page
+    nav = getDistEmb(
+        page, link, nav2vec
+    )  # Nav Distance between the source and target page
     leven = levenshtein_score(text.lower(), link.lower())
     return (ngram, freq, ambig, kur, w2v, nav, leven)
 
@@ -188,19 +196,23 @@ def get_feature_set(page, text, link, anchors, word2vec, nav2vec):
 # Returns the most likely candidate according to the pre-trained link model
 # If the probability is below a certain threshold, return None
 def classify_links(page, text, anchors, word2vec, nav2vec, model, threshold=0.95):
-    #start_time = time.time()
+    # start_time = time.time()
     cand_prediction = {}
     # Work with the 10 most frequent candidates
     limited_cands = anchors[text]
     if len(limited_cands) > 10:
-        limited_cands = dict(sorted(anchors[text].items(), key=operator.itemgetter(1), reverse=True)[:10])
+        limited_cands = dict(
+            sorted(anchors[text].items(), key=operator.itemgetter(1), reverse=True)[:10]
+        )
     for cand in limited_cands:
         # get the features
         #         cand_feats = get_feature_set(page, text, cand, anchors, word2vec,nav2vec,pageids)
         cand_feats = get_feature_set(page, text, cand, anchors, word2vec, nav2vec)
 
         # compute the model probability
-        cand_prediction[cand] = model.predict_proba(np.array(cand_feats).reshape((1, -1)))[0, 1]
+        cand_prediction[cand] = model.predict_proba(
+            np.array(cand_feats).reshape((1, -1))
+        )[0, 1]
 
     # Compute the top candidate
     top_candidate = max(cand_prediction.items(), key=operator.itemgetter(1))
@@ -208,35 +220,39 @@ def classify_links(page, text, anchors, word2vec, nav2vec, model, threshold=0.95
     # Check if the max probability meets the threshold before returning
     if top_candidate[1] < threshold:
         return None
-    #print("--- %s seconds ---" % (time.time() - start_time))
+    # print("--- %s seconds ---" % (time.time() - start_time))
     return top_candidate
+
 
 # Actual Linking function
 
 
 def process_page(
-        wikitext,
-        page,
-        anchors,
-        pageids,
-        redirects,
-        word2vec,
-        nav2vec,
-        model,
-        threshold=0.8,
-        pr=True,
-        return_wikitext=True,
-        context=10):
-    '''
+    wikitext,
+    page,
+    anchors,
+    pageids,
+    redirects,
+    word2vec,
+    nav2vec,
+    model,
+    threshold=0.8,
+    pr=True,
+    return_wikitext=True,
+    context=10,
+):
+    """
     returns updated wikitext
-    '''
+    """
     # parse the wikicode
     page_wikicode = mwparserfromhell.parse(wikitext)
 
     page_wikicode_init = str(page_wikicode)  # save the initial state
 
     # get all existing links
-    dict_links = getLinks(page_wikicode, redirects=redirects, pageids=pageids)  # get all links, resolve redirects
+    dict_links = getLinks(
+        page_wikicode, redirects=redirects, pageids=pageids
+    )  # get all links, resolve redirects
     linked_mentions = set(dict_links.keys())
     linked_links = set(dict_links.values())
     # inlcude also current pagetitle
@@ -260,28 +276,44 @@ def process_page(
                     for gram_length in range(10, 0, -1):
                         grams = list(ngrams(sent.split(), gram_length))
                         for gram in grams:
-                            mention = ' '.join(gram).lower()
-                            mention_original = ' '.join(gram)
+                            mention = " ".join(gram).lower()
+                            mention_original = " ".join(gram)
                             # if the mention exist in the DB
                             # it was not previously linked (or part of a link)
                             # none of its candidate links is already used
                             # it was not tested before (for efficiency)
-                            if (mention in anchors and
-                                not any(mention in s for s in linked_mentions) and
-                                not bool(set(anchors[mention].keys()) & linked_links) and
-                                    mention not in tested_mentions):
+                            if (
+                                mention in anchors
+                                and not any(mention in s for s in linked_mentions)
+                                and not bool(
+                                    set(anchors[mention].keys()) & linked_links
+                                )
+                                and mention not in tested_mentions
+                            ):
                                 # logic
-                                #print("testing:", mention, len(anchors[mention]))
+                                # print("testing:", mention, len(anchors[mention]))
                                 candidate = classify_links(
-                                    page, mention, anchors, word2vec, nav2vec, model, threshold=threshold)
+                                    page,
+                                    mention,
+                                    anchors,
+                                    word2vec,
+                                    nav2vec,
+                                    model,
+                                    threshold=threshold,
+                                )
                                 if candidate:
                                     candidate_link, candidate_proba = candidate
-                                    #print(">> ", mention, candidate)
+                                    # print(">> ", mention, candidate)
                                     ############## Critical ##############
                                     # Insert The Link in the current wikitext
                                     match = re.compile(
-                                        r'(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])'.format(re.escape(mention_original)))
-                                    new_str = "[[" + candidate_link + "|" + mention_original
+                                        r"(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])".format(
+                                            re.escape(mention_original)
+                                        )
+                                    )
+                                    new_str = (
+                                        "[[" + candidate_link + "|" + mention_original
+                                    )
                                     # add the probability
                                     if pr:
                                         new_str += "|pr=" + str(candidate_proba)
@@ -293,8 +325,12 @@ def process_page(
                                     linked_mentions.add(mention)
                                     linked_links.add(candidate_link)
                                     if found == 1:
-                                        page_wikicode_init_substr = page_wikicode_init[i1_node_init:i2_node_init]
-                                        i1_sub = page_wikicode_init_substr.lower().find(mention)
+                                        page_wikicode_init_substr = page_wikicode_init[
+                                            i1_node_init:i2_node_init
+                                        ]
+                                        i1_sub = page_wikicode_init_substr.lower().find(
+                                            mention
+                                        )
                                         startOffset = i1_node_init + i1_sub
                                         endOffset = startOffset + len(mention)
                                         ## provide context of the mention (+/- c characters in substring and wikitext)
@@ -305,21 +341,30 @@ def process_page(
                                             ## context substring
                                             str_context = page_wikicode_init_substr
                                             i1_c = max([0, i1_sub - context])
-                                            i2_c = min([len(str_context), i1_sub + len(mention_original) + context])
+                                            i2_c = min(
+                                                [
+                                                    len(str_context),
+                                                    i1_sub
+                                                    + len(mention_original)
+                                                    + context,
+                                                ]
+                                            )
                                             context_substring = str_context[i1_c:i2_c]
                                             ## wikitext substring
                                             str_context = wikitext
                                             i1_c = max([0, startOffset - context])
-                                            i2_c = min([len(str_context), endOffset + context])
+                                            i2_c = min(
+                                                [len(str_context), endOffset + context]
+                                            )
                                             context_wikitext = str_context[i1_c:i2_c]
                                         new_link = {
-                                            'linkTarget': candidate_link,
-                                            'anchor': mention_original,
-                                            'probability': float(candidate_proba),
-                                            'startOffset': startOffset,
-                                            'endOffset': endOffset,
-                                            'context_wikitext': context_wikitext,
-                                            'context_plaintext': context_substring
+                                            "linkTarget": candidate_link,
+                                            "anchor": mention_original,
+                                            "probability": float(candidate_proba),
+                                            "startOffset": startOffset,
+                                            "endOffset": endOffset,
+                                            "context_wikitext": context_wikitext,
+                                            "context_plaintext": context_substring,
                                         }
                                         added_links += [new_link]
                                 # More Book-keeping

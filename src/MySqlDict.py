@@ -12,31 +12,41 @@ class MySqlDict(UserDict):
         self.cursor = self.conn.cursor()
 
     def __len__(self):
-        get_len_query = "SELECT COUNT(*) FROM {tablename}".format(tablename=self.tablename)
+        get_len_query = "SELECT COUNT(*) FROM {tablename}".format(
+            tablename=self.tablename
+        )
         self.cursor.execute(get_len_query)
         rows = self.cursor.fetchone()
         return rows[0] if rows is not None else 0
 
     def __bool__(self):
-        get_max_query = "SELECT MAX(ROWID) FROM {tablename}".format(tablename=self.tablename)
+        get_max_query = "SELECT MAX(ROWID) FROM {tablename}".format(
+            tablename=self.tablename
+        )
         self.cursor.execute(get_max_query)
         result = self.cursor.fetchone()
         return True if result is not None else False
 
     def iterkeys(self):
-        get_keys_query = "SELECT lookup FROM {tablename}".format(tablename=self.tablename)
+        get_keys_query = "SELECT lookup FROM {tablename}".format(
+            tablename=self.tablename
+        )
         self.cursor.execute(get_keys_query)
         for row in self.cursor.fetchall():
             yield row[0]
 
     def itervalues(self):
-        get_values_query = "SELECT value FROM {tablename}".format(tablename=self.tablename)
+        get_values_query = "SELECT value FROM {tablename}".format(
+            tablename=self.tablename
+        )
         self.cursor.execute(get_values_query)
         for value in self.cursor.fetchall():
             yield pickle.loads(value[0])
 
     def iteritems(self):
-        get_items_query = "SELECT lookup, value FROM {tablename}".format(tablename=self.tablename)
+        get_items_query = "SELECT lookup, value FROM {tablename}".format(
+            tablename=self.tablename
+        )
         self.cursor.execute(get_items_query)
         for key, value in self.cursor.fetchall():
             yield key, pickle.loads(value)
@@ -55,14 +65,20 @@ class MySqlDict(UserDict):
         self.conn.close()
 
     def __contains__(self, key):
-        has_item_query = "SELECT value FROM {tablename} WHERE lookup = %s LIMIT 1".format(
-            tablename=self.tablename
+        has_item_query = (
+            "SELECT value FROM {tablename} WHERE lookup = %s LIMIT 1".format(
+                tablename=self.tablename
+            )
         )
         self.cursor.execute(has_item_query, (key,))
         return self.cursor.fetchone() is not None
 
     def __getitem__(self, key):
-        get_item_query = "SELECT value FROM {tablename} WHERE lookup = %s LIMIT 1".format(tablename=self.tablename)
+        get_item_query = (
+            "SELECT value FROM {tablename} WHERE lookup = %s LIMIT 1".format(
+                tablename=self.tablename
+            )
+        )
         self.cursor.execute(get_item_query, (key,))
         item = self.cursor.fetchone()
         if item is None:

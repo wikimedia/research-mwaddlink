@@ -6,20 +6,22 @@ import os
 
 
 class DatasetLoader:
-    def __init__(self, backend='mysql', wiki_id=None, table_prefix="lr"):
+    def __init__(self, backend="mysql", wiki_id=None, table_prefix="lr"):
         self.backend = backend
         self.wiki_id = wiki_id
         self.table_prefix = table_prefix
-        if self.backend == 'mysql':
-            self.model_path = os.path.join(tempfile.gettempdir(), "{0}.linkmodel.json".format(wiki_id))
+        if self.backend == "mysql":
+            self.model_path = os.path.join(
+                tempfile.gettempdir(), "{0}.linkmodel.json".format(wiki_id)
+            )
         else:
             self.model_path = "./data/{0}/{0}.linkmodel.json".format(wiki_id)
 
     def get(self, tablename=None):
-        if self.backend == 'mysql':
+        if self.backend == "mysql":
             return MySqlDict.MySqlDict(
                 tablename="%s_%s_%s" % (self.table_prefix, self.wiki_id, tablename),
-                conn=get_mysql_connection()
+                conn=get_mysql_connection(),
             )
         else:
             return SqliteDict(
@@ -34,19 +36,19 @@ class DatasetLoader:
         # and then return the path.
         if os.path.exists(self.model_path):
             return self.model_path
-        elif self.backend == 'mysql':
+        elif self.backend == "mysql":
             self._load_model_from_mysql()
             return self.model_path
         else:
-            raise Exception('Unable to load model.')
+            raise Exception("Unable to load model.")
 
     def _load_model_from_mysql(self):
         cursor = get_mysql_connection().cursor()
         cursor.execute("SELECT value FROM lr_model WHERE lookup = %s", (self.wiki_id,))
         model = cursor.fetchone()
         if model is None:
-            raise Exception('Could not load model from MySQL')
-        file = open(self.model_path, mode='w')
-        output = model[0].decode('utf-8')
+            raise Exception("Could not load model from MySQL")
+        file = open(self.model_path, mode="w")
+        output = model[0].decode("utf-8")
         file.write(output)
         file.close()

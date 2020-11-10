@@ -8,6 +8,7 @@ import re
 from tqdm import tqdm
 import sys
 import logging
+
 # from nltk import sent_tokenize, word_tokenize
 from mwparserfromhell import parse
 import glob
@@ -18,37 +19,43 @@ paths = []
 if len(sys.argv) >= 2:
     lang = sys.argv[1]
 else:
-    lang = 'en'
+    lang = "en"
 ## number of sentences to extract
 if len(sys.argv) >= 3:
     LIMIT_SENTS = int(sys.argv[2])
 else:
-    LIMIT_SENTS = 200000 #adhoc
+    LIMIT_SENTS = 200000  # adhoc
 
-wiki   = lang+'wiki'
-dirpath = '/mnt/data/xmldatadumps/public/{0}/*'.format(wiki)
+wiki = lang + "wiki"
+dirpath = "/mnt/data/xmldatadumps/public/{0}/*".format(wiki)
 
 # Get the penultimate dump directory (the dir "latest" can have some simlink issues")
 try:
     files = glob.glob(dirpath)
     files.sort(key=os.path.getmtime)
     for f in files:
-        if 'latest' in f:
+        if "latest" in f:
             files.remove(f)
             break
-    snapshot = files[-1].split('/')[-1]
+    snapshot = files[-1].split("/")[-1]
 except:
-    snapshot = 'latest'
+    snapshot = "latest"
 
-dump_fn = '/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles.xml.bz2'.format(wiki,snapshot)
-for infile in glob.glob('/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles*.xml*.bz2'.format(wiki,snapshot) ):
+dump_fn = "/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles.xml.bz2".format(
+    wiki, snapshot
+)
+for infile in glob.glob(
+    "/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles*.xml*.bz2".format(
+        wiki, snapshot
+    )
+):
     if infile == dump_fn:
         continue
-    if 'multistream' in infile:
+    if "multistream" in infile:
         continue
     paths += [infile]
 if len(paths) == 0:
-    paths+=[dump_fn]
+    paths += [dump_fn]
 
 print("Processing the following Wikipedia dump files:")
 for p in paths:
@@ -128,7 +135,6 @@ for p in paths:
 #     return res
 
 
-
 ####################
 # Remove links to special content
 regexes = [
@@ -140,8 +146,8 @@ regexes = [
     ".*\}\}",
     ".*\{\{",
     ".*<ref",
-    ".*png"
-    ]
+    ".*png",
+]
 combined = "(" + ")|(".join(regexes) + ")"
 
 
@@ -152,13 +158,17 @@ combined = "(" + ")|(".join(regexes) + ")"
 def linked_sents_extractor(title, wikicode):
     # An approximate solution to identify sentences, without a sentence tokenizer
     try:
-        filter_wtp = re.sub(r"<\s*ref.*(<\s*/ref\s*>|/\s*>)", '',  wikicode)
+        filter_wtp = re.sub(r"<\s*ref.*(<\s*/ref\s*>|/\s*>)", "", wikicode)
         wtp_code = wtp.parse(filter_wtp)
-        filter_wtp = re.sub(r"(\w{3,}[\]\]]*\s*\.\s)|()\n", '\\1[cut]',  wtp_code.plain_text(replace_wikilinks=False, replace_templates = False))
+        filter_wtp = re.sub(
+            r"(\w{3,}[\]\]]*\s*\.\s)|()\n",
+            "\\1[cut]",
+            wtp_code.plain_text(replace_wikilinks=False, replace_templates=False),
+        )
     except:
         return None
-        #print("Error on page", title)
-    filter_wtp =filter_wtp.split('[cut]')
+        # print("Error on page", title)
+    filter_wtp = filter_wtp.split("[cut]")
     sents = []
     # filters
     for a in filter_wtp:
@@ -169,11 +179,11 @@ def linked_sents_extractor(title, wikicode):
         jmwp = parse(j)
         check = True
         for i in jmwp.nodes:
-            if not (isinstance(i, Wikilink) or isinstance (i, Text)):
+            if not (isinstance(i, Wikilink) or isinstance(i, Text)):
                 check = False
         # preserve sentences that have at least a link
         if check and len(jmwp.nodes) > 2 and len(jmwp.filter_wikilinks()) > 0:
-            return j # j is the sentence
+            return j  # j is the sentence
     return None
 
 
@@ -186,11 +196,10 @@ def process_dump(dump, path):
             continue
         code = next(page).text
         if not page.title.startswith("Wikipedia:"):
-            #yield linked_sents_extractor(page.title, code)
+            # yield linked_sents_extractor(page.title, code)
             sent = linked_sents_extractor(page.title, code)
             if sent:
                 yield page.title, sent
-
 
 
 ##################
@@ -206,7 +215,7 @@ wiki_links = []
 # mwxml parallelism
 # this might apply to english only
 # maybe it's possible to split other dumps to part-files
-pbar = tqdm(total = LIMIT_SENTS)
+pbar = tqdm(total=LIMIT_SENTS)
 for title, sentence in mwxml.map(process_dump, paths, threads=10):
     wiki_links.append((title, sentence))
     count += 1
@@ -214,14 +223,14 @@ for title, sentence in mwxml.map(process_dump, paths, threads=10):
         break
     pbar.update(1)
 pbar.close()
-print('number of sentences extracted', len(wiki_links))
+print("number of sentences extracted", len(wiki_links))
 
 
 ##################
 # store two files
 # training: to be used by the generate_training_data.py, because in the future we might want to use the whole sentence.
 # test: this is effectively the data used by the backtesting protocol.
-LIMIT_SENTS_SPLIT = len(wiki_links) //2
+LIMIT_SENTS_SPLIT = len(wiki_links) // 2
 print(LIMIT_SENTS_SPLIT)
 
 # Store the sentences for training

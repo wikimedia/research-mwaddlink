@@ -20,33 +20,39 @@ paths = []
 if len(sys.argv) >= 2:
     lang = sys.argv[1]
 else:
-    lang = 'en'
+    lang = "en"
 
-wiki   = lang+'wiki'
+wiki = lang + "wiki"
 
-dirpath = '/mnt/data/xmldatadumps/public/{0}/*'.format(wiki)
-threads  = 10
+dirpath = "/mnt/data/xmldatadumps/public/{0}/*".format(wiki)
+threads = 10
 # Get the penultimate dump directory (the dir "latest" can have some simlink issues")
 try:
     files = glob.glob(dirpath)
     files.sort(key=os.path.getmtime)
     for f in files:
-        if 'latest' in f:
+        if "latest" in f:
             files.remove(f)
             break
-    snapshot = files[-1].split('/')[-1]
+    snapshot = files[-1].split("/")[-1]
 except:
-    snapshot = 'latest'
+    snapshot = "latest"
 
-dump_fn = '/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles.xml.bz2'.format(wiki,snapshot)
-for infile in glob.glob('/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles*.xml*.bz2'.format(wiki,snapshot) ):
+dump_fn = "/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles.xml.bz2".format(
+    wiki, snapshot
+)
+for infile in glob.glob(
+    "/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles*.xml*.bz2".format(
+        wiki, snapshot
+    )
+):
     if infile == dump_fn:
         continue
-    if 'multistream' in infile:
+    if "multistream" in infile:
         continue
     paths += [infile]
 if len(paths) == 0:
-    paths+=[dump_fn]
+    paths += [dump_fn]
 
 print("Processing the following Wikipedia dump files:")
 for p in paths:
@@ -70,17 +76,22 @@ def process_dump_pageids_redirects(dump, path):
         yield page_id, page_title, page_title_rd
     print("Done processing path:", path)
 
+
 # we get two dictionaries
 # pageids={page_title:page_id} ## only for non-redirect-pages
 # redirects={page_title:page_title_rd}, where page_title_rd is the redirected-to page-title ## onlöy for redirect mpages
-print('1st pass: getting pageids and redirects tables')
+print("1st pass: getting pageids and redirects tables")
 pageids = {}
 redirects = {}
 pbar = tqdm()
-for page_id, page_title, page_title_rd, in mwxml.map(process_dump_pageids_redirects, paths,threads=threads):
+for (
+    page_id,
+    page_title,
+    page_title_rd,
+) in mwxml.map(process_dump_pageids_redirects, paths, threads=threads):
     if page_title_rd == None:
         pageids[page_title] = page_id
-    elif len(page_title_rd)>0:
+    elif len(page_title_rd) > 0:
         redirects[page_title] = page_title_rd
     else:
         pass
@@ -88,7 +99,7 @@ for page_id, page_title, page_title_rd, in mwxml.map(process_dump_pageids_redire
 pbar.close()
 
 
-print('extraction done.')
+print("extraction done.")
 print("Number of pages", len(pageids))
 print("Number of redirects", len(redirects))
 
@@ -97,8 +108,10 @@ print("Number of redirects", len(redirects))
 # dump iteration on each page to get links and anchors
 # from each page with extract pairs of (link, text)
 #################################################
-print('2nd pass: getting all links')
+print("2nd pass: getting all links")
 anchors = {}
+
+
 def process_dump_get_links(dump, path):
     for page in dump:
         if page.redirect or page.namespace != 0:
@@ -117,7 +130,7 @@ def process_dump_get_links(dump, path):
                 ## this includes some normalisation
                 link, anchor = wtpGetLinkAnchor(l)
                 ## resolve the redirect of link
-                link = redirects.get(link,link)
+                link = redirects.get(link, link)
                 ## check if link is in main namespace
                 if link in pageids:
                     yield link, anchor
@@ -126,19 +139,20 @@ def process_dump_get_links(dump, path):
                 continue
     print("Done processing path:", path)
 
+
 ##################
 # mwxml parallelism
 # this might apply to english only
 # maybe it's possible to split other dumps to part-files
 pbar = tqdm()
-for link, text in mwxml.map(process_dump_get_links, paths, threads = threads):
+for link, text in mwxml.map(process_dump_get_links, paths, threads=threads):
     if text in anchors:
         anchors[text].append(link)
     else:
         anchors[text] = [link]
     pbar.update(1)
 pbar.close()
-print('extraction done.')
+print("extraction done.")
 print("Number of anchors", len(anchors))
 
 #####################
@@ -147,22 +161,22 @@ print("Number of anchors", len(anchors))
 ####################
 
 # store the dictionaries into the language data folder
-output_path = '../data/{0}/{0}.pageids'.format(lang)
-with open(output_path+'.pkl', 'wb') as handle:
+output_path = "../data/{0}/{0}.pageids".format(lang)
+with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(pageids, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # store the dictionaries into the language data folder
-output_path = '../data/{0}/{0}.redirects'.format(lang)
-with open(output_path+'.pkl', 'wb') as handle:
+output_path = "../data/{0}/{0}.redirects".format(lang)
+with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(redirects, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # turn redundant pairs into Count
 # e.g., ['wmf', 'wmf', 'wmf'] -> {'wmf':3}
 print("Compressing the dictionary")
-for k,v in tqdm(anchors.items()):
+for k, v in tqdm(anchors.items()):
     anchors[k] = dict(Counter(v))
 
 ##################
 # store the dictionary into the language data folder
-with open(output_path+'.pkl', 'wb') as handle:
+with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(anchors, handle, protocol=pickle.HIGHEST_PROTOCOL)

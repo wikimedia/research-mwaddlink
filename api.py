@@ -19,12 +19,12 @@ logger.addHandler(logging.StreamHandler(stdout))
 load_dotenv()
 
 
-@app.route('/', methods=['GET'])
+@app.route("/", methods=["GET"])
 def main():
-    return 'TODO: Some landing page or API docs.'
+    return "TODO: Some landing page or API docs."
 
 
-@app.route('/query', methods=['POST'])
+@app.route("/query", methods=["POST"])
 def query():
     query_args = {
         "wikitext": fields.Str(required=True),
@@ -32,10 +32,12 @@ def query():
         "pageid": fields.Int(required=True),
         "threshold": fields.Float(required=True),
         "wiki_id": fields.Str(required=True),
-        "page_title": fields.Str(required=True)
+        "page_title": fields.Str(required=True),
     }
     args = parser.parse(query_args, request)
-    datasetloader = DatasetLoader(backend=os.environ.get('DB_BACKEND'), wiki_id=args["wiki_id"])
+    datasetloader = DatasetLoader(
+        backend=os.environ.get("DB_BACKEND"), wiki_id=args["wiki_id"]
+    )
     query_instance = Query(logger, datasetloader)
     return query_instance.run(
         wikitext=args["wikitext"],
@@ -43,5 +45,5 @@ def query():
         pageid=args["pageid"],
         threshold=args["threshold"],
         wiki_id=args["wiki_id"],
-        page_title=args["page_title"]
+        page_title=args["page_title"],
     )

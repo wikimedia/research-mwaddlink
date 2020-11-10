@@ -15,15 +15,28 @@ logger.addHandler(logging.StreamHandler(stdout))
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--wiki-id", "-id",
-                        default=None,
-                        type=str,
-                        required=True,
-                        help="Wiki ID to use for copying SQLite files into MySQL.")
-    parser.add_argument("--tables", "-t",
-                        nargs='+',
-                        default=('anchors', 'redirects', 'pageids', 'navfiltered', 'w2vfiltered', 'model'),
-                        required=False)
+    parser.add_argument(
+        "--wiki-id",
+        "-id",
+        default=None,
+        type=str,
+        required=True,
+        help="Wiki ID to use for copying SQLite files into MySQL.",
+    )
+    parser.add_argument(
+        "--tables",
+        "-t",
+        nargs="+",
+        default=(
+            "anchors",
+            "redirects",
+            "pageids",
+            "navfiltered",
+            "w2vfiltered",
+            "model",
+        ),
+        required=False,
+    )
     table_prefix = "lr"
     args = parser.parse_args()
     mysql_conn = get_mysql_connection()
@@ -31,11 +44,14 @@ def main():
     for table in args.tables:
         logger.info("Populating table %s" % table)
 
-        if table == 'model':
-            data = open("./data/{0}/{0}.linkmodel.json".format(args.wiki_id), mode='r')
+        if table == "model":
+            data = open("./data/{0}/{0}.linkmodel.json".format(args.wiki_id), mode="r")
             linkmodel = data.read()
             tablename = "%s_%s" % (table_prefix, table)
-            cursor.execute("DELETE FROM {table} WHERE lookup = %s LIMIT 1".format(table=tablename), (args.wiki_id,))
+            cursor.execute(
+                "DELETE FROM {table} WHERE lookup = %s LIMIT 1".format(table=tablename),
+                (args.wiki_id,),
+            )
             query = "INSERT INTO {table} VALUES (%s,%s)".format(table=tablename)
             cursor.execute(query, (args.wiki_id, linkmodel))
         else:
@@ -56,5 +72,5 @@ def main():
     mysql_conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

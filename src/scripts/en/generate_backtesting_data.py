@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import mwparserfromhell 
+import mwparserfromhell
 from mwparserfromhell.nodes import Wikilink, Text, Tag
 import wikitextparser as wtp
 import bz2, subprocess
@@ -16,13 +16,14 @@ from gensim.corpora import wikicorpus
 import glob
 
 
-
 import mwxml
 
 # Full latest-articles dump
 # This path is for WMF cluster
 # Download the dumps otherwise
-paths = glob.glob('/mnt/data/xmldatadumps/public/enwiki/latest/enwiki-latest-pages-articles*.xml*.bz2')
+paths = glob.glob(
+    "/mnt/data/xmldatadumps/public/enwiki/latest/enwiki-latest-pages-articles*.xml*.bz2"
+)
 
 
 ####################
@@ -32,11 +33,13 @@ paths = glob.glob('/mnt/data/xmldatadumps/public/enwiki/latest/enwiki-latest-pag
 ####################
 # bunch of helper functions (factor out ?)
 
+
 def remove_images(prs):
-    img = re.compile('(File|Image|Category):', re.IGNORECASE)
+    img = re.compile("(File|Image|Category):", re.IGNORECASE)
     remove_img = [f for f in prs.ifilter_wikilinks() if img.match(str(f.title))]
     for f in remove_img:
         prs.remove(f)
+
 
 def remove_headings(prs):
     remove_img = list(prs.ifilter_headings())
@@ -47,31 +50,30 @@ def remove_headings(prs):
 def pre_filter(text):
     res = []
 
-    parts = text.split('\n')
+    parts = text.split("\n")
     # exclude lists and headings
-    excluded_chars = ['*', '=']
+    excluded_chars = ["*", "="]
     for p in parts:
         if p[:1] in excluded_chars:
             continue
 
         # exclude files
-        if '[File:' in p:
+        if "[File:" in p:
             continue
 
-        parts = p.split('|')
+        parts = p.split("|")
         if len(parts) > 1:
-            if parts[0] == 'thumb':
+            if parts[0] == "thumb":
                 continue
 
         # passed everything, append to results
         res.append(p)
 
-    return '\n'.join(res)
+    return "\n".join(res)
 
 
 def wiki2sents(text, token_min_length=2, token_max_length=20, lower=False):
-    """Parses wikipedia text and returns a list of sentences
-    """
+    """Parses wikipedia text and returns a list of sentences"""
     prs = text
 
     # images aren't removed so remove them manually
@@ -86,18 +88,17 @@ def wiki2sents(text, token_min_length=2, token_max_length=20, lower=False):
     if lower:
         raw = raw.lower()
 
-    #print(raw)
+    # print(raw)
     sents = sent_tokenize(prs)
     res = []
     for s in sents:
-        if '\n' in s:
+        if "\n" in s:
             # chances are it's a list or it's still got a heading or something so skip
-#           print(u'Skipping <{}> because it\'s got new lines so it\'s probably a list'.format(s))
+            #           print(u'Skipping <{}> because it\'s got new lines so it\'s probably a list'.format(s))
             continue
         res.append(s)
-#       print(u'<{}>'.format(s))
+    #       print(u'<{}>'.format(s))
     return res
-
 
 
 ####################
@@ -111,8 +112,8 @@ regexes = [
     ".*\}\}",
     ".*\{\{",
     ".*<ref",
-    ".*png"
-    ]
+    ".*png",
+]
 combined = "(" + ")|(".join(regexes) + ")"
 
 
@@ -123,13 +124,17 @@ combined = "(" + ")|(".join(regexes) + ")"
 def linked_sents_extractor(title, wikicode):
     # An approximate solution to identify sentences, without a sentence tokenizer
     try:
-        filter_wtp = re.sub(r"<\s*ref.*(<\s*/ref\s*>|/\s*>)", '',  wikicode)
+        filter_wtp = re.sub(r"<\s*ref.*(<\s*/ref\s*>|/\s*>)", "", wikicode)
         wtp_code = wtp.parse(filter_wtp)
-        filter_wtp = re.sub(r"(\w{3,}[\]\]]*\s*\.\s)|()\n", '\\1[cut]',  wtp_code.plain_text(replace_wikilinks=False, replace_templates = False))
+        filter_wtp = re.sub(
+            r"(\w{3,}[\]\]]*\s*\.\s)|()\n",
+            "\\1[cut]",
+            wtp_code.plain_text(replace_wikilinks=False, replace_templates=False),
+        )
     except:
         return None
-        #print("Error on page", title)
-    filter_wtp =filter_wtp.split('[cut]')
+        # print("Error on page", title)
+    filter_wtp = filter_wtp.split("[cut]")
     sents = []
     # filters
     for a in filter_wtp:
@@ -140,11 +145,11 @@ def linked_sents_extractor(title, wikicode):
         jmwp = parse(j)
         check = True
         for i in jmwp.nodes:
-            if not (isinstance(i, Wikilink) or isinstance (i, Text)):
+            if not (isinstance(i, Wikilink) or isinstance(i, Text)):
                 check = False
         # preserve sentences that have at least a link
         if check and len(jmwp.nodes) > 2 and len(jmwp.filter_wikilinks()) > 0:
-            return j # j is the sentence
+            return j  # j is the sentence
     return None
 
 
@@ -157,19 +162,18 @@ def process_dump(dump, path):
             continue
         code = next(page).text
         if not page.title.startswith("Wikipedia:"):
-            #yield linked_sents_extractor(page.title, code)
-            sent = linked_sents_extractor(page.title, code) 
+            # yield linked_sents_extractor(page.title, code)
+            sent = linked_sents_extractor(page.title, code)
             if sent:
-                yield page.title, sent 
+                yield page.title, sent
 
-                
-            
+
 ##################
 # Global variables
 # TODO: if necessary, parametrize the script to take these as input
 count = 0
 LIMIT_SENTS = 200000
-LIMIT_SENTS_SPLIT = LIMIT_SENTS //2
+LIMIT_SENTS_SPLIT = LIMIT_SENTS // 2
 # Storage array of sentences
 wiki_links = []
 
@@ -178,15 +182,15 @@ wiki_links = []
 # mwxml parallelism
 # this might apply to english only
 # maybe it's possible to split other dumps to part-files
-pbar = tqdm(total = LIMIT_SENTS)
+pbar = tqdm(total=LIMIT_SENTS)
 for title, sentence in mwxml.map(process_dump, paths):
     wiki_links.append((title, sentence))
-    count += 1 
+    count += 1
     if count >= LIMIT_SENTS:
         break
     pbar.update(1)
 pbar.close()
-print('number of sentences extracted', len(wiki_links))
+print("number of sentences extracted", len(wiki_links))
 
 
 ##################
