@@ -32,6 +32,12 @@ def query():
     datasetloader = DatasetLoader(
         backend=os.environ.get("DB_BACKEND"), wiki_id=data["wiki_id"]
     )
+
+    try:
+        datasetloader.get_model_path()
+    except RuntimeError:
+        return "Unable to load model for %s!" % data["wiki_id"], 400
+
     query_instance = Query(logger, datasetloader)
     return jsonify(
         query_instance.run(

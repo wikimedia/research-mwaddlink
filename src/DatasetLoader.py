@@ -40,7 +40,7 @@ class DatasetLoader:
             self._load_model_from_mysql()
             return self.model_path
         else:
-            raise Exception("Unable to load model.")
+            raise RuntimeError("Unable to load model.")
 
     def _load_model_from_mysql(self):
         cursor = get_mysql_connection().cursor()
