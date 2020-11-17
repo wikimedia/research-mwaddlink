@@ -1,0 +1,85 @@
+---
+parameters:
+  - name: body
+    in: body
+    required: true
+    schema:
+      id: Input
+      required:
+        - wikitext
+        - revid
+        - pageid
+        - threshold
+        - wiki_id
+        - page_title
+      properties:
+        wikitext:
+          type: string
+          description: 'Raw wikitext of the article'
+        revid:
+          type: integer
+          description: 'Revision ID of the article'
+        pageid:
+          type: integer
+          description: 'Page ID of the article'
+        threshold:
+          type: number
+          description: 'Number between 0 and 1 for the threshold to use.'
+        wiki_id:
+          type: string
+          description: 'ID of the wiki for processing (e.g. "de" or "simple")'
+        page_title:
+          type: string
+          description: 'Page title of the article'
+definitions:
+  LinkRecommendationSet:
+    type: object
+    properties:
+      added_links:
+        type: array
+        description: 'An array of link recommendation objects.'
+        items:
+          $ref: '#/definitions/LinkRecommendation'
+      no_added_links:
+        type: integer
+        description: 'The number of link recommendations.'
+      page_title:
+        type: string
+        description: 'The page title'
+      pageid:
+        type: integer
+        description: 'The page ID'
+      revid:
+        type: integer
+        description: 'The revision ID'
+  LinkRecommendation:
+    type: object
+    properties:
+      anchor:
+        type: string
+        description: 'The phrase to link in the article text.'
+      context_plaintext:
+        type: string
+        description: 'The immediate context for the anchor, in plaintext.'
+      context_wikitext:
+        type: string
+        description: 'The immediate context for the anchor, in wikitext.'
+      endOffset:
+        type: integer
+        description: 'The character offset describing where the anchor ends.'
+      linkTarget:
+        type: string
+        description: 'The article title that the anchor text should be linked to.'
+      probability:
+        type: number
+        description: 'The probability score that the link should be added.'
+      startOffset:
+        type: integer
+        description: 'The character offset describing where the anchor begins.'
+
+
+responses:
+  200:
+    description: LinkRecommendationSet
+    schema:
+      $ref: '#/definitions/LinkRecommendationSet'
