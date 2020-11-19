@@ -49,3 +49,13 @@ def query():
             page_title=data["page_title"],
         )
     )
+
+
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    """
+    Kubernetes will use this endpoint to know if it should route traffic to the application.
+    @return:
+    An empty string and a HTTP 200 response.
+    """
+    return "", 200
