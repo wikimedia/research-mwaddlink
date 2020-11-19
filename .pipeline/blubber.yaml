@@ -23,7 +23,7 @@ variants:
     includes: [production-build]
     entrypoint: ["gunicorn","api:app","-b","0.0.0.0:8000"]
     builder:
-      command: ["PYTHONPATH=/opt/lib/python/site-packages", "python3", "-m", "nltk.downloader", "punkt"]
+      command: ["PYTHONPATH=/opt/lib/python/site-packages", "python3.7", "-m", "nltk.downloader", "punkt"]
     python:
       requirements: [requirements-query.txt]
   codehealth:
