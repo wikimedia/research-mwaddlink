@@ -47,5 +47,6 @@ def query():
             threshold=data["threshold"],
             wiki_id=data["wiki_id"],
             page_title=data["page_title"],
+            max_recommendations=data["max_recommendations"],
         )
     )

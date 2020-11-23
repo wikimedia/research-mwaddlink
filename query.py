@@ -61,6 +61,15 @@ def main():
         help="Database backend to use for querying.",
     )
 
+    parser.add_argument(
+        "--max-recommendations",
+        "-m",
+        default=20,
+        type=int,
+        required=False,
+        help="Maximum number of link recommendations to query (set to -1 for all)",
+    )
+
     args = parser.parse_args()
     page_title = normalise_title(args.page_title)
     threshold = args.threshold
@@ -74,6 +83,7 @@ def main():
         revid=page_dict["revid"],
         threshold=threshold,
         wiki_id=args.wiki_id,
+        max_recommendations=args.max_recommendations,
     )
     json_out = json.dumps(dict_result, indent=4)
     print(json_out)

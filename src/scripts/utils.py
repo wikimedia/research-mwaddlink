@@ -224,9 +224,12 @@ def classify_links(page, text, anchors, word2vec, nav2vec, model, threshold=0.95
     return top_candidate
 
 
+# helper class to break out of nested for-loop when reaching set number of recommendations
+class MaxRecError(Exception):
+    pass
+
+
 # Actual Linking function
-
-
 def process_page(
     wikitext,
     page,
@@ -240,6 +243,7 @@ def process_page(
     pr=True,
     return_wikitext=True,
     context=10,
+    maxrec=-1,
 ):
     """
     returns updated wikitext
@@ -262,113 +266,137 @@ def process_page(
     tested_mentions = set()
     added_links = []
 
-    for node in page_wikicode.filter(recursive=False):
-        # Parsing the tree can be done once
-        # this is the most out loop to make sure the offset-calculations matches throughout
-        if isinstance(node, Text):
-            # check the offset of the node in the wikitext_init
-            node_val = node.value
-            i1_node_init = page_wikicode_init.find(node_val)
-            i2_node_init = i1_node_init + len(node_val)
-            lines = node.split("\n")
-            for line in lines:
-                for sent in tokenizeSent(line):
-                    for gram_length in range(10, 0, -1):
-                        grams = list(ngrams(sent.split(), gram_length))
-                        for gram in grams:
-                            mention = " ".join(gram).lower()
-                            mention_original = " ".join(gram)
-                            # if the mention exist in the DB
-                            # it was not previously linked (or part of a link)
-                            # none of its candidate links is already used
-                            # it was not tested before (for efficiency)
-                            if (
-                                mention in anchors
-                                and not any(mention in s for s in linked_mentions)
-                                and not bool(
-                                    set(anchors[mention].keys()) & linked_links
-                                )
-                                and mention not in tested_mentions
-                            ):
-                                # logic
-                                # print("testing:", mention, len(anchors[mention]))
-                                candidate = classify_links(
-                                    page,
-                                    mention,
-                                    anchors,
-                                    word2vec,
-                                    nav2vec,
-                                    model,
-                                    threshold=threshold,
-                                )
-                                if candidate:
-                                    candidate_link, candidate_proba = candidate
-                                    # print(">> ", mention, candidate)
-                                    ############## Critical ##############
-                                    # Insert The Link in the current wikitext
-                                    match = re.compile(
-                                        r"(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])".format(
-                                            re.escape(mention_original)
-                                        )
+    # try-except to break out of nested for-loop once we found maxrec links to add
+    try:
+        for node in page_wikicode.filter(recursive=False):
+            # Parsing the tree can be done once
+            # this is the most out loop to make sure the offset-calculations matches throughout
+            if isinstance(node, Text):
+                # check the offset of the node in the wikitext_init
+                node_val = node.value
+                i1_node_init = page_wikicode_init.find(node_val)
+                i2_node_init = i1_node_init + len(node_val)
+                lines = node.split("\n")
+                for line in lines:
+                    for sent in tokenizeSent(line):
+                        for gram_length in range(10, 0, -1):
+                            grams = list(ngrams(sent.split(), gram_length))
+                            for gram in grams:
+                                mention = " ".join(gram).lower()
+                                mention_original = " ".join(gram)
+                                # if the mention exist in the DB
+                                # it was not previously linked (or part of a link)
+                                # none of its candidate links is already used
+                                # it was not tested before (for efficiency)
+                                if (
+                                    mention in anchors
+                                    and not any(mention in s for s in linked_mentions)
+                                    and not bool(
+                                        set(anchors[mention].keys()) & linked_links
                                     )
-                                    new_str = (
-                                        "[[" + candidate_link + "|" + mention_original
+                                    and mention not in tested_mentions
+                                ):
+                                    # logic
+                                    # print("testing:", mention, len(anchors[mention]))
+                                    candidate = classify_links(
+                                        page,
+                                        mention,
+                                        anchors,
+                                        word2vec,
+                                        nav2vec,
+                                        model,
+                                        threshold=threshold,
                                     )
-                                    # add the probability
-                                    if pr:
-                                        new_str += "|pr=" + str(candidate_proba)
-                                    new_str += "]]"
-                                    newval, found = match.subn(new_str, node.value, 1)
-                                    node.value = newval
-                                    ######################################
-                                    # Book-keeping
-                                    linked_mentions.add(mention)
-                                    linked_links.add(candidate_link)
-                                    if found == 1:
-                                        page_wikicode_init_substr = page_wikicode_init[
-                                            i1_node_init:i2_node_init
-                                        ]
-                                        i1_sub = page_wikicode_init_substr.lower().find(
-                                            mention
+                                    if candidate:
+                                        candidate_link, candidate_proba = candidate
+                                        # print(">> ", mention, candidate)
+                                        ############## Critical ##############
+                                        # Insert The Link in the current wikitext
+                                        match = re.compile(
+                                            r"(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])".format(
+                                                re.escape(mention_original)
+                                            )
                                         )
-                                        startOffset = i1_node_init + i1_sub
-                                        endOffset = startOffset + len(mention)
-                                        ## provide context of the mention (+/- c characters in substring and wikitext)
-                                        if context == None:
-                                            context_wikitext = mention_original
-                                            context_substring = mention_original
-                                        else:
-                                            ## context substring
-                                            str_context = page_wikicode_init_substr
-                                            i1_c = max([0, i1_sub - context])
-                                            i2_c = min(
-                                                [
-                                                    len(str_context),
-                                                    i1_sub
-                                                    + len(mention_original)
-                                                    + context,
+                                        new_str = (
+                                            "[["
+                                            + candidate_link
+                                            + "|"
+                                            + mention_original
+                                        )
+                                        # add the probability
+                                        if pr:
+                                            new_str += "|pr=" + str(candidate_proba)
+                                        new_str += "]]"
+                                        newval, found = match.subn(
+                                            new_str, node.value, 1
+                                        )
+                                        node.value = newval
+                                        ######################################
+                                        # Book-keeping
+                                        linked_mentions.add(mention)
+                                        linked_links.add(candidate_link)
+                                        if found == 1:
+                                            page_wikicode_init_substr = (
+                                                page_wikicode_init[
+                                                    i1_node_init:i2_node_init
                                                 ]
                                             )
-                                            context_substring = str_context[i1_c:i2_c]
-                                            ## wikitext substring
-                                            str_context = wikitext
-                                            i1_c = max([0, startOffset - context])
-                                            i2_c = min(
-                                                [len(str_context), endOffset + context]
+                                            i1_sub = (
+                                                page_wikicode_init_substr.lower().find(
+                                                    mention
+                                                )
                                             )
-                                            context_wikitext = str_context[i1_c:i2_c]
-                                        new_link = {
-                                            "linkTarget": candidate_link,
-                                            "anchor": mention_original,
-                                            "probability": float(candidate_proba),
-                                            "startOffset": startOffset,
-                                            "endOffset": endOffset,
-                                            "context_wikitext": context_wikitext,
-                                            "context_plaintext": context_substring,
-                                        }
-                                        added_links += [new_link]
-                                # More Book-keeping
-                                tested_mentions.add(mention)
+                                            startOffset = i1_node_init + i1_sub
+                                            endOffset = startOffset + len(mention)
+                                            ## provide context of the mention (+/- c characters in substring and wikitext)
+                                            if context == None:
+                                                context_wikitext = mention_original
+                                                context_substring = mention_original
+                                            else:
+                                                ## context substring
+                                                str_context = page_wikicode_init_substr
+                                                i1_c = max([0, i1_sub - context])
+                                                i2_c = min(
+                                                    [
+                                                        len(str_context),
+                                                        i1_sub
+                                                        + len(mention_original)
+                                                        + context,
+                                                    ]
+                                                )
+                                                context_substring = str_context[
+                                                    i1_c:i2_c
+                                                ]
+                                                ## wikitext substring
+                                                str_context = wikitext
+                                                i1_c = max([0, startOffset - context])
+                                                i2_c = min(
+                                                    [
+                                                        len(str_context),
+                                                        endOffset + context,
+                                                    ]
+                                                )
+                                                context_wikitext = str_context[
+                                                    i1_c:i2_c
+                                                ]
+                                            new_link = {
+                                                "linkTarget": candidate_link,
+                                                "anchor": mention_original,
+                                                "probability": float(candidate_proba),
+                                                "startOffset": startOffset,
+                                                "endOffset": endOffset,
+                                                "context_wikitext": context_wikitext,
+                                                "context_plaintext": context_substring,
+                                            }
+                                            added_links += [new_link]
+                                            # stop iterating the wikitext to generate link recommendations
+                                            # as soon as we have maxrec link-recommendations
+                                            if len(added_links) == maxrec:
+                                                raise MaxRecError
+                                    # More Book-keeping
+                                    tested_mentions.add(mention)
+    except MaxRecError:
+        pass
     # if yes, we return the adapted wikitext
     # else just return list of links with offsets
     if return_wikitext:
