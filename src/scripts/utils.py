@@ -135,6 +135,7 @@ def getPageDict(title: str, lang: str) -> dict:
     wikitext = res_rev["slots"]["main"]["content"]
     revid = res_rev["revid"]
     pageid = res_page["pageid"]
+    # TODO: Use page_id, page_title, rev_id, wiki_id here.
     return {
         "pagetitle": title,
         "lang": lang,
