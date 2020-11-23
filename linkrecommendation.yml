@@ -31,6 +31,10 @@ parameters:
         page_title:
           type: string
           description: 'Page title of the article'
+        max_recommendations:
+            type: integer
+            description: 'Maximum number of recommendations to return'
+            default: 20
 definitions:
   LinkRecommendationSet:
     type: object

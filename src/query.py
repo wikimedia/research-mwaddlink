@@ -20,6 +20,7 @@ class Query:
         revid: int,
         wiki_id: str,
         threshold: float,
+        max_recommendations: int,
     ) -> dict:
         self.logger.info(
             "Getting link recommendations for article %s in %swiki with link-threshold %s"
@@ -45,6 +46,7 @@ class Query:
             model=self.model,
             threshold=threshold,
             return_wikitext=False,
+            maxrec=max_recommendations,
         )
 
         anchors.close()
