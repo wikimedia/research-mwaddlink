@@ -22,6 +22,9 @@ variants:
   production:
     includes: [production-build]
     entrypoint: ["gunicorn","api:app","-b","0.0.0.0:8000"]
+    runs:
+      environment:
+        NLTK_DATA: '/home/somebody/nltk_data'
     builder:
       command: ["PYTHONPATH=/opt/lib/python/site-packages", "python3.7", "-m", "nltk.downloader", "punkt"]
     python:
