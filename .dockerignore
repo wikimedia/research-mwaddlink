@@ -2,3 +2,6 @@
 ./venv_query
 ./.tox
 ./.idea
+*.sql
+*.sql.gz
+*.json
