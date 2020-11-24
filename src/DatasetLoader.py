@@ -22,6 +22,7 @@ class DatasetLoader:
             return MySqlDict.MySqlDict(
                 tablename="%s_%s_%s" % (self.table_prefix, self.wiki_id, tablename),
                 conn=get_mysql_connection(),
+                datasetname=tablename,
             )
         else:
             return SqliteDict(
