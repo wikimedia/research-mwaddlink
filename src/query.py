@@ -61,6 +61,6 @@ class Query:
             "page_title": page_title,
             "pageid": pageid,
             "revid": revid,
-            "no_added_links": len(added_links),
-            "added_links": added_links,
+            "links_count": len(added_links),
+            "links": added_links,
         }
