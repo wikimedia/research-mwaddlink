@@ -13,7 +13,7 @@ swag = Swagger(app)
 json_logging.init_flask(enable_json=True)
 json_logging.init_request_instrument(app)
 logger = logging.getLogger("logger")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(stdout))
 
 load_dotenv()
