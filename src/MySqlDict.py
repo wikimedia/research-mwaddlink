@@ -12,6 +12,15 @@ class MySqlDict(UserDict):
         self.conn = conn
         self.cursor = self.conn.cursor()
         self.query_count = 0
+        self.query_details = {
+            "__len__": 0,
+            "__bool__": 0,
+            "iterkeys": 0,
+            "itervalues": 0,
+            "iteritems": 0,
+            "__contains__": 0,
+            "__getitem__": 0,
+        }
 
     def __len__(self):
         get_len_query = "SELECT COUNT(*) FROM {tablename}".format(
@@ -19,6 +28,7 @@ class MySqlDict(UserDict):
         )
         self.cursor.execute(get_len_query)
         self.query_count += 1
+        self.query_details["__len__"] += 1
         rows = self.cursor.fetchone()
         return rows[0] if rows is not None else 0
 
@@ -28,6 +38,7 @@ class MySqlDict(UserDict):
         )
         self.cursor.execute(get_max_query)
         self.query_count += 1
+        self.query_details["__bool__"] += 1
         result = self.cursor.fetchone()
         return True if result is not None else False
 
@@ -37,6 +48,7 @@ class MySqlDict(UserDict):
         )
         self.cursor.execute(get_keys_query)
         self.query_count += 1
+        self.query_details["iterkeys"] += 1
         for row in self.cursor.fetchall():
             yield row[0]
 
@@ -46,6 +58,7 @@ class MySqlDict(UserDict):
         )
         self.cursor.execute(get_values_query)
         self.query_count += 1
+        self.query_details["itervalues"] += 1
         for value in self.cursor.fetchall():
             yield pickle.loads(value[0])
 
@@ -55,6 +68,7 @@ class MySqlDict(UserDict):
         )
         self.cursor.execute(get_items_query)
         self.query_count += 1
+        self.query_details["iteritems"] += 1
         for key, value in self.cursor.fetchall():
             yield key, pickle.loads(value)
 
@@ -79,6 +93,7 @@ class MySqlDict(UserDict):
         )
         self.cursor.execute(has_item_query, (key,))
         self.query_count += 1
+        self.query_details["__contains__"] += 1
         return self.cursor.fetchone() is not None
 
     def __getitem__(self, key):
@@ -89,6 +104,7 @@ class MySqlDict(UserDict):
         )
         self.cursor.execute(get_item_query, (key,))
         self.query_count += 1
+        self.query_details["__getitem__"] += 1
         item = self.cursor.fetchone()
         if item is None:
             raise KeyError(key)

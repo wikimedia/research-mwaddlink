@@ -89,6 +89,8 @@ class Query:
         query_total = 0
         query_detail = {}
         for dataset in self.datasets:
+            query_detail[dataset.datasetname] = {}
             query_total += dataset.query_count
-            query_detail[dataset.datasetname] = dataset.query_count
+            query_detail[dataset.datasetname]["total"] = dataset.query_count
+            query_detail[dataset.datasetname]["details"] = dataset.query_details
         return query_total, query_detail
