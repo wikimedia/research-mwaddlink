@@ -7,6 +7,7 @@ import bz2, subprocess
 import re
 from tqdm import tqdm
 import sys
+import random
 import logging
 
 # from nltk import sent_tokenize, word_tokenize
@@ -233,12 +234,20 @@ print("number of sentences extracted", len(wiki_links))
 LIMIT_SENTS_SPLIT = len(wiki_links) // 2
 print(LIMIT_SENTS_SPLIT)
 
+wiki_links_indices = list(range(len(wiki_links)))
+# reproducible shuffling
+random.seed(2)
+# shuffle order of extracted sentences when spliting into training/test
+random.shuffle(wiki_links_indices)
+
 # Store the sentences for training
 with open("../../data/{0}/training/sentences_train.csv".format(lang), "w") as f:
-    for row in wiki_links[:LIMIT_SENTS_SPLIT]:
+    for i in wiki_links_indices[:LIMIT_SENTS_SPLIT]:
+        row = wiki_links[i]
         f.write("%s\n" % "\t".join(row))
 
 # Store the sentences for back-testing
 with open("../../data/{0}/testing/sentences_test.csv".format(lang), "w") as f:
-    for row in wiki_links[LIMIT_SENTS_SPLIT:]:
+    for i in wiki_links_indices[LIMIT_SENTS_SPLIT:]:
+        row = wiki_links[i]
         f.write("%s\n" % "\t".join(row))
