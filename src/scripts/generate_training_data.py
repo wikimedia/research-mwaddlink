@@ -10,9 +10,7 @@ import mwparserfromhell as mwph
 
 from utils import wtpGetLinkAnchor
 from utils import get_feature_set
-from utils import getLinks, normalise_title, normalise_anchor, tokenizeSent
-import nltk
-from nltk.util import ngrams
+from utils import getLinks, normalise_title, normalise_anchor, ngram_iterator
 
 import time
 
@@ -68,26 +66,23 @@ with open(outfile, "w") as f:
             inp_pairs = getLinks(wikitext, redirects=redirects, pageids=pageids)
             set_inp_pairs = set(inp_pairs.items())
 
-            ## get all possible mentions
+            # get all possible mentions
             wikitext_nolinks = mwph.parse(wikitext).strip_code()
             tested_mentions = set()
-            for sent in tokenizeSent(wikitext_nolinks):
-                for gram_length in range(10, 0, -1):
-                    grams = list(ngrams(sent.split(), gram_length))
-                    for gram in grams:
-                        mention = " ".join(gram).lower()
-                        mention_original = " ".join(gram)
-                        # if the mention exist in the DB
-                        # it was not previously linked (or part of a link)
-                        # none of its candidate links is already used
-                        # it was not tested before (for efficiency)
-                        if mention in anchors and mention not in tested_mentions:
-                            tested_mentions.add(mention)
-            ##we also add the mentions inp_pairs to make sure we have positive examples
+            for gram in ngram_iterator(wikitext_nolinks, 10, 1):
+                mention = gram.lower()
+                mention_original = gram
+                # if the mention exist in the DB
+                # it was not previously linked (or part of a link)
+                # none of its candidate links is already used
+                # it was not tested before (for efficiency)
+                if mention in anchors and mention not in tested_mentions:
+                    tested_mentions.add(mention)
+            # we also add the mentions inp_pairs to make sure we have positive examples
             for mention in inp_pairs.keys():
                 if mention in anchors:
                     tested_mentions.add(mention)
-            ## add (mention,link)-pairs as positive or negative examples
+            # add (mention,link)-pairs as positive or negative examples
             for mention in tested_mentions:
                 mention = normalise_anchor(mention)
                 candidates_link = anchors[mention]
