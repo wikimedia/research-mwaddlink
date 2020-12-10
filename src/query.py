@@ -31,8 +31,7 @@ class Query:
         pageids = self.datasetloader.get("pageids")
         redirects = self.datasetloader.get("redirects")
         word2vec = self.datasetloader.get("w2vfiltered")
-        nav2vec = self.datasetloader.get("navfiltered")
-        self.datasets = [anchors, pageids, redirects, word2vec, nav2vec]
+        self.datasets = [anchors, pageids, redirects, word2vec]
 
         added_links = process_page(
             wikitext=wikitext,
@@ -41,7 +40,6 @@ class Query:
             pageids=pageids,
             redirects=redirects,
             word2vec=word2vec,
-            nav2vec=nav2vec,
             model=self.model,
             threshold=threshold,
             return_wikitext=False,
@@ -52,7 +50,6 @@ class Query:
         pageids.close()
         redirects.close()
         word2vec.close()
-        nav2vec.close()
 
         stop = perf_counter()
 

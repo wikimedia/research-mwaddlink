@@ -1,11 +1,13 @@
-import pickle
 import argparse
-from utils import process_page
-from utils import getLinks
-import mwparserfromhell as mwph
-import xgboost as xgb
 import multiprocessing
+import pickle
+
+import mwparserfromhell as mwph
 import pandas as pd
+import xgboost as xgb
+
+from utils import getLinks
+from utils import process_page
 
 """
 backtesting evlauation of trained model on held-out testset
@@ -57,7 +59,6 @@ def main():
     word2vec = pickle.load(
         open("../../data/{0}/{0}.w2vfiltered.pkl".format(lang), "rb")
     )
-    nav2vec = pickle.load(open("../../data/{0}/{0}.navfiltered.pkl".format(lang), "rb"))
 
     ## load trained model
     ## use a fourth of the cpus, at most 8
@@ -105,7 +106,6 @@ def main():
                     pageids,
                     redirects,
                     word2vec,
-                    nav2vec,
                     model,
                     threshold=threshold,
                     pr=False,

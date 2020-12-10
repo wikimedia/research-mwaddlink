@@ -144,35 +144,6 @@ and storing the resulting dictionary as a pickle
 ./data/<LANG>/<LANG>.w2vfiltered.pkl
 ```
 
-
-#### Nav2Vec:
-This models how current Wikipedia readers navigate through Wikipedia.
-
-compute via:
-```bash
-PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  ./scripts/generate_features_nav2vec-01-get-sessions.py -l $LANG
-```
-- gets reading sessions from webrequest from 1 week (this can be changed)
-
-```bash
-python ./scripts/generate_features_nav2vec-02-train-w2v.py -l $LANG -rfin True
-```
-- fits a word2vec-model with 50 dimensions (this and other hyperparameters can also be changed)
-
-This will generate an embedding for <LANG> in
-```bash
-./data/<LANG>/<LANG>.nav.bin
-```
-
-We filter only those vectors from articles in the main-namespace that are not redirects by running
-```bash
-python filter_dict_nav.py $LANG
-```
-and storing the resulting dictionary as a pickle
-```bash
-./data/<LANG>/<LANG>.navfiltered.pkl
-```
-
 #### Raw datasets:
 There is a backtesting dataset to a) test the accuracy of the model, and b) train the model.
 We mainly want to extract fully formed and linked sentences as our ultimate ground truth.
@@ -227,7 +198,7 @@ store in:
 ```
 
 #### memory-mapping
-The pickle-dictionaries (anchors, pageids, redirects, w2v,nav) are converted to sqlite-databases using the [sqlitedict-package](https://pypi.org/project/sqlitedict/) in order to reduce memory-footprint when reading these dictionaries when getting link-recommendations for individual articles.
+The pickle-dictionaries (anchors, pageids, redirects, w2v) are converted to sqlite-databases using the [sqlitedict-package](https://pypi.org/project/sqlitedict/) in order to reduce memory-footprint when reading these dictionaries when getting link-recommendations for individual articles.
 
 computed via
 ```bash
@@ -240,7 +211,6 @@ stored in
 ./data/<LANG>/<LANG>.pageids.sqlite
 ./data/<LANG>/<LANG>.redirects.sqlite
 ./data/<LANG>/<LANG>.w2vfiltered.sqlite
-./data/<LANG>/<LANG>.navfiltered.sqlite
 ```
 
 #### Development

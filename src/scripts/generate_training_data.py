@@ -30,7 +30,6 @@ anchors = pickle.load(open("../../data/{0}/{0}.anchors.pkl".format(lang), "rb"))
 pageids = pickle.load(open("../../data/{0}/{0}.pageids.pkl".format(lang), "rb"))
 redirects = pickle.load(open("../../data/{0}/{0}.redirects.pkl".format(lang), "rb"))
 word2vec = pickle.load(open("../../data/{0}/{0}.w2vfiltered.pkl".format(lang), "rb"))
-nav2vec = pickle.load(open("../../data/{0}/{0}.navfiltered.pkl".format(lang), "rb"))
 
 ####################
 # This scripts extracts examples from the backtesting protocol
@@ -102,7 +101,7 @@ with open(outfile, "w") as f:
                         label = False
                     try:
                         features = get_feature_set(
-                            page, mention, link, anchors, word2vec, nav2vec
+                            page, mention, link, anchors, word2vec
                         )
                         str_write = "%s\t%s\t%s" % (page, mention, link)
                         for feature in features:

@@ -11,8 +11,6 @@ decorator==4.4.2
 defusedxml==0.6.0
 docopt==0.6.2
 entrypoints==0.3
-fasttext @ git+https://github.com/facebookresearch/fastText.git@a20c0d27cd0ee88a25ea0433b7f03038cd728459
-gensim==3.8.3
 idna==2.10
 importlib-metadata==2.0.0
 ipykernel==5.3.4

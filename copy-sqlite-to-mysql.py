@@ -31,7 +31,6 @@ def main():
             "anchors",
             "redirects",
             "pageids",
-            "navfiltered",
             "w2vfiltered",
             "model",
         ),

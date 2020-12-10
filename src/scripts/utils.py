@@ -172,7 +172,7 @@ def getDistEmb(ent_a, ent_b, embd):
 # Return the features for each link candidate in the context of the text and the page
 
 
-def get_feature_set(page, text, link, anchors, word2vec, nav2vec):
+def get_feature_set(page, text, link, anchors, word2vec):
     ngram = len(text.split())  # simple space based tokenizer to compute n-grams
     freq = anchors[text][link]  # How many times was the link use with this text
     ambig = len(anchors[text])  # home many different links where used with this text
@@ -182,11 +182,8 @@ def get_feature_set(page, text, link, anchors, word2vec, nav2vec):
     w2v = getDistEmb(
         page, link, word2vec
     )  # W2V Distance between the source and target page
-    nav = getDistEmb(
-        page, link, nav2vec
-    )  # Nav Distance between the source and target page
     leven = levenshtein_score(text.lower(), link.lower())
-    return (ngram, freq, ambig, kur, w2v, nav, leven)
+    return (ngram, freq, ambig, kur, w2v, leven)
 
 
 ##########################
@@ -196,7 +193,7 @@ def get_feature_set(page, text, link, anchors, word2vec, nav2vec):
 # for a given page X and a piece of text "lipsum".. check all the candidate and make inference
 # Returns the most likely candidate according to the pre-trained link model
 # If the probability is below a certain threshold, return None
-def classify_links(page, text, anchors, word2vec, nav2vec, model, threshold=0.95):
+def classify_links(page, text, anchors, word2vec, model, threshold=0.95):
     # start_time = time.time()
     cand_prediction = {}
     # Work with the 10 most frequent candidates
@@ -207,8 +204,8 @@ def classify_links(page, text, anchors, word2vec, nav2vec, model, threshold=0.95
         )
     for cand in limited_cands:
         # get the features
-        #         cand_feats = get_feature_set(page, text, cand, anchors, word2vec,nav2vec,pageids)
-        cand_feats = get_feature_set(page, text, cand, anchors, word2vec, nav2vec)
+        #         cand_feats = get_feature_set(page, text, cand, anchors, word2vec,pageids)
+        cand_feats = get_feature_set(page, text, cand, anchors, word2vec)
 
         # compute the model probability
         cand_prediction[cand] = model.predict_proba(
@@ -238,7 +235,6 @@ def process_page(
     pageids,
     redirects,
     word2vec,
-    nav2vec,
     model,
     threshold=0.8,
     pr=True,
@@ -304,7 +300,6 @@ def process_page(
                                         mention,
                                         anchors,
                                         word2vec,
-                                        nav2vec,
                                         model,
                                         threshold=threshold,
                                     )
