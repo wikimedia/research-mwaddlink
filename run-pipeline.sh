@@ -59,8 +59,24 @@ python generate_addlink_model.py $LANG
 
 # ## perform automatic backtesting
 echo 'RUNNING BACKTESTING EVALUATION'
-python generate_backtesting_eval.py -l $LANG -nmax 100000
+python generate_backtesting_eval.py -l $LANG -nmax 100000 -t 0.5
 
-# # converting data to shelve format
+# # converting data to sqlite format
 echo 'CONVERTING DATA TO SQLITE FORMAT'
 python generate_sqlite_data.py $LANG
+
+echo 'MOVING SQLITE DATA TO MYSQL-DATABASE (STAGING)'
+# config needed to access database (might be subject to change depending from where this is run)
+cd ../../
+
+ DB_USER=research \
+ DB_DATABASE=staging \
+ DB_HOST=dbstore1005.eqiad.wmnet \
+ DB_PORT=3350 \
+ DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf python create-tables.py -id $LANG
+
+ DB_USER=research \
+ DB_DATABASE=staging \
+ DB_HOST=dbstore1005.eqiad.wmnet \
+ DB_PORT=3350 \
+ DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf python copy-sqlite-to-mysql.py -id $LANG
