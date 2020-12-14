@@ -68,14 +68,22 @@ echo 'MOVING SQLITE DATA TO MYSQL-DATABASE (STAGING)'
 # config needed to access database (might be subject to change depending from where this is run)
 cd ../../
 
- DB_USER=research \
- DB_DATABASE=staging \
- DB_HOST=dbstore1005.eqiad.wmnet \
- DB_PORT=3350 \
- DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf python create-tables.py -id $WIKI_ID
+DB_USER=${DB_USER:-research}
+DB_DATABASE=${DB_DATABASE:-staging}
+DB_HOST=${DB_HOST:-dbstore1005.eqiad.wmnet}
+DB_PORT=${DB_PORT:-3350}
+DB_READ_DEFAULT_FILE=${DB_READ_DEFAULT_FILE:-/etc/mysql/conf.d/analytics-research-client.cnf}
 
- DB_USER=research \
- DB_DATABASE=staging \
- DB_HOST=dbstore1005.eqiad.wmnet \
- DB_PORT=3350 \
- DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf python copy-sqlite-to-mysql.py -id $WIKI_ID
+DB_USER=$DB_USER \
+DB_DATABASE=$DB_DATABASE \
+DB_HOST=$DB_HOST \
+DB_PORT=$DB_PORT \
+DB_READ_DEFAULT_FILE=$DB_READ_DEFAULT_FILE \
+python create-tables.py -id "$WIKI_ID"
+
+DB_USER=$DB_USER \
+DB_DATABASE=$DB_DATABASE \
+DB_HOST=$DB_HOST \
+DB_PORT=$DB_PORT \
+DB_READ_DEFAULT_FILE=$DB_READ_DEFAULT_FILE \
+python copy-sqlite-to-mysql.py -id "$WIKI_ID"
