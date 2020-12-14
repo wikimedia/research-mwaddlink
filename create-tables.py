@@ -10,7 +10,7 @@ def main():
         default=None,
         type=str,
         required=True,
-        help="Wiki ID to use for table creation. Use short form, e.g. 'en' instead of 'enwiki'.",
+        help="Wiki ID to use for table creation.",
     )
     parser.add_argument(
         "--tables",

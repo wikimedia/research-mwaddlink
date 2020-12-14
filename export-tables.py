@@ -11,7 +11,7 @@ def main():
         default=None,
         type=str,
         required=True,
-        help="Wiki ID to use for table export. Use short form, e.g. 'en' instead of 'enwiki'.",
+        help="Wiki ID to use for table export.",
     )
     parser.add_argument(
         "--tables",

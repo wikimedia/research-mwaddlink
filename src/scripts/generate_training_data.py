@@ -17,19 +17,17 @@ from nltk.util import ngrams
 import time
 
 if len(sys.argv) >= 2:
-    lang = sys.argv[1]
+    wiki_id = sys.argv[1]
 else:
-    lang = "en"
-
-wiki = lang + "wiki"
+    wiki_id = "enwiki"
 
 t1 = time.time()
 
 ## open dataset-dicts from pickle files
-anchors = pickle.load(open("../../data/{0}/{0}.anchors.pkl".format(lang), "rb"))
-pageids = pickle.load(open("../../data/{0}/{0}.pageids.pkl".format(lang), "rb"))
-redirects = pickle.load(open("../../data/{0}/{0}.redirects.pkl".format(lang), "rb"))
-word2vec = pickle.load(open("../../data/{0}/{0}.w2vfiltered.pkl".format(lang), "rb"))
+anchors = pickle.load(open("../../data/{0}/{0}.anchors.pkl".format(wiki_id), "rb"))
+pageids = pickle.load(open("../../data/{0}/{0}.pageids.pkl".format(wiki_id), "rb"))
+redirects = pickle.load(open("../../data/{0}/{0}.redirects.pkl".format(wiki_id), "rb"))
+word2vec = pickle.load(open("../../data/{0}/{0}.w2vfiltered.pkl".format(wiki_id), "rb"))
 
 ####################
 # This scripts extracts examples from the backtesting protocol
@@ -38,8 +36,8 @@ word2vec = pickle.load(open("../../data/{0}/{0}.w2vfiltered.pkl".format(lang), "
 # Positive example: The correct link
 # Negative example: identified mentions and all candidate links
 
-infile = "../../data/{0}/training/sentences_train.csv".format(lang)
-outfile = "../../data/{0}/training/link_train.csv".format(lang)
+infile = "../../data/{0}/training/sentences_train.csv".format(wiki_id)
+outfile = "../../data/{0}/training/link_train.csv".format(wiki_id)
 
 ####################
 # Bunch of utility function that need to be factored out

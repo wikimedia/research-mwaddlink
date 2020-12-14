@@ -1,25 +1,21 @@
 import sys, os
-import bz2, subprocess
 import pickle
 import glob
 import numpy as np
 
 if len(sys.argv) >= 2:
-    lang = sys.argv[1]
+    wiki_id = sys.argv[1]
 else:
-    lang = "en"
-
-wiki = lang + "wiki"
-
+    wiki_id = "enwiki"
 
 ## filter the w2v embedding
-FILE_PAGEIDS = "../../data/{0}/{0}.pageids.pkl".format(lang)
+FILE_PAGEIDS = "../../data/{0}/{0}.pageids.pkl".format(wiki_id)
 pageids = pickle.load(open(FILE_PAGEIDS, "rb"))
 
 # Embeddings of Wikipedia entities(not words)
 from wikipedia2vec import Wikipedia2Vec
 
-w2file = "../../data/{0}/{0}.w2v.bin".format(lang)
+w2file = "../../data/{0}/{0}.w2v.bin".format(wiki_id)
 word2vec = Wikipedia2Vec.load(w2file)
 
 ## filter only vectors from entity in pageids (main namespace, no redirect)
@@ -33,7 +29,7 @@ for title in pageids.keys():
     except KeyError:
         pass
 ## dump as pickle
-output_path = "../../data/{0}/{0}.w2vfiltered".format(lang)
+output_path = "../../data/{0}/{0}.w2vfiltered".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(word2vec_filter, handle, protocol=pickle.HIGHEST_PROTOCOL)
 

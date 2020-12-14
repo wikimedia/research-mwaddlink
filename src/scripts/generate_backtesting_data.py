@@ -1,34 +1,29 @@
 #!/usr/bin/env python
 
-import mwparserfromhell
 from mwparserfromhell.nodes import Wikilink, Text, Tag
 import wikitextparser as wtp
-import bz2, subprocess
 import re
 from tqdm import tqdm
 import sys
 import random
-import logging
 
-# from nltk import sent_tokenize, word_tokenize
 from mwparserfromhell import parse
 import glob
 import mwxml
 
 paths = []
-##input lang
 if len(sys.argv) >= 2:
-    lang = sys.argv[1]
+    wiki_id = sys.argv[1]
 else:
-    lang = "en"
+    wiki_id = "enwiki"
+
 ## number of sentences to extract
 if len(sys.argv) >= 3:
     LIMIT_SENTS = int(sys.argv[2])
 else:
     LIMIT_SENTS = 200000  # adhoc
 
-wiki = lang + "wiki"
-dirpath = "/mnt/data/xmldatadumps/public/{0}/*".format(wiki)
+dirpath = "/mnt/data/xmldatadumps/public/{0}/*".format(wiki_id)
 
 # Get the penultimate dump directory (the dir "latest" can have some simlink issues")
 try:
@@ -43,11 +38,11 @@ except:
     snapshot = "latest"
 
 dump_fn = "/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles.xml.bz2".format(
-    wiki, snapshot
+    wiki_id, snapshot
 )
 for infile in glob.glob(
     "/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles*.xml*.bz2".format(
-        wiki, snapshot
+        wiki_id, snapshot
     )
 ):
     if infile == dump_fn:
@@ -241,13 +236,13 @@ random.seed(2)
 random.shuffle(wiki_links_indices)
 
 # Store the sentences for training
-with open("../../data/{0}/training/sentences_train.csv".format(lang), "w") as f:
+with open("../../data/{0}/training/sentences_train.csv".format(wiki_id), "w") as f:
     for i in wiki_links_indices[:LIMIT_SENTS_SPLIT]:
         row = wiki_links[i]
         f.write("%s\n" % "\t".join(row))
 
 # Store the sentences for back-testing
-with open("../../data/{0}/testing/sentences_test.csv".format(lang), "w") as f:
+with open("../../data/{0}/testing/sentences_test.csv".format(wiki_id), "w") as f:
     for i in wiki_links_indices[LIMIT_SENTS_SPLIT:]:
         row = wiki_links[i]
         f.write("%s\n" % "\t".join(row))

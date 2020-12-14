@@ -2,10 +2,7 @@
 # coding: utf-8
 
 import sys, os
-import mwparserfromhell
-import bz2, subprocess
 import pickle
-import shelve
 import wikitextparser as wtp
 import glob
 import mwxml
@@ -18,13 +15,11 @@ from utils import wtpGetLinkAnchor, normalise_title
 paths = []
 
 if len(sys.argv) >= 2:
-    lang = sys.argv[1]
+    wiki_id = sys.argv[1]
 else:
-    lang = "en"
+    wiki_id = "enwiki"
 
-wiki = lang + "wiki"
-
-dirpath = "/mnt/data/xmldatadumps/public/{0}/*".format(wiki)
+dirpath = "/mnt/data/xmldatadumps/public/{0}/*".format(wiki_id)
 threads = 10
 # Get the penultimate dump directory (the dir "latest" can have some simlink issues")
 try:
@@ -39,11 +34,11 @@ except:
     snapshot = "latest"
 
 dump_fn = "/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles.xml.bz2".format(
-    wiki, snapshot
+    wiki_id, snapshot
 )
 for infile in glob.glob(
     "/mnt/data/xmldatadumps/public/{0}/{1}/{0}-{1}-pages-articles*.xml*.bz2".format(
-        wiki, snapshot
+        wiki_id, snapshot
     )
 ):
     if infile == dump_fn:
@@ -161,12 +156,12 @@ print("Number of anchors", len(anchors))
 ####################
 
 # store the dictionaries into the language data folder
-output_path = "../data/{0}/{0}.pageids".format(lang)
+output_path = "../data/{0}/{0}.pageids".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(pageids, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # store the dictionaries into the language data folder
-output_path = "../data/{0}/{0}.redirects".format(lang)
+output_path = "../data/{0}/{0}.redirects".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(redirects, handle, protocol=pickle.HIGHEST_PROTOCOL)
 

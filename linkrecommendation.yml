@@ -27,7 +27,7 @@ parameters:
           description: 'Number between 0 and 1 for the threshold to use.'
         wiki_id:
           type: string
-          description: 'ID of the wiki for processing (e.g. "de" or "simple")'
+          description: 'ID of the wiki for processing (e.g. "dewiki" or "simplewiki")'
         page_title:
           type: string
           description: 'Page title of the article'

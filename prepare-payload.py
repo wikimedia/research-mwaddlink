@@ -21,7 +21,7 @@ def main():
         default=None,
         type=str,
         required=True,
-        help="Wiki ID for which to get recommendations. Use shortform (i.e. en and not enwiki)",
+        help="Wiki ID for which to get recommendations.",
     )
 
     parser.add_argument(
@@ -36,11 +36,6 @@ def main():
     args = parser.parse_args()
     page_title = normalise_title(args.page_title)
     page_dict = getPageDict(page_title, args.wiki_id)
-    page_dict["wiki_id"] = page_dict["lang"]
-    # TODO: In a follow-up, convert getPageDict to use "wiki_id" and "page_title".
-    del page_dict["lang"]
-    page_dict["page_title"] = page_dict["pagetitle"]
-    del page_dict["pagetitle"]
     page_dict["threshold"] = args.threshold
     print(json.dumps(page_dict, indent=4))
 

@@ -1,15 +1,8 @@
-import os, sys
-import datetime
-import calendar
-import time
-import string
-import random
+import sys
 import pickle
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F, types as T, Window
 import urllib
-
-# from utils_parse import normalise_title, normalise_anchor
 
 
 def normalise_title(title):
@@ -127,11 +120,9 @@ def get_valid_ngrams(row):
 
 
 if len(sys.argv) >= 2:
-    lang = sys.argv[1]
+    wiki_id = sys.argv[1]
 else:
-    lang = "en"
-
-wiki = lang + "wiki"
+    wiki_id = "enwiki"
 
 snapshot = "2020-07"
 ## there is more lag here (on 2020-09-07 I could only find the 2020-07 snapshot)
@@ -147,7 +138,7 @@ wikipedia_all = (
     ## select table
     spark.read.table("wmf.mediawiki_wikitext_current")
     ## select wiki project
-    .where(F.col("wiki_db") == wiki)
+    .where(F.col("wiki_db") == wiki_id)
     .where(F.col("snapshot") == snapshot)
     ## main namespace
     .where(F.col("page_namespace") == 0)
@@ -248,7 +239,7 @@ df_pd = links_formatted.toPandas()
 df_pd["candidates"] = df_pd["candidates"].apply(lambda x: dict(x))
 dict_anchors = df_pd.set_index("anchor")["candidates"].to_dict()
 # store the dictionaries into the language data folder
-output_path = "../../data/{0}/{0}.anchors".format(lang)
+output_path = "../../data/{0}/{0}.anchors".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(dict_anchors, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -256,7 +247,7 @@ with open(output_path + ".pkl", "wb") as handle:
 ## saving articles-dict
 df_articles = (articles.select("pid", "title")).toPandas()
 # store the dictionaries into the language data folder
-output_path = "../../data/{0}/{0}.pageids".format(lang)
+output_path = "../../data/{0}/{0}.pageids".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(
         df_articles.set_index("title")["pid"].to_dict(),
@@ -267,7 +258,7 @@ with open(output_path + ".pkl", "wb") as handle:
 ## saving redirects dictionary
 df_redirects = (redirects.select("title_from", "title_to")).toPandas()
 # store the dictionaries into the language data folder
-output_path = "../../data/{0}/{0}.redirects".format(lang)
+output_path = "../../data/{0}/{0}.redirects".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(
         df_redirects.set_index("title_from")["title_to"].to_dict(),

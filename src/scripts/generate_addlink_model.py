@@ -3,7 +3,6 @@
 
 import xgboost
 from sklearn import model_selection
-from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
@@ -14,15 +13,14 @@ import multiprocessing
 # This script can be used on any language
 
 if len(sys.argv) >= 2:
-    lang = sys.argv[1]
+    wiki_id = sys.argv[1]
 else:
-    lang = "en"
+    wiki_id = "enwiki"
 
-wiki = lang + "wiki"
 ##################
 # Read the training dataset
 df = pd.read_csv(
-    "../../data/{0}/training/link_train.csv".format(lang),
+    "../../data/{0}/training/link_train.csv".format(wiki_id),
     sep="\t",
     header=None,
     quoting=3,
@@ -64,4 +62,4 @@ predictions = model.predict_proba(X_test)[:, 1]
 print("ROC AUC=%.3f" % roc_auc_score(y_test, predictions))
 
 # save the model
-model.save_model("../../data/{0}/{0}.linkmodel.json".format(lang))
+model.save_model("../../data/{0}/{0}.linkmodel.json".format(wiki_id))

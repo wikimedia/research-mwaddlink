@@ -111,9 +111,9 @@ def tokenizeSent(text):
             yield " ".join(tok_acc)
 
 
-def getPageDict(title: str, lang: str) -> dict:
+def getPageDict(title: str, wiki_id: str) -> dict:
     """
-    get the wikitext for a pagetitle for a lang
+    get the wikitext for a pagetitle for a wiki
     """
     params = {
         "action": "query",
@@ -125,23 +125,21 @@ def getPageDict(title: str, lang: str) -> dict:
         "format": "json",
         "formatversion": "2",
     }
-    API_URL = "https://{0}.wikipedia.org/w/api.php".format(lang)
+    API_URL = "https://{0}.wikipedia.org/w/api.php".format(
+        wiki_id.replace("wiki", "").replace("_", "-")
+    )
     headers = {"User-Agent": "mwaddlink"}
     req = requests.get(API_URL, headers=headers, params=params)
     res = req.json()
     res_page = res["query"]["pages"][0]
     res_rev = res_page["revisions"][0]
 
-    wikitext = res_rev["slots"]["main"]["content"]
-    revid = res_rev["revid"]
-    pageid = res_page["pageid"]
-    # TODO: Use page_id, page_title, rev_id, wiki_id here.
     return {
-        "pagetitle": title,
-        "lang": lang,
-        "wikitext": wikitext,
-        "pageid": pageid,
-        "revid": revid,
+        "page_title": title,
+        "wiki_id": wiki_id,
+        "wikitext": res_rev["slots"]["main"]["content"],
+        "pageid": res_page["pageid"],
+        "revid": res_page["revid"],
     }
 
 

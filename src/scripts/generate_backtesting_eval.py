@@ -17,12 +17,12 @@ backtesting evlauation of trained model on held-out testset
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--lang",
-        "-l",
+        "--wiki-id",
+        "-id",
         default=None,
         type=str,
         required=True,
-        help="language (wiki) for which to get recommendations (e.g. enwiki or en)",
+        help="Wiki ID for which to get recommendations (e.g. enwiki)",
     )
 
     parser.add_argument(
@@ -47,28 +47,30 @@ def main():
     #                     help ="report prec and recall every nint testing-samples")
 
     args = parser.parse_args()
-    lang = args.lang.replace("wiki", "")
     threshold = args.threshold
+    wiki_id = args.wiki_id
     N_max = args.nmax
     # N_interval = args.nint
 
     ## open dataset-dicts from pickle files
-    anchors = pickle.load(open("../../data/{0}/{0}.anchors.pkl".format(lang), "rb"))
-    pageids = pickle.load(open("../../data/{0}/{0}.pageids.pkl".format(lang), "rb"))
-    redirects = pickle.load(open("../../data/{0}/{0}.redirects.pkl".format(lang), "rb"))
+    anchors = pickle.load(open("../../data/{0}/{0}.anchors.pkl".format(wiki_id), "rb"))
+    pageids = pickle.load(open("../../data/{0}/{0}.pageids.pkl".format(wiki_id), "rb"))
+    redirects = pickle.load(
+        open("../../data/{0}/{0}.redirects.pkl".format(wiki_id), "rb")
+    )
     word2vec = pickle.load(
-        open("../../data/{0}/{0}.w2vfiltered.pkl".format(lang), "rb")
+        open("../../data/{0}/{0}.w2vfiltered.pkl".format(wiki_id), "rb")
     )
 
     ## load trained model
     ## use a fourth of the cpus, at most 8
     n_cpus_max = min([int(multiprocessing.cpu_count() / 4), 8])
     model = xgb.XGBClassifier(n_jobs=n_cpus_max)  # init model
-    model.load_model("../../data/{0}/{0}.linkmodel.json".format(lang))  # load data
+    model.load_model("../../data/{0}/{0}.linkmodel.json".format(wiki_id))  # load data
 
     ## load the test-set
     test_set = []
-    with open("../../data/{0}/testing/sentences_test.csv".format(lang)) as fin:
+    with open("../../data/{0}/testing/sentences_test.csv".format(wiki_id)) as fin:
         for line in fin:
             try:
                 title, sent = line.split("\t")
@@ -142,7 +144,7 @@ def main():
         dict_eval["micro_precision"] = micro_precision
         dict_eval["micro_recall"] = micro_recall
         list_result.append(dict_eval)
-    output_path = "../../data/{0}/testing/{0}.backtest.eval".format(lang)
+    output_path = "../../data/{0}/testing/{0}.backtest.eval".format(wiki_id)
     df = pd.DataFrame.from_dict(list_result).sort_values(by="threshold")
     df.to_csv(output_path + ".csv")
 

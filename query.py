@@ -41,7 +41,7 @@ def main():
         default=None,
         type=str,
         required=True,
-        help="Wiki ID for which to get recommendations. Use shortform (i.e. en and not enwiki)",
+        help="Wiki ID for which to get recommendations.",
     )
 
     parser.add_argument(

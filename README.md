@@ -71,10 +71,10 @@ To load, the API will need to pre-compute the some datasets for each target lang
 
 It is essential to follow these steps sequentially because some scripts may require the output of previous ones.
 
-You can run the pipeline for a given language (change the variable ```LANG```)
+You can run the pipeline for a given language (change the variable ```WIKI_ID```)
 
 ```bash
-./run-pipeline.sh
+WIKI_ID=cswiki ./run-pipeline.sh
 ```
 
 **Notes**:
@@ -94,32 +94,32 @@ This is the main dictionary to find candidates and mentions; the bigger, the bet
 
 compute with:
 ```bash
-PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  ./scripts/generate_anchor_dictionary_spark.py $LANG
+PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  ./scripts/generate_anchor_dictionary_spark.py $WIKI_ID
 ```
 
 
 store in:
 ```bash
-./data/<LANG>/<LANG>.anchors.pkl
+./data/<WIKI_ID>/<WIKI_ID>.anchors.pkl
 ```
 - normalising link-titles (e.g. capitalize first letter) and anchors (lowercase the anchor-string) via ```scripts/utils.py```
 - for candidate links, we resolve redirects and only keep main-namespace articles
 
 This also adds the two following helper-dictionaries
 ```bash
-./data/<LANG>/<LANG>.pageids.pkl
+./data/<WIKI_ID>/<WIKI_ID>.pageids.pkl
 ```
 - this is a dictionary of all main-namespace and non-redirect articles with the mapping of {page_title:page_id}
 
 ```bash
-./data/<LANG>/<LANG>.redirects.pkl
+./data/<WIKI_ID>/<WIKI_ID>.redirects.pkl
 ```
 - this is a dictionary of all main-namespace and redirect articles with the mapping {page_title:page_title_rd}, where page_title_rd is the title of the redirected-to article.
 
 
 Note that the default setup uses the spark-cluster from stat1008 (in order to use the [anaconda-wmf newpyter](https://wikitech.wikimedia.org/wiki/Analytics/Systems/Jupyter#Newpyter]) setup. This is necessary for filtering the anchor-dictionary by link-probability. Alternatively, one can run:
 ```bash
-python ./scripts/generate_anchor_dictionary.py <LANG>
+python ./scripts/generate_anchor_dictionary.py <WIKI_ID>
 ```
 
 
@@ -127,21 +127,21 @@ python ./scripts/generate_anchor_dictionary.py <LANG>
 This models semantic relationship.
 Get it from: https://github.com/wikipedia2vec/wikipedia2vec then run:
 ```bash
-wikipedia2vec train --min-entity-count=0 --dim-size 50 --pool-size 10 "/mnt/data/xmldatadumps/public/"$LANG"wiki/latest/"$LANG"wiki-latest-pages-articles.xml.bz2" "./data/"$LANG"/"$LANG".w2v.bin"
+wikipedia2vec train --min-entity-count=0 --dim-size 50 --pool-size 10 "/mnt/data/xmldatadumps/public/"$WIKI_ID"/latest/"$WIKI_ID"-latest-pages-articles.xml.bz2" "./data/"$WIKI_ID"/"$WIKI_ID".w2v.bin"
 ```
 
 store in
 ```bash
-./data/<LANG>/<LANG>.w2v.bin
+./data/<WIKI_ID>/<WIKI_ID>.w2v.bin
 ```
 
 We filter only those vectors from articles in the main-namespace that are not redirects by running
 ```bash
-python filter_dict_w2v.py $LANG
+python filter_dict_w2v.py $WIKI_ID
 ```
 and storing the resulting dictionary as a pickle
 ```bash
-./data/<LANG>/<LANG>.w2vfiltered.pkl
+./data/<WIKI_ID>/<WIKI_ID>.w2vfiltered.pkl
 ```
 
 #### Raw datasets:
@@ -150,13 +150,13 @@ We mainly want to extract fully formed and linked sentences as our ultimate grou
 
 compute with:
 ```bash
-python ./scripts/generate_backtesting_data.py $LANG
+python ./scripts/generate_backtesting_data.py $WIKI_ID
 ```
 
 Datasets are then stored in:
 ```bash
-./data/<LANG>/training/sentences_train.csv
-./data/<LANG>/testing/sentences_test.csv
+./data/<WIKI_ID>/training/sentences_train.csv
+./data/<WIKI_ID>/testing/sentences_test.csv
 
 ```
 
@@ -165,12 +165,12 @@ We need dataset with features and training labels (true link, false link)
 
 compute with:
 ```bash
-python ./scripts/generate_training_data.py <LANG>
+python ./scripts/generate_training_data.py <WIKI_ID>
 ```
 
 This is going to generate a file to be stored here:
 ```bash
-./data/<LANG>/training/link_train.csv
+./data/<WIKI_ID>/training/link_train.csv
 ```
 
 #### XGBoost Classification Model:
@@ -178,11 +178,11 @@ This is the main prediction model it takes (Page_title, Mention, Candidate Link)
 
 compute with:
 ```bash
-python ./scripts/generate_addlink_model.py <LANG>
+python ./scripts/generate_addlink_model.py <WIKI_ID>
 ```
 store in:
 ```bash
-./data/<LANG>/<LANG>.linkmodel.json
+./data/<WIKI_ID>/<WIKI_ID>.linkmodel.json
 ```
 
 #### Backtesting evaluation:
@@ -190,11 +190,11 @@ Evaluate the prediction algorithm on a set of sentences in the training set usin
 
 compute with (first 10000 sentences):
 ```bash
-python generate_backtesting_eval.py -l $LANG -nmax 10000
+python generate_backtesting_eval.py -l $WIKI_ID -nmax 10000
 ```
 store in:
 ```bash
-./data/<LANG>/<LANG>.backtest.eval
+./data/<WIKI_ID>/<WIKI_ID>.backtest.eval
 ```
 
 #### memory-mapping
@@ -202,15 +202,15 @@ The pickle-dictionaries (anchors, pageids, redirects, w2v) are converted to sqli
 
 computed via
 ```bash
-python ./scripts/generate_sqlite_data.py $LANG
+python ./scripts/generate_sqlite_data.py $WIKI_ID
 ```
 
 stored in
 ```bash
-./data/<LANG>/<LANG>.anchors.sqlite
-./data/<LANG>/<LANG>.pageids.sqlite
-./data/<LANG>/<LANG>.redirects.sqlite
-./data/<LANG>/<LANG>.w2vfiltered.sqlite
+./data/<WIKI_ID>/<WIKI_ID>.anchors.sqlite
+./data/<WIKI_ID>/<WIKI_ID>.pageids.sqlite
+./data/<WIKI_ID>/<WIKI_ID>.redirects.sqlite
+./data/<WIKI_ID>/<WIKI_ID>.w2vfiltered.sqlite
 ```
 
 #### Development
