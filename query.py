@@ -45,6 +45,14 @@ def main():
     )
 
     parser.add_argument(
+        "--api-url",
+        default=None,
+        type=str,
+        required=False,
+        help="Full URL to api.php.",
+    )
+
+    parser.add_argument(
         "--threshold",
         "-t",
         default=0.5,
@@ -73,7 +81,7 @@ def main():
     args = parser.parse_args()
     page_title = normalise_title(args.page_title)
     threshold = args.threshold
-    page_dict = getPageDict(page_title, args.wiki_id)
+    page_dict = getPageDict(page_title, args.wiki_id, args.api_url)
     datasetloader = DatasetLoader(args.database_backend, args.wiki_id)
     query = Query(logger, datasetloader)
     dict_result = query.run(

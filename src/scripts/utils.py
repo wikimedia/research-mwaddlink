@@ -153,7 +153,7 @@ def ngram_iterator(text, gram_length_max, gram_length_min=1):
                     yield gram
 
 
-def getPageDict(title: str, wiki_id: str) -> dict:
+def getPageDict(title: str, wiki_id: str, api_url: str = None) -> dict:
     """
     get the wikitext for a pagetitle for a wiki
     """
@@ -167,11 +167,12 @@ def getPageDict(title: str, wiki_id: str) -> dict:
         "format": "json",
         "formatversion": "2",
     }
-    API_URL = "https://{0}.wikipedia.org/w/api.php".format(
+
+    api_url = api_url or "https://{0}.wikipedia.org/w/api.php".format(
         wiki_id.replace("wiki", "").replace("_", "-")
     )
     headers = {"User-Agent": "mwaddlink"}
-    req = requests.get(API_URL, headers=headers, params=params)
+    req = requests.get(api_url, headers=headers, params=params)
     res = req.json()
     res_page = res["query"]["pages"][0]
     res_rev = res_page["revisions"][0]
