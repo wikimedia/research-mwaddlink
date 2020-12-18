@@ -379,7 +379,12 @@ def process_page(
                                             i1_sub + len(mention_original) + context,
                                         ]
                                     )
-                                    context_substring = str_context[i1_c:i2_c]
+                                    context_substring = [
+                                        str_context[i1_c:i1_sub],
+                                        str_context[
+                                            i1_sub + len(mention_original) : i2_c
+                                        ],
+                                    ]
                                     ## wikitext substring
                                     str_context = wikitext
                                     i1_c = max([0, startOffset - context])
@@ -389,13 +394,22 @@ def process_page(
                                             endOffset + context,
                                         ]
                                     )
-                                    context_wikitext = str_context[i1_c:i2_c]
+                                    context_wikitext = [
+                                        str_context[i1_c:i1_sub],
+                                        str_context[
+                                            i1_sub + len(mention_original) : i2_c
+                                        ],
+                                    ]
+                                anchor_ordinal = page_wikicode_init[:endOffset].count(
+                                    mention_original
+                                )
                                 new_link = {
                                     "linkTarget": candidate_link,
                                     "anchor": mention_original,
                                     "probability": float(candidate_proba),
                                     "startOffset": startOffset,
                                     "endOffset": endOffset,
+                                    "anchor_ordinal": anchor_ordinal,
                                     "context_wikitext": context_wikitext,
                                     "context_plaintext": context_substring,
                                 }
