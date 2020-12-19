@@ -45,7 +45,7 @@ def main():
     page_title = normalise_title(args.page_title)
     page_dict = getPageDict(page_title, args.wiki_id, args.api_url)
     page_dict["threshold"] = args.threshold
-    print(json.dumps(page_dict, indent=4))
+    print(json.dumps(page_dict, indent=4, ensure_ascii=False))
 
 
 if __name__ == "__main__":

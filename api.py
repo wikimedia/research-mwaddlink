@@ -9,6 +9,7 @@ from src.query import Query
 from dotenv import load_dotenv
 
 app = Flask(__name__)
+app.config["JSON_AS_ASCII"] = False
 swag = Swagger(app)
 json_logging.init_flask(enable_json=True)
 json_logging.init_request_instrument(app)
