@@ -181,7 +181,7 @@ def getPageDict(title: str, wiki_id: str) -> dict:
         "wiki_id": wiki_id,
         "wikitext": res_rev["slots"]["main"]["content"],
         "pageid": res_page["pageid"],
-        "revid": res_page["revid"],
+        "revid": res_rev["revid"],
     }
 
 
