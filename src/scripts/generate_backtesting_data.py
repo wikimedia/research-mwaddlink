@@ -153,6 +153,10 @@ combined = "(" + ")|(".join(regexes) + ")"
 # TODO: this is essentially a best effort. maybe using Parsoid will solve this headache. ?!
 def linked_sents_extractor(title, wikicode):
     # An approximate solution to identify sentences, without a sentence tokenizer
+
+    # bengali has special character for full stop https://en.wikipedia.org/wiki/Bengali_language
+    # replace by .\n to ensure that sentence gets split (problems with \w{3,} in bengali script)
+    wikicode = wikicode.replace("।", ".\n")
     try:
         filter_wtp = re.sub(r"<\s*ref.*(<\s*/ref\s*>|/\s*>)", "", wikicode)
         wtp_code = wtp.parse(filter_wtp)
