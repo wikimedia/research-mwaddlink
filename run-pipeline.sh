@@ -4,7 +4,7 @@ set -ex
 
 # on stat-machine you might have to "kinit" first
 
-WIKI_ID=${WIKI_ID:-simple}
+WIKI_ID=${WIKI_ID:-simplewiki}
 
 ## go to scripts directory
 cd src/scripts/
@@ -18,15 +18,12 @@ mkdir ../../data/$WIKI_ID/testing
 
 
 echo 'GETTING THE ANCHOR DICTIONARY'
-deactivate
-source ../../venv/bin/activate
-deactivate
-
-
+# for the anchor dictionary we use the conda-environment on stats
 source /usr/lib/anaconda-wmf/bin/activate
 PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
 conda deactivate
 
+# activate the custom virtual environment
 source ../../venv/bin/activate
 # alternatively, one can get the anchor-dictionary by processing the xml-dumps
 # note that this does not filter by link-probability
@@ -58,7 +55,7 @@ python generate_addlink_model.py $WIKI_ID
 
 # ## perform automatic backtesting
 echo 'RUNNING BACKTESTING EVALUATION'
-python generate_backtesting_eval.py -l $WIKI_ID -nmax 100000 -t 0.5
+python generate_backtesting_eval.py -id $WIKI_ID -nmax 10000
 
 # # converting data to sqlite format
 echo 'CONVERTING DATA TO SQLITE FORMAT'
@@ -87,3 +84,6 @@ DB_HOST=$DB_HOST \
 DB_PORT=$DB_PORT \
 DB_READ_DEFAULT_FILE=$DB_READ_DEFAULT_FILE \
 python copy-sqlite-to-mysql.py -id "$WIKI_ID"
+
+# deactivate the virtual environment
+deactivate
