@@ -1,4 +1,5 @@
 import xgboost as xgb
+from typing import List
 from src.scripts.utils import process_page
 from src.DatasetLoader import DatasetLoader
 import multiprocessing
@@ -74,13 +75,9 @@ class Query:
 
         self.logger.info(log_data)
 
-        return {
-            "page_title": page_title,
-            "pageid": pageid,
-            "revid": revid,
-            "links_count": len(added_links),
-            "links": added_links,
-        }
+        return self.make_result(
+            page_title=page_title, pageid=pageid, revid=revid, added_links=added_links
+        )
 
     def get_query_info(self):
         query_total = 0
@@ -91,3 +88,28 @@ class Query:
             query_detail[dataset.datasetname]["total"] = dataset.query_count
             query_detail[dataset.datasetname]["details"] = dataset.query_details
         return query_total, query_detail
+
+    def make_result(
+        self, page_title: str, pageid: int, revid: int, added_links: List[dict]
+    ):
+        return {
+            "page_title": page_title,
+            "pageid": pageid,
+            "revid": revid,
+            "links_count": len(added_links),
+            "links": [
+                self.make_link(link, pos)
+                for pos, link in enumerate(added_links, start=1)
+            ],
+        }
+
+    def make_link(self, link: dict, pos: int):
+        return {
+            "phrase_to_link": link["anchor"],
+            "context_before": link["context_plaintext"][0],
+            "context_after": link["context_plaintext"][1],
+            "link_target": link["linkTarget"],
+            "instance_occurrence": link["anchor_ordinal"],
+            "probability": link["probability"],
+            "insertion_order": pos,
+        }
