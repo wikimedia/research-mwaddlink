@@ -93,7 +93,7 @@ def main():
         wiki_id=args.wiki_id,
         max_recommendations=args.max_recommendations,
     )
-    json_out = json.dumps(dict_result, indent=4)
+    json_out = json.dumps(dict_result, indent=4, ensure_ascii=False)
     print(json_out)
 
 
