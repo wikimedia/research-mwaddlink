@@ -16,3 +16,4 @@ for fname in list_fname:
     for k, v in dict_pkl.items():
         sqlite_db[k] = v
     sqlite_db.close()
+    os.system("shasum -a 256 %s > %s.checksum" % (output_path, output_path))

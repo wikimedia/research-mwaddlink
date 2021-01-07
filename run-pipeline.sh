@@ -5,17 +5,17 @@ set -ex
 # on stat-machine you might have to "kinit" first
 
 WIKI_ID=${WIKI_ID:-simplewiki}
+DATASET_PATH=$(pwd)/data/${WIKI_ID}
 
 ## go to scripts directory
 cd src/scripts/
 
 # # create folder for data
-echo "CREATING FOLDERS for data in ../data/${WIKI_ID}"
+echo "CREATING FOLDERS for data in ${DATASET_PATH}"
 
-mkdir ../../data/$WIKI_ID
-mkdir ../../data/$WIKI_ID/training
-mkdir ../../data/$WIKI_ID/testing
-
+mkdir "$DATASET_PATH"
+mkdir "$DATASET_PATH/training"
+mkdir "$DATASET_PATH/testing"
 
 echo 'GETTING THE ANCHOR DICTIONARY'
 # for the anchor dictionary we use the conda-environment on stats
@@ -84,6 +84,16 @@ DB_HOST=$DB_HOST \
 DB_PORT=$DB_PORT \
 DB_READ_DEFAULT_FILE=$DB_READ_DEFAULT_FILE \
 python copy-sqlite-to-mysql.py -id "$WIKI_ID"
+
+DB_USER=$DB_USER \
+DB_DATABASE=$DB_DATABASE \
+DB_HOST=$DB_HOST \
+DB_PORT=$DB_PORT \
+DB_READ_DEFAULT_FILE=$DB_READ_DEFAULT_FILE \
+python export-tables.py -id "$WIKI_ID" --path "$DATASET_PATH"
+
+echo "Generated datasets in $DATASET_PATH"
+echo "To publish the datasets, run \"$WIKI_ID ./publish-datasets.sh\""
 
 # deactivate the virtual environment
 deactivate
