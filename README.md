@@ -17,7 +17,7 @@ For this we have the following utilities
 * command-line tool:
 
 ```bash
-python cli.py -id de -p Garnet_Carter
+python query.py -id de -p Garnet_Carter
 ```
 This will return all recommended links for a given page (-p) in a given wiki ID (-id). You can also specify the 
 threshold for the probability of the link (-t, default=0.9)
