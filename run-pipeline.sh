@@ -97,3 +97,7 @@ echo "To publish the datasets, run \"$WIKI_ID ./publish-datasets.sh\""
 
 # deactivate the virtual environment
 deactivate
+
+# Remove the old linkmodel.json file from /tmp, in case we are testing
+# out queries on stat1008.
+rm /tmp/"$WIKI_ID".linkmodel.json || true
