@@ -39,12 +39,12 @@ definitions:
   LinkRecommendationSet:
     type: object
     properties:
-      added_links:
+      links:
         type: array
         description: 'An array of link recommendation objects.'
         items:
           $ref: '#/definitions/LinkRecommendation'
-      no_added_links:
+      links_count:
         type: integer
         description: 'The number of link recommendations.'
       page_title:
@@ -59,27 +59,32 @@ definitions:
   LinkRecommendation:
     type: object
     properties:
-      anchor:
+      phrase_to_link:
         type: string
         description: 'The phrase to link in the article text.'
-      context_plaintext:
-        type: string
-        description: 'The immediate context for the anchor, in plaintext.'
-      context_wikitext:
-        type: string
-        description: 'The immediate context for the anchor, in wikitext.'
-      endOffset:
+      wikitext_offset:
         type: integer
-        description: 'The character offset describing where the anchor ends.'
-      linkTarget:
+        description: 'The character offset describing where the anchor begins.'
+      context_before:
+        type: string
+        description: 'The immediate preceding context for the anchor, in plaintext.'
+      context_after:
+        type: string
+        description: 'The immediate succeeding context for the anchor, in plaintext.'
+      link_target:
         type: string
         description: 'The article title that the anchor text should be linked to.'
+      instance_occurrence:
+        type: integer
+        description: >
+          The 1-based index of the link anchor within the list of matches when searching for the phrase to link
+          within simple wikitext (top-level wikitext that's not part of any kind of wikitext construct).
       probability:
         type: number
         description: 'The probability score that the link should be added.'
-      startOffset:
+      insertion_order:
         type: integer
-        description: 'The character offset describing where the anchor begins.'
+        description: "The 1-based index of the link recommendation within all link recommendations, sorted by wikitext offset."
 
 
 responses:

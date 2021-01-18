@@ -106,6 +106,7 @@ class Query:
     def make_link(self, link: dict, pos: int):
         return {
             "phrase_to_link": link["anchor"],
+            "wikitext_offset": link["startOffset"],
             "context_before": link["context_plaintext"][0],
             "context_after": link["context_plaintext"][1],
             "link_target": link["linkTarget"],
