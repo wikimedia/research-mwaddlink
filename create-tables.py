@@ -22,6 +22,7 @@ def main():
             "pageids",
             "w2vfiltered",
             "model",
+            "checksum",
         ],
         required=False,
     )
@@ -32,7 +33,7 @@ def main():
     cursor = connection.cursor()
 
     for table in args.tables:
-        if table == "model":
+        if table in ["model", "checksum"]:
             tablename = "%s_%s" % (table_prefix, table)
         else:
             tablename = "%s_%s_%s" % (table_prefix, args.wiki_id, table)
