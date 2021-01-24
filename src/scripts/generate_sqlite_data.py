@@ -1,6 +1,15 @@
 import sys
 import pickle
+import gzip
+import shutil
+import subprocess
 from sqlitedict import SqliteDict
+
+"""
+Generate SQLite files from python pickle files.
+
+In addition to SQLite files, gzipped copies are created as well as SHA 256 checksums of the gzipped copies
+"""
 
 if len(sys.argv) >= 2:
     wiki_id = sys.argv[1]
@@ -16,4 +25,13 @@ for fname in list_fname:
     for k, v in dict_pkl.items():
         sqlite_db[k] = v
     sqlite_db.close()
-    os.system("shasum -a 256 %s > %s.checksum" % (output_path, output_path))
+    with open(output_path, "rb") as sqlite:
+        with gzip.open("%s.gz" % output_path, "wb") as compressed_sqlite:
+            shutil.copyfileobj(sqlite, compressed_sqlite)
+
+    with open("%s.checksum" % output_path, "wb") as checksum_file:
+        shasum = subprocess.Popen(
+            ["shasum", "-a", "256", "%s.gz" % output_path], stdout=subprocess.PIPE
+        )
+        checksum_file.writelines(shasum.stdout)
+        checksum_file.close()
