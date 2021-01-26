@@ -5,6 +5,7 @@ import xgboost
 from sklearn import model_selection
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
+import os
 import pandas as pd
 import sys
 import multiprocessing
@@ -62,4 +63,6 @@ predictions = model.predict_proba(X_test)[:, 1]
 print("ROC AUC=%.3f" % roc_auc_score(y_test, predictions))
 
 # save the model
-model.save_model("../../data/{0}/{0}.linkmodel.json".format(wiki_id))
+link_model_path = "../../data/{0}/{0}.linkmodel.json".format(wiki_id)
+model.save_model(link_model_path)
+os.system("shasum -a 256 %s > %s.checksum" % (link_model_path, link_model_path))
