@@ -21,7 +21,7 @@ variants:
       packages: [python3.7,build-essential,mariadb-client]
   production:
     includes: [production-build]
-    entrypoint: ["gunicorn","api:app","-b","0.0.0.0:8000"]
+    entrypoint: ["gunicorn","api:app","-b","0.0.0.0:8000","--statsd-host=localhost:9125","--statsd-prefix=linkrecommendation"]
     runs:
       environment:
         NLTK_DATA: '/home/somebody/nltk_data'
