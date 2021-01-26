@@ -41,7 +41,7 @@ def main():
             "CREATE TABLE {tablename} ("
             "  `lookup` TEXT NOT NULL,"
             "  `value` LONGBLOB NOT NULL,"
-            "  INDEX `lookup_index` (`lookup`)"
+            "  INDEX `lookup_index` (`lookup`(767))"
             ") CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
         ).format(tablename=tablename)
         try:
