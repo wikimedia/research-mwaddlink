@@ -68,7 +68,6 @@ def main():
         result = subprocess.run(
             [
                 "shasum",
-                "--strict",
                 "-a",
                 "256",
                 "-c",
