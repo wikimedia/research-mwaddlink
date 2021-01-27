@@ -23,8 +23,12 @@ source /usr/lib/anaconda-wmf/bin/activate
 PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
 conda deactivate
 
-# activate the custom virtual environment
-source ../../venv/bin/activate
+# activate the custom virtual environment, unless it's already active
+VENV_ACTIVATED=0
+if [ -z "$VIRTUAL_ENV" ]; then
+  VENV_ACTIVATED=1
+  source ../../venv/bin/activate
+fi
 # alternatively, one can get the anchor-dictionary by processing the xml-dumps
 # note that this does not filter by link-probability
 # python generate_anchor_dictionary.py $WIKI_ID
@@ -96,7 +100,9 @@ echo "Generated datasets in $DATASET_PATH"
 echo "To publish the datasets, run \"$WIKI_ID ./publish-datasets.sh\""
 
 # deactivate the virtual environment
-deactivate
+if [ $VENV_ACTIVATED -ne 0 ]; then
+  deactivate
+fi
 
 # Remove the old linkmodel.json file from /tmp, in case we are testing
 # out queries on stat1008.
