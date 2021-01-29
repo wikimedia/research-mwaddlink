@@ -2,7 +2,7 @@ import argparse
 from src.mysql import get_mysql_connection
 
 
-def main():
+def main(raw_args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--wiki-id",
@@ -28,7 +28,7 @@ def main():
     )
     table_prefix = "lr"
 
-    args = parser.parse_args()
+    args = parser.parse_args(raw_args)
     connection = get_mysql_connection()
     cursor = connection.cursor()
 
@@ -38,16 +38,13 @@ def main():
         else:
             tablename = "%s_%s_%s" % (table_prefix, args.wiki_id, table)
         create_query = (
-            "CREATE TABLE {tablename} ("
+            "CREATE TABLE IF NOT EXISTS {tablename} ("
             "  `lookup` TEXT NOT NULL,"
             "  `value` LONGBLOB NOT NULL,"
             "  INDEX `lookup_index` (`lookup`(767))"
             ") CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
         ).format(tablename=tablename)
-        try:
-            cursor.execute(create_query)
-        except Exception as err:
-            print(err)
+        cursor.execute(create_query)
 
     cursor.close()
     connection.close()
