@@ -9,6 +9,7 @@ import os
 import pandas as pd
 import sys
 import multiprocessing
+import subprocess
 
 ##################
 # This script can be used on any language
@@ -63,6 +64,15 @@ predictions = model.predict_proba(X_test)[:, 1]
 print("ROC AUC=%.3f" % roc_auc_score(y_test, predictions))
 
 # save the model
-link_model_path = "../../data/{0}/{0}.linkmodel.json".format(wiki_id)
-model.save_model(link_model_path)
-os.system("shasum -a 256 %s > %s.checksum" % (link_model_path, link_model_path))
+data_dir = "../../data/%s" % wiki_id
+link_model_filename = "%s.linkmodel.json" % wiki_id
+link_model_path = "%s/%s" % (data_dir, link_model_filename)
+model.save_model(os.path.realpath(link_model_path))
+with open("%s.checksum" % link_model_path, "wb") as checksum_file:
+    shasum = subprocess.Popen(
+        ["shasum", "-a", "256", "%s" % link_model_filename],
+        stdout=subprocess.PIPE,
+        cwd=os.path.relpath(data_dir),
+    )
+    checksum_file.writelines(shasum.stdout)
+    checksum_file.close()
