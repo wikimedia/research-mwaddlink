@@ -2,15 +2,17 @@ import argparse
 from src.mysql import get_mysql_connection
 
 
-def main(raw_args=None):
-    parser = argparse.ArgumentParser()
+def create_tables(raw_args=None):
+    parser = argparse.ArgumentParser(
+        description="Create tables in the database if they do not already exist."
+    )
     parser.add_argument(
         "--wiki-id",
         "-id",
         default=None,
         type=str,
-        required=True,
-        help="Wiki ID to use for table creation.",
+        required=False,
+        help="Wiki ID to use for table creation. Can be omitted for model and checksum tables.",
     )
     parser.add_argument(
         "--tables",
@@ -37,6 +39,7 @@ def main(raw_args=None):
             tablename = "%s_%s" % (table_prefix, table)
         else:
             tablename = "%s_%s_%s" % (table_prefix, args.wiki_id, table)
+
         create_query = (
             "CREATE TABLE IF NOT EXISTS {tablename} ("
             "  `lookup` TEXT NOT NULL,"
@@ -51,4 +54,4 @@ def main(raw_args=None):
 
 
 if __name__ == "__main__":
-    main()
+    create_tables()
