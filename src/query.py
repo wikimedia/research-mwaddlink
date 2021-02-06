@@ -99,18 +99,18 @@ class Query:
             "links_count": len(added_links),
             "links": [
                 self.make_link(link, pos)
-                for pos, link in enumerate(added_links, start=1)
+                for pos, link in enumerate(added_links, start=0)
             ],
         }
 
     def make_link(self, link: dict, pos: int):
         return {
-            "phrase_to_link": link["anchor"],
-            "wikitext_offset": link["startOffset"],
+            "link_text": link["link_text"],
+            "wikitext_offset": link["start_offset"],
             "context_before": link["context_plaintext"][0],
             "context_after": link["context_plaintext"][1],
-            "link_target": link["linkTarget"],
-            "instance_occurrence": link["anchor_ordinal"],
-            "probability": link["probability"],
-            "insertion_order": pos,
+            "link_target": link["link_target"],
+            "match_index": link["match_index"],
+            "score": link["score"],
+            "link_index": pos,
         }
