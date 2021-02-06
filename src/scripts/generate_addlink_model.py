@@ -70,9 +70,8 @@ link_model_path = "%s/%s" % (data_dir, link_model_filename)
 model.save_model(os.path.realpath(link_model_path))
 with open("%s.checksum" % link_model_path, "wb") as checksum_file:
     shasum = subprocess.Popen(
-        ["shasum", "-a", "256", "%s" % link_model_filename],
+        ["shasum", "-a", "256", link_model_filename],
         stdout=subprocess.PIPE,
         cwd=os.path.relpath(data_dir),
     )
     checksum_file.writelines(shasum.stdout)
-    checksum_file.close()
