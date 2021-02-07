@@ -59,7 +59,7 @@ definitions:
   LinkRecommendation:
     type: object
     properties:
-      phrase_to_link:
+      link_text:
         type: string
         description: 'The phrase to link in the article text.'
       wikitext_offset:
@@ -74,17 +74,17 @@ definitions:
       link_target:
         type: string
         description: 'The article title that the anchor text should be linked to.'
-      instance_occurrence:
+      match_index:
         type: integer
         description: >
-          The 1-based index of the link anchor within the list of matches when searching for the phrase to link
+          The 0-based index of the link anchor within the list of matches when searching for the phrase to link
           within simple wikitext (top-level wikitext that's not part of any kind of wikitext construct).
-      probability:
+      score:
         type: number
         description: 'The probability score that the link should be added.'
-      insertion_order:
+      link_index:
         type: integer
-        description: "The 1-based index of the link recommendation within all link recommendations, sorted by wikitext offset."
+        description: "The 0-based index of the link recommendation within all link recommendations, sorted by wikitext offset."
 
 
 responses:

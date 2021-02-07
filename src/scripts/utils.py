@@ -356,8 +356,8 @@ def process_page(
                                 i1_node_init:i2_node_init
                             ]
                             i1_sub = page_wikicode_init_substr.lower().find(mention)
-                            startOffset = i1_node_init + i1_sub
-                            endOffset = startOffset + len(mention)
+                            start_offset = i1_node_init + i1_sub
+                            end_offset = start_offset + len(mention)
                             ## provide context of the mention (+/- c characters in substring and wikitext)
                             if context == None:
                                 context_wikitext = mention_original
@@ -378,40 +378,36 @@ def process_page(
                                 ]
                                 ## wikitext substring
                                 str_context = wikitext
-                                i1_c = max([0, startOffset - context])
+                                i1_c = max([0, start_offset - context])
                                 i2_c = min(
                                     [
                                         len(str_context),
-                                        endOffset + context,
+                                        end_offset + context,
                                     ]
                                 )
                                 context_wikitext = [
                                     str_context[i1_c:i1_sub],
                                     str_context[i1_sub + len(mention_original) : i2_c],
                                 ]
-                            # Find 1-based index of anchor text match in a way that hopefully mostly survives
+                            # Find 0-based index of anchor text match in a way that hopefully mostly survives
                             # wikitext -> HTML transformation: count occurrences of the text in top-level
                             # text nodes u
                             preceding_nodes = page_wikicode_text_nodes[
                                 : page_wikicode_text_nodes.index(node)
                             ]
-                            anchor_ordinal = (
-                                sum(
-                                    str(node).count(mention_original)
-                                    for node in preceding_nodes
-                                )
-                                + page_wikicode_init_substr[:i1_sub].count(
-                                    mention_original
-                                )
-                                + 1
+                            match_index = sum(
+                                str(node).count(mention_original)
+                                for node in preceding_nodes
+                            ) + page_wikicode_init_substr[:i1_sub].count(
+                                mention_original
                             )
                             new_link = {
-                                "linkTarget": candidate_link,
-                                "anchor": mention_original,
-                                "probability": float(candidate_proba),
-                                "startOffset": startOffset,
-                                "endOffset": endOffset,
-                                "anchor_ordinal": anchor_ordinal,
+                                "link_target": candidate_link,
+                                "link_text": mention_original,
+                                "score": float(candidate_proba),
+                                "start_offset": start_offset,
+                                "end_offset": end_offset,
+                                "match_index": match_index,
                                 "context_wikitext": context_wikitext,
                                 "context_plaintext": context_substring,
                             }
