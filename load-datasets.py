@@ -42,8 +42,8 @@ def main():
     )
     parser.add_argument(
         "--download",
+        action="store_true",
         default=False,
-        type=bool,
         required=False,
         help="""
         Attempt to download datasets from analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/
