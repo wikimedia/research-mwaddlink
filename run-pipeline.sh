@@ -13,9 +13,8 @@ cd src/scripts/
 # # create folder for data
 echo "CREATING FOLDERS for data in ${DATASET_PATH}"
 
-mkdir "$DATASET_PATH"
-mkdir "$DATASET_PATH/training"
-mkdir "$DATASET_PATH/testing"
+mkdir -p "$DATASET_PATH/training"
+mkdir -p "$DATASET_PATH/testing"
 
 echo 'GETTING THE ANCHOR DICTIONARY'
 # for the anchor dictionary we use the conda-environment on stats
