@@ -80,7 +80,7 @@ DB_DATABASE=$DB_DATABASE \
 DB_HOST=$DB_HOST \
 DB_PORT=$DB_PORT \
 DB_READ_DEFAULT_FILE=$DB_READ_DEFAULT_FILE \
-python create-tables.py -id "$WIKI_ID"
+python create_tables.py -id "$WIKI_ID"
 
 DB_USER=$DB_USER \
 DB_DATABASE=$DB_DATABASE \
