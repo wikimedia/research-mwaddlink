@@ -97,7 +97,7 @@ DB_READ_DEFAULT_FILE=$DB_READ_DEFAULT_FILE \
 python export-tables.py -id "$WIKI_ID" --path "$DATASET_PATH"
 
 echo "Generated datasets in $DATASET_PATH"
-echo "To publish the datasets, run \"$WIKI_ID ./publish-datasets.sh\""
+echo "To publish the datasets, run \"WIKI_ID=$WIKI_ID ./publish-datasets.sh\""
 
 # deactivate the virtual environment
 if [ $VENV_ACTIVATED -ne 0 ]; then
