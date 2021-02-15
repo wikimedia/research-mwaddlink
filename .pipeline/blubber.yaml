@@ -18,7 +18,7 @@ variants:
     includes: [build]
     base: docker-registry.wikimedia.org/python3-build-buster
     apt:
-      packages: [python3.7,build-essential,mariadb-client]
+      packages: [python3.7,build-essential,mariadb-client,cmake]
   production:
     includes: [production-build]
     entrypoint: ["gunicorn","api:app","-b","0.0.0.0:8000","--statsd-host=localhost:9125","--statsd-prefix=linkrecommendation"]
