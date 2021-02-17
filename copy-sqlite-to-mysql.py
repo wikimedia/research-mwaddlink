@@ -3,11 +3,9 @@ import argparse
 from sqlitedict import SqliteDict
 from src.mysql import get_mysql_connection, import_model_to_table
 import logging
-import json_logging
 from sys import stdout
 
 LOG_LEVEL = logging.DEBUG
-json_logging.init_non_web(enable_json=True)
 logger = logging.getLogger("logger")
 logger.setLevel(LOG_LEVEL)
 logger.addHandler(logging.StreamHandler(stdout))

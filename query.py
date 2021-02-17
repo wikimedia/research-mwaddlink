@@ -1,14 +1,12 @@
 import argparse
 import json
 import logging
-import json_logging
 from sys import stdout
 from src.scripts.utils import getPageDict, normalise_title
 from src.query import Query
 from src.DatasetLoader import DatasetLoader
 
 LOG_LEVEL = logging.DEBUG
-json_logging.init_non_web(enable_json=True)
 logger = logging.getLogger("logger")
 logger.setLevel(LOG_LEVEL)
 logger.addHandler(logging.StreamHandler(stdout))
