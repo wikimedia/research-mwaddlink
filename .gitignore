@@ -2,3 +2,6 @@ GC*.ipynb
 Dockerfile
 .idea
 __pycache__
+coverage-reports
+.coverage
+xunit-reports
