@@ -5,6 +5,7 @@ import logging
 import os
 from sys import stdout
 from src.DatasetLoader import DatasetLoader
+from src.scripts.utils import getPageDict, normalise_title
 from src.query import Query
 from src.LogstashAwareJSONRequestLogFormatter import (
     LogstashAwareJSONRequestLogFormatter,
@@ -30,19 +31,30 @@ def main():
     return redirect("/apidocs")
 
 
-@swag_from("linkrecommendation.yml")
-@app.route("/query", methods=["POST"])
-def query():
-    data = request.json
-    validate(data, "Input", "linkrecommendation.yml")
-    datasetloader = DatasetLoader(
-        backend=os.environ.get("DB_BACKEND"), wiki_id=data["wiki_id"]
-    )
+@swag_from("swagger/linkrecommendations.post.yml", methods=["POST"])
+@swag_from("swagger/linkrecommendations.get.yml", methods=["GET"])
+@app.route(
+    "/v0/linkrecommendations/<string:wiki_id>/<string:page_title>",
+    methods=["POST", "GET"],
+)
+def query(wiki_id, page_title):
+    if request.method == "POST":
+        data = request_data = request.json
+        validate(data, "Input", "swagger/linkrecommendations.post.yml")
+    else:
+        data = getPageDict(page_title, wiki_id)
+        request_data = request.args
+
+    # FIXME: We're supposed to be able to read these defaults from the Swagger spec
+    data["threshold"] = float(request_data.get("threshold", 0.5))
+    data["max_recommendations"] = int(request_data.get("max_recommendations", 15))
+
+    datasetloader = DatasetLoader(backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id)
 
     try:
         datasetloader.get_model_path()
     except RuntimeError:
-        return "Unable to load model for %s!" % data["wiki_id"], 400
+        return "Unable to load model for %s!" % wiki_id, 400
 
     query_instance = Query(logger, datasetloader)
     return jsonify(
@@ -51,9 +63,9 @@ def query():
             revid=data["revid"],
             pageid=data["pageid"],
             threshold=data["threshold"],
-            wiki_id=data["wiki_id"],
-            page_title=data["page_title"],
-            max_recommendations=data.get("max_recommendations", 20),
+            wiki_id=wiki_id,
+            page_title=normalise_title(page_title),
+            max_recommendations=data["max_recommendations"],
         )
     )
 

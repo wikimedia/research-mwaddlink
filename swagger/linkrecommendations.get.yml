@@ -1,40 +1,27 @@
 ---
 parameters:
-  - name: body
-    in: body
+  - name: wiki_id
+    in: path
     required: true
-    schema:
-      id: Input
-      required:
-        - wikitext
-        - revid
-        - pageid
-        - threshold
-        - wiki_id
-        - page_title
-      properties:
-        wikitext:
-          type: string
-          description: 'Raw wikitext of the article'
-        revid:
-          type: integer
-          description: 'Revision ID of the article'
-        pageid:
-          type: integer
-          description: 'Page ID of the article'
-        threshold:
-          type: number
-          description: 'Number between 0 and 1 for the threshold to use.'
-        wiki_id:
-          type: string
-          description: 'ID of the wiki for processing (e.g. "dewiki" or "simplewiki")'
-        page_title:
-          type: string
-          description: 'Page title of the article'
-        max_recommendations:
-            type: integer
-            description: 'Maximum number of recommendations to return'
-            default: 20
+    type: string
+    description: 'ID of the wiki for processing (e.g. "dewiki" or "simplewiki")'
+  - name: page_title
+    in: path
+    required: true
+    type: string
+    description: 'Page title of the article'
+  - name: threshold
+    in: query
+    required: false
+    type: number
+    default: 0.5
+    description: 'Number between 0 and 1 for the threshold to use.'
+  - name: max_recommendations
+    in: query
+    required: false
+    type: number
+    default: 15
+    description: 'Maximum number of recommendations to return'
 definitions:
   LinkRecommendationSet:
     type: object
