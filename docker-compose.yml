@@ -2,11 +2,16 @@ version: "3.9"
 services:
   linkrecommendation:
     image: docker-registry.wikimedia.org/wikimedia/research-mwaddlink:stable
+    entrypoint: ["flask", "run"]
     volumes:
       - .:/srv/app:cached
     ports:
       - 8000:8000
     environment:
+      FLASK_DEBUG: 1
+      FLASK_APP: "api"
+      FLASK_RUN_PORT: 8000
+      FLASK_RUN_HOST: "0.0.0.0"
       DB_USER: "root"
       DB_PASSWORD: "root"
       DB_HOST: "db"

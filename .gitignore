@@ -1,4 +1,5 @@
 GC*.ipynb
 Dockerfile
+docker-compose.override.yml
 .idea
 __pycache__
