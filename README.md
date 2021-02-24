@@ -35,13 +35,15 @@ DB_PASSWORD=password \
 DB_PORT=3306 \
 DB_HOST=127.0.0.1 \
 DB_DATABASE=addlink \
-FLASK_DEBUG=1 \
 DB_BACKEND=mysql \
+MEDIAWIKI_API_URL=https://my.wiki.url/w/api.php \
 FLASK_APP=api \
+FLASK_DEBUG=1 \
 flask run
 ```
 
-In production we use `gunicorn` to serve the Flask app.
+In production we use `gunicorn` to serve the Flask app, and the MEDIAWIKI_API_URL parameter is omitted, making the app
+select the right Wikipedia URL automatically.
 
 ### Database backends
 

@@ -42,7 +42,7 @@ def query(wiki_id, page_title):
         data = request_data = request.json
         validate(data, "Input", "swagger/linkrecommendations.post.yml")
     else:
-        data = getPageDict(page_title, wiki_id)
+        data = getPageDict(page_title, wiki_id, os.environ.get("MEDIAWIKI_API_URL"))
         request_data = request.args
 
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
