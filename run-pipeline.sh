@@ -19,7 +19,8 @@ mkdir -p "$DATASET_PATH/testing"
 echo 'GETTING THE ANCHOR DICTIONARY'
 # for the anchor dictionary we use the conda-environment on stats
 source /usr/lib/anaconda-wmf/bin/activate
-PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
+# PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
+PYSPARK_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 PYSPARK_DRIVER_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
 conda deactivate
 
 # activate the custom virtual environment, unless it's already active

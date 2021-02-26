@@ -1,8 +1,12 @@
-import sys
+import os, sys
 import pickle
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F, types as T, Window
+import mwparserfromhell
+import pyarrow.parquet as pq
 import urllib
+import datetime
+import dateutil.relativedelta
 
 
 def normalise_title(title):
@@ -76,12 +80,11 @@ def get_plain_text_without_links(row):
     wikicode = row.wikitext
     wikicode_without_links = re.sub(links_regex, ".", wikicode)
     wikicode_without_links = re.sub(references_regex, ".", wikicode_without_links)
-    ## we dont have mwparserfromhell on the spark-cluster yet
+    ## try to strip markup via mwparserfromhell to get plain text
     try:
         text = mwparserfromhell.parse(wikicode_without_links).strip_code()
     except:
         text = wikicode_without_links
-    text = wikicode_without_links
     return T.Row(pid=row.pid, title=normalise_title(row.title), text=text.lower())
 
 
@@ -110,13 +113,11 @@ def get_valid_ngrams(row):
     for n in range(10, 0, -1):
         ngrams = get_ngrams(text, n)
         for ng in ngrams:
-            if ng in anchors_keys:
+            ng_found = anchors_suppBroadcast.value.get(ng, 0)
+            if ng_found == 1:
                 found_anchors.append(ng)
-    #                 text.replace(ng, " @ ")
+                text.replace(ng, " @ ")
     return [T.Row(pid=row.pid, anchor=a) for a in found_anchors]
-
-
-## usage
 
 
 if len(sys.argv) >= 2:
@@ -124,9 +125,11 @@ if len(sys.argv) >= 2:
 else:
     wiki_id = "enwiki"
 
-snapshot = "2020-07"
-## there is more lag here (on 2020-09-07 I could only find the 2020-07 snapshot)
+# define paths to save results (local as well as hadoop for intermediate datasets)
+PATH_local = "../../data/%s/" % wiki_id
+PATH_hadoop = "/tmp/mwaddlink/"
 
+# start spark session
 spark = (
     SparkSession.builder.master("yarn")
     .appName("generating-anchors")
@@ -134,6 +137,35 @@ spark = (
     .getOrCreate()
 )
 
+# find the latest snapshot of the wikitext-table in hive (format "YYYY-MM", e.g. "2021-01")
+# start with today's month and check previous months as snapshots
+# for each snapshot we check if there is at least one entry, (fallback is the 2021-01 snapshot)
+n_check = 6  ## check at most that many of the previous months
+d = datetime.date.today()  ## start from todays month
+snapshot = d.strftime("%Y-%m")  # snapshots are in the form '2021-01'
+for i in range(n_check):
+    # for each snapshot we check if there is at least one entry
+    # we pick the latest snapshot
+    wikipedia_check = (
+        ## select table
+        spark.read.table("wmf.mediawiki_wikitext_current")
+        ## select wiki project
+        .where(F.col("wiki_db") == wiki_id)
+        .where(F.col("snapshot") == snapshot)
+        .limit(1)
+    )
+    n = wikipedia_check.count()  # count if there is at least one entry
+    if n > 0:
+        break
+    d2 = d - dateutil.relativedelta.relativedelta(months=1)
+    snapshot = d2.strftime("%Y-%m")
+    d = d2
+if n == 0:
+    # if none of above yield a result, fall back to 2021-01 snapshot
+    snapshot = "2021-01"
+print(snapshot)
+
+# load the wikitext-table
 wikipedia_all = (
     ## select table
     spark.read.table("wmf.mediawiki_wikitext_current")
@@ -192,19 +224,34 @@ anchors_aslinks = (
 )
 
 ## counting ngrams
-anchors_keys = set(
-    anchors_aslinks.select("anchor").rdd.map(lambda r: r.anchor).collect()
-)
 chunks = articles.rdd.map(get_plain_text_without_links).flatMap(get_chunks)
-matched_ngrams = (
-    spark.createDataFrame(chunks.flatMap(get_valid_ngrams))
-    .groupBy("anchor", "pid")
-    .agg(F.count("*").alias("occ"))
-)
+anchors_list = anchors_aslinks.select("anchor").rdd.map(lambda r: r.anchor).collect()
 
-anchors_astext = matched_ngrams.groupBy("anchor").agg(
-    F.sum(F.col("occ")).alias("astext")
-)
+# we divide the anchor list into chunks of smax to count word-frequency
+FILE_anchorastext_hadoop = PATH_hadoop + "%s.anchors_astext.parquet" % (wiki_id)
+smax = 1000000
+n_s = int(len(anchors_list) / smax) + 1
+for i_ns in range(n_s):
+    anchors_suppBroadcast = spark.sparkContext.broadcast(
+        {anchor: 1 for anchor in anchors_list[i_ns * smax : (i_ns + 1) * smax]}
+    )
+
+    matched_ngrams = (
+        spark.createDataFrame(chunks.flatMap(get_valid_ngrams))
+        .groupBy("anchor", "pid")
+        .agg(F.count("*").alias("occ"))
+    )
+
+    anchors_astext = matched_ngrams.groupBy("anchor").agg(
+        F.sum(F.col("occ")).alias("astext")
+    )
+    if i_ns == 0:
+        mode = "overwrite"
+    else:
+        mode = "append"
+    anchors_astext.write.mode(mode).parquet(FILE_anchorastext_hadoop)
+
+anchors_astext = spark.read.load(FILE_anchorastext_hadoop)
 
 ## join the anchors_aslink and anchors_astext to calculate the link probability
 anchors_lp = (
@@ -229,25 +276,56 @@ links_resolved_articles_filtered = (
 )
 
 links_formatted = (
-    links_resolved_articles_filtered.groupBy("anchor", "link")
-    .agg(F.count(F.col("title")).alias("n"))
-    .groupBy("anchor")
-    .agg(F.collect_list(F.struct(F.col("link"), F.col("n"))).alias("candidates"))
+    links_resolved_articles_filtered.groupBy("anchor", "link").agg(
+        F.count(F.col("title")).alias("n")
+    )
+    # .groupBy("anchor")
+    # .agg(F.collect_list(F.struct(F.col("link"), F.col("n"))).alias("candidates"))
 )
-# links_formatted.write.mode('overwrite').parquet('/user/mgerlach/en.anchors.parquet')
-df_pd = links_formatted.toPandas()
-df_pd["candidates"] = df_pd["candidates"].apply(lambda x: dict(x))
-dict_anchors = df_pd.set_index("anchor")["candidates"].to_dict()
+
+## saving anchors dictionary as anchor.pkl
+FILE_hadoop = PATH_hadoop + "%s.links_formatted.parquet" % wiki_id
+FILE_local = PATH_local + "%s.links_formatted.parquet" % wiki_id
+
+links_formatted.write.mode("overwrite").parquet(FILE_hadoop)
+# remove the local links_formatted file if exists
+if os.path.isdir(FILE_local):
+    os.system("rm -rf %s" % FILE_local)
+
+os.system("hadoop fs -get %s %s" % (FILE_hadoop, FILE_local))
+dataset = pq.ParquetDataset(FILE_local)
+table = dataset.read()
+df = table.to_pandas()
+
+df["candidates"] = df.apply(lambda x: (x["link"], x["n"]), axis=1)
+df_agg = df.groupby("anchor").agg(
+    candidates=("candidates", "unique"),
+)
+df_agg["candidates"] = df_agg["candidates"].apply(lambda x: dict(x))
+dict_anchors = df_agg["candidates"].to_dict()
 # store the dictionaries into the language data folder
-output_path = "../../data/{0}/{0}.anchors".format(wiki_id)
+output_path = PATH_local + "{0}.anchors".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(dict_anchors, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+os.system("rm -rf %s" % (FILE_local))
+os.system("hdfs dfs -rm -r %s" % (FILE_hadoop))
+os.system("hdfs dfs -rm -r %s" % (FILE_anchorastext_hadoop))
 
-## saving articles-dict
-df_articles = (articles.select("pid", "title")).toPandas()
-# store the dictionaries into the language data folder
-output_path = "../../data/{0}/{0}.pageids".format(wiki_id)
+
+## saving articles-dictionary as pageids.pkl
+FILE_hadoop = PATH_hadoop + "%s.pageids.parquet" % wiki_id
+FILE_local = PATH_local + "%s.pageids.parquet" % wiki_id
+
+articles.select("pid", "title").write.mode("overwrite").parquet(FILE_hadoop)
+if os.path.isdir(FILE_local):
+    os.system("rm -rf %s" % FILE_local)
+os.system("hadoop fs -get %s %s" % (FILE_hadoop, FILE_local))
+dataset = pq.ParquetDataset(FILE_local)
+table = dataset.read()
+df_articles = table.to_pandas()
+
+output_path = PATH_local + "{0}.pageids".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(
         df_articles.set_index("title")["pid"].to_dict(),
@@ -255,13 +333,29 @@ with open(output_path + ".pkl", "wb") as handle:
         protocol=pickle.HIGHEST_PROTOCOL,
     )
 
+os.system("rm -rf %s" % (FILE_local))
+os.system("hdfs dfs -rm -r %s" % (FILE_hadoop))
+
+
 ## saving redirects dictionary
-df_redirects = (redirects.select("title_from", "title_to")).toPandas()
-# store the dictionaries into the language data folder
-output_path = "../../data/{0}/{0}.redirects".format(wiki_id)
+FILE_hadoop = PATH_hadoop + "%s.redirects.parquet" % wiki_id
+FILE_local = PATH_local + "%s.redirects.parquet" % wiki_id
+
+redirects.select("title_from", "title_to").write.mode("overwrite").parquet(FILE_hadoop)
+if os.path.isdir(FILE_local):
+    os.system("rm -rf %s" % FILE_local)
+os.system("hadoop fs -get %s %s" % (FILE_hadoop, FILE_local))
+dataset = pq.ParquetDataset(FILE_local)
+table = dataset.read()
+df_redirects = table.to_pandas()
+
+output_path = PATH_local + "{0}.redirects".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(
         df_redirects.set_index("title_from")["title_to"].to_dict(),
         handle,
         protocol=pickle.HIGHEST_PROTOCOL,
     )
+
+os.system("rm -rf %s" % (FILE_local))
+os.system("hdfs dfs -rm -r %s" % (FILE_hadoop))
