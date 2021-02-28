@@ -1,6 +1,8 @@
 import argparse
 import os
 import requests
+import random
+import string
 import shutil
 import subprocess
 from src.mysql import get_mysql_connection, import_model_to_table
@@ -71,6 +73,16 @@ def main():
             dataset_filename = "%s_%s_%s.sql.gz" % (table_prefix, wiki_id, dataset_name)
         return dataset_filename
 
+    def cache_bust_url_query_params():
+        return {
+            "cache_bust": (
+                "".join(
+                    random.choice(string.ascii_lowercase + string.digits)
+                    for _ in range(8)
+                ),
+            )
+        }
+
     def verify_files_exist(dataset_name):
         print(
             "  ",
@@ -132,7 +144,10 @@ def main():
     args = parser.parse_args()
     all_datasets_url = "https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/wikis.txt"
     if not args.wiki_id:
-        with requests.get(all_datasets_url) as all_datasets_req:
+        with requests.get(
+            all_datasets_url,
+            cache_bust_url_query_params(),
+        ) as all_datasets_req:
             wiki_ids = list(filter(None, all_datasets_req.text.split("\n")))
     else:
         wiki_ids = [args.wiki_id]
@@ -163,7 +178,8 @@ def main():
 
             for dataset in datasets:
                 with requests.get(
-                    "%s/%s.checksum" % (base_url, get_dataset_filename(dataset))
+                    "%s/%s.checksum" % (base_url, get_dataset_filename(dataset)),
+                    cache_bust_url_query_params(),
                 ) as remote_checksum:
                     if remote_checksum.status_code != 200:
                         raise RuntimeError(
@@ -213,7 +229,9 @@ def main():
                             flush=True,
                         )
                         with requests.get(
-                            remote_dataset_url, stream=True
+                            remote_dataset_url,
+                            stream=True,
+                            params=cache_bust_url_query_params(),
                         ) as remote_dataset:
                             if remote_dataset.status_code != 200:
                                 raise RuntimeError(
