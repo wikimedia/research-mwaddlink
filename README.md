@@ -219,4 +219,16 @@ stored in
 
 Run lint checks with `flake8`: `.venv_query/bin/flake8` or `tox`.
 
-Formt your code with [`black`](https://pypi.org/project/black/).
+Format your code with [`black`](https://pypi.org/project/black/).
+
+##### Docker Compose
+
+There is a Docker Compose configuration for running the service locally. Run `docker-compose up -d` then use `docker-compose exec linkrecommendation [cmd]` to execute code in the application container.
+
+Note that on macOS hosts there is currently an issue with XGBoost when loading the JSON model:
+
+```
+xgboost.core.XGBoostError: [09:00:14] ../src/common/json.cc:449: Unknown construct, around character position: 71
+```
+
+See [T275358](https://phabricator.wikimedia.org/T275358) for more information.
