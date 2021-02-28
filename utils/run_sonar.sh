@@ -18,4 +18,7 @@ if [ ! -z ${SONAR_BRANCH_TARGET+x} ]; then
 fi
 
 # Initialize analysis, send data to SonarQube
-/opt/sonar-scanner/bin/sonar-scanner "${args[@]}" -Dsonar.login="$SONAR_API_KEY" -Dsonar.branch.name="${SONAR_BRANCH_NAME}" "$@"
+/opt/sonar-scanner/bin/sonar-scanner "${args[@]}" \
+  -Dsonar.login="$SONAR_API_KEY" \
+  -Dsonar.branch.name="${SONAR_BRANCH_NAME}" \
+  "$@"

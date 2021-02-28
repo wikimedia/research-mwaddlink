@@ -9,6 +9,10 @@ variants:
     python:
       version: python3
   test:
+    runs:
+      # Needed so that pytest can output coverage files to the /srv/app directory,
+      # and also so that tox can generate its .tox directory here.
+      insecurely: true
     includes: [build]
     entrypoint: [tox]
     python:

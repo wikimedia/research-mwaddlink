@@ -3,3 +3,6 @@ Dockerfile
 docker-compose.override.yml
 .idea
 __pycache__
+coverage-reports
+.coverage
+xunit-reports

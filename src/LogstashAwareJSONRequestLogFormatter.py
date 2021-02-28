@@ -12,6 +12,10 @@ class LogstashAwareJSONRequestLogFormatter(json_logging.JSONRequestLogFormatter)
         json_log_object = super(
             LogstashAwareJSONRequestLogFormatter, self
         )._format_log_object(record, request_util)
+        return self._rename_request_field(json_log_object)
+
+    @staticmethod
+    def _rename_request_field(json_log_object):
         # Logstash wants "request" as an object instead of the URL path, so instead
         # rename the field to "url" and delete the "request" key.
         if "request" in json_log_object:
