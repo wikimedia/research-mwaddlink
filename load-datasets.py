@@ -9,6 +9,11 @@ from src.mysql import get_mysql_connection, import_model_to_table
 import gzip
 from create_tables import create_tables
 
+ANALYTICS_BASE_URL = os.getenv(
+    "ANALYTICS_BASE_URL",
+    "https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/",
+)
+
 
 def main():
     cli_ok_status = "[OK]"
@@ -142,7 +147,7 @@ def main():
     table_prefix = "lr"
     checksum_table = "%s_checksum" % table_prefix
     args = parser.parse_args()
-    all_datasets_url = "https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/wikis.txt"
+    all_datasets_url = requests.compat.urljoin(ANALYTICS_BASE_URL, "wikis.txt")
     if not args.wiki_id:
         with requests.get(
             all_datasets_url,
@@ -169,10 +174,8 @@ def main():
                 "== Attempting to download datasets (%s) for %s =="
                 % (", ".join(datasets), wiki_id)
             )
-            base_url = (
-                "https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/%s"
-                % wiki_id
-            )
+            base_url = requests.compat.urljoin(ANALYTICS_BASE_URL, wiki_id)
+
             if not os.path.exists(local_dataset_directory):
                 os.makedirs(local_dataset_directory)
 
