@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, redirect
-from flasgger import Swagger, swag_from, validate
+from flasgger import Swagger, validate
 import json_logging
 import logging
 import os
@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False
-swag = Swagger(app)
+swag = Swagger(app, template_file="swagger/linkrecommendations.yml")
 json_logging.init_flask(enable_json=True)
 json_logging.init_request_instrument(
     app=app, custom_formatter=LogstashAwareJSONRequestLogFormatter
@@ -31,23 +31,20 @@ def main():
     return redirect("/apidocs")
 
 
-@swag_from("swagger/linkrecommendations.post.yml", methods=["POST"])
-@swag_from("swagger/linkrecommendations.get.yml", methods=["GET"])
 @app.route(
     "/v0/linkrecommendations/<string:wiki_id>/<string:page_title>",
     methods=["POST", "GET"],
 )
 def query(wiki_id, page_title):
     if request.method == "POST":
-        data = request_data = request.json
-        validate(data, "Input", "swagger/linkrecommendations.post.yml")
+        data = request.json
+        validate(data, "Input", "swagger/linkrecommendations.yml")
     else:
         data = getPageDict(page_title, wiki_id, os.environ.get("MEDIAWIKI_API_URL"))
-        request_data = request.args
 
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
-    data["threshold"] = float(request_data.get("threshold", 0.5))
-    data["max_recommendations"] = int(request_data.get("max_recommendations", 15))
+    data["threshold"] = float(request.args.get("threshold", 0.5))
+    data["max_recommendations"] = int(request.args.get("max_recommendations", 15))
 
     datasetloader = DatasetLoader(backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id)
 
