@@ -40,7 +40,12 @@ def query(wiki_id, page_title):
         data = request.json
         validate(data, "Input", "swagger/linkrecommendations.yml")
     else:
-        data = getPageDict(page_title, wiki_id, os.environ.get("MEDIAWIKI_API_URL"))
+        try:
+            data = getPageDict(page_title, wiki_id, os.environ.get("MEDIAWIKI_API_URL"))
+        except KeyError as e:
+            if e.args[0] == "revisions":
+                return "Page not found: %s" % page_title, 404
+            raise e
 
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
     data["threshold"] = float(request.args.get("threshold", 0.5))
