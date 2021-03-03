@@ -51,6 +51,14 @@ def main():
     )
 
     parser.add_argument(
+        "--proxy-api-url",
+        default=None,
+        type=str,
+        required=False,
+        help="Full URL to a proxy to api.php.",
+    )
+
+    parser.add_argument(
         "--threshold",
         "-t",
         default=0.5,
@@ -79,7 +87,7 @@ def main():
     args = parser.parse_args()
     page_title = normalise_title(args.page_title)
     threshold = args.threshold
-    page_dict = getPageDict(page_title, args.wiki_id, args.api_url)
+    page_dict = getPageDict(page_title, args.wiki_id, args.api_url, args.proxy_api_url)
     datasetloader = DatasetLoader(args.database_backend, args.wiki_id)
     query = Query(logger, datasetloader)
     dict_result = query.run(
