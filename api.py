@@ -41,7 +41,12 @@ def query(wiki_id, page_title):
         validate(data, "Input", "swagger/linkrecommendations.yml")
     else:
         try:
-            data = getPageDict(page_title, wiki_id, os.environ.get("MEDIAWIKI_API_URL"))
+            data = getPageDict(
+                page_title,
+                wiki_id,
+                os.environ.get("MEDIAWIKI_API_URL"),
+                os.environ.get("MEDIAWIKI_PROXY_API_URL"),
+            )
         except KeyError as e:
             if e.args[0] == "revisions":
                 return "Page not found: %s" % page_title, 404

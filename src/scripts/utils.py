@@ -148,9 +148,18 @@ def ngram_iterator(text, gram_length_max, gram_length_min=1):
                     yield gram
 
 
-def getPageDict(title: str, wiki_id: str, api_url: str = None) -> dict:
+def getPageDict(
+    title: str, wiki_id: str, api_url: str = None, proxy_api_url: str = None
+) -> dict:
     """
-    get the wikitext for a pagetitle for a wiki
+    Get the wikitext, rev ID and page ID for a title.
+    :param title The page title
+    :param wiki_id The wiki ID to use with queries. Current assumption is that it is a Wikipedia wiki ID,
+      non-Wikipedia wiki IDs are not yet supported.
+    :param api_url The URL to use for connecting to MediaWiki API, it should contain the full path to api.php,
+      e.g. http://localhost:8080/w/api.php
+    :param proxy_api_url: The proxy URL to use for connecting to MediaWiki API. In production it is a value
+      like http://localhost:6500/w/api.php
     """
     params = {
         "action": "query",
@@ -162,11 +171,25 @@ def getPageDict(title: str, wiki_id: str, api_url: str = None) -> dict:
         "format": "json",
         "formatversion": "2",
     }
+    # FIXME: Add support for non-wikipedia wikis (e.g. wikitech.org, mediawiki.org)
+    langcode = wiki_id.replace("wiki", "").replace("_", "-")
 
-    api_url = api_url or "https://{0}.wikipedia.org/w/api.php".format(
-        wiki_id.replace("wiki", "").replace("_", "-")
-    )
-    headers = {"User-Agent": "mwaddlink"}
+    # In production, API queries should go to the proxy URL
+    if proxy_api_url:
+        api_url = proxy_api_url
+    else:
+        # Use the API url if specified via an environment variable or
+        # the production wikipedia API endpoint; both of these are developer
+        # setup configurations.
+        api_url = api_url or "https://%s.wikipedia.org/w/api.php" % langcode
+    headers = {
+        "User-Agent": "linkrecommendation",
+    }
+
+    # If we have a proxy URL then we should use the Host header
+    if proxy_api_url:
+        headers["Host"] = "%s.wikipedia.org" % langcode
+
     req = requests.get(api_url, headers=headers, params=params)
     res = req.json()
     res_page = res["query"]["pages"][0]
