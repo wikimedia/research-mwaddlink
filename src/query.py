@@ -47,11 +47,6 @@ class Query:
             maxrec=max_recommendations,
         )
 
-        anchors.close()
-        pageids.close()
-        redirects.close()
-        word2vec.close()
-
         stop = perf_counter()
 
         log_data = {
