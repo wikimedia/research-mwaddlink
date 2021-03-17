@@ -51,7 +51,7 @@ definitions:
         type: integer
         description: "The 0-based index of the link recommendation within all link recommendations, sorted by wikitext offset."
 info:
-  description: See https://wikitech.wikimedia.org/wiki/Add_Link for more info
+  description: Provide link recommendations for articles on Wikimedia projects. See https://api.wikimedia.org/wiki/API_reference/Service/Link_Recommendation for further information.
   title: Wikimedia Link Recommendation Service
   version: 1.0.0
 paths:
