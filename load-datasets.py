@@ -164,6 +164,9 @@ def main():
     print("== Initializing ==")
     ensure_table_exists("checksum")
     ensure_table_exists("model")
+    for wiki_id in wiki_ids:
+        for dataset in datasets:
+            ensure_table_exists(dataset, wiki_id)
 
     print("  ", "Beginning process to load datasets for %s" % ", ".join(wiki_ids))
 
@@ -189,7 +192,6 @@ def main():
                             "Unable to download checksum for %s, status code: %s."
                             % (dataset, remote_checksum.status_code)
                         )
-                    ensure_table_exists(dataset, wiki_id)
 
                     # Now compare the checksum with what we have stored in the database, if anything
                     with mysql_connection.cursor() as cursor:
@@ -273,7 +275,6 @@ def main():
         for dataset in datasets_to_import:
             verify_files_exist(dataset)
             verify_checksum(dataset)
-            ensure_table_exists(dataset, wiki_id)
 
         with mysql_connection.cursor() as cursor:
             for dataset in datasets_to_import:
