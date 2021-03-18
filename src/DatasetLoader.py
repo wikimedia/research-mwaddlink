@@ -14,6 +14,7 @@ class DatasetLoader:
             self.model_path = os.path.join(
                 tempfile.gettempdir(), "{0}.linkmodel.json".format(wiki_id)
             )
+            self.mysql_connection = get_mysql_connection()
         else:
             self.model_path = "./data/{0}/{0}.linkmodel.json".format(wiki_id)
 
@@ -21,7 +22,7 @@ class DatasetLoader:
         if self.backend == "mysql":
             return MySqlDict.MySqlDict(
                 tablename="%s_%s_%s" % (self.table_prefix, self.wiki_id, tablename),
-                conn=get_mysql_connection(),
+                conn=self.mysql_connection,
                 datasetname=tablename,
             )
         else:
@@ -44,7 +45,7 @@ class DatasetLoader:
             raise RuntimeError("Unable to load model.")
 
     def _load_model_from_mysql(self):
-        cursor = get_mysql_connection().cursor()
+        cursor = self.mysql_connection.cursor()
         cursor.execute("SELECT value FROM lr_model WHERE lookup = %s", (self.wiki_id,))
         model = cursor.fetchone()
         if model is None:
