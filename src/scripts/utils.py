@@ -316,7 +316,7 @@ def process_page(
     )  # get all links, resolve redirects
     linked_mentions = set(dict_links.keys())
     linked_links = set(dict_links.values())
-    # inlcude also current pagetitle
+    # include also current pagetitle
     linked_mentions.add(normalise_anchor(page))
     linked_links.add(normalise_title(page))
 
@@ -330,7 +330,17 @@ def process_page(
             node_val = node.value
             i1_node_init = page_wikicode_init.find(node_val)
             i2_node_init = i1_node_init + len(node_val)
-            for gram in ngram_iterator(node, 10, 1):
+            # The ngram_iterator generates substrings from the text of the article to check as candidate-anchors
+            # for links. It will do that by concatenating individual word-tokens (roughly speaking everything that
+            # is separated by a whitespace) to ngrams (strings that consist of n tokens); for example "Atlantic Ocean"
+            # would be a 2-gram. The arguments gram_length_max, gram_length_min define the range in which we vary n
+            # The current range n=5,...,1 means we first check all substrings of length 5, then 4, and so on until we
+            # reach 1. This range is defined by looking at the typical size of existing links in the anchor-dictionary.
+            # There are text-anchors that are not covered by this; they have much larger values for n; however,
+            # most anchors have small values of n.
+            # Reducing the range of the ngram-iterator we have fewer substrings for which we check the
+            # anchor-dictionary (and subsequently other lookups from checking whether to put a link).
+            for gram in ngram_iterator(text=node, gram_length_max=5, gram_length_min=1):
                 mention = gram.lower()
                 mention_original = gram
                 # if the mention exist in the DB

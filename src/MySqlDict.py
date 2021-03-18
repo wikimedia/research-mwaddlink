@@ -5,6 +5,15 @@ from dotenv import load_dotenv
 
 class MySqlDict(UserDict):
     def __init__(self, tablename=None, conn=None, datasetname=None, **kwargs):
+        """
+        Like SqlDict (https://pypi.org/project/sqldict/), but using MySQL as the backend.
+
+        Uses an in process cache to avoid issuing the same SQL queries.
+        :param tablename: The tablename to connect to
+        :param conn: The connection object from pymysql
+        :param datasetname: The name of the dataset to query
+        :param kwargs: Additional arguments (currently unused)
+        """
         super().__init__(**kwargs)
         load_dotenv()
         self.tablename = tablename
@@ -20,7 +29,9 @@ class MySqlDict(UserDict):
             "iteritems": 0,
             "__contains__": 0,
             "__getitem__": 0,
+            "in_process_cache_access_count": 0,
         }
+        self.in_process_cache = {}
 
     def __len__(self):
         get_len_query = "SELECT COUNT(*) FROM {tablename}".format(
@@ -86,6 +97,9 @@ class MySqlDict(UserDict):
         self.conn.close()
 
     def __contains__(self, key):
+        if key in self.in_process_cache:
+            self.query_details["in_process_cache_access_count"] += 1
+            return True
         has_item_query = (
             "SELECT value FROM {tablename} WHERE lookup = %s LIMIT 1".format(
                 tablename=self.tablename
@@ -94,9 +108,15 @@ class MySqlDict(UserDict):
         self.cursor.execute(has_item_query, (key,))
         self.query_count += 1
         self.query_details["__contains__"] += 1
-        return self.cursor.fetchone() is not None
+        item = self.cursor.fetchone()
+        if item is not None:
+            self.in_process_cache[key] = pickle.loads(item[0])
+        return item is not None
 
     def __getitem__(self, key):
+        if key in self.in_process_cache:
+            self.query_details["in_process_cache_access_count"] += 1
+            return self.in_process_cache[key]
         get_item_query = (
             "SELECT value FROM {tablename} WHERE lookup = %s LIMIT 1".format(
                 tablename=self.tablename
@@ -108,4 +128,5 @@ class MySqlDict(UserDict):
         item = self.cursor.fetchone()
         if item is None:
             raise KeyError(key)
-        return pickle.loads(item[0])
+        self.in_process_cache[key] = pickle.loads(item[0])
+        return self.in_process_cache[key]

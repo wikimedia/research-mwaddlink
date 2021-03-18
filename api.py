@@ -3,6 +3,8 @@ from flasgger import Swagger, validate
 import json_logging
 import logging
 import os
+from werkzeug.middleware.profiler import ProfilerMiddleware
+
 from sys import stdout
 from src.DatasetLoader import DatasetLoader
 from src.scripts.utils import getPageDict, normalise_title
@@ -13,6 +15,14 @@ from src.LogstashAwareJSONRequestLogFormatter import (
 from dotenv import load_dotenv
 
 app = Flask(__name__)
+# Debug mode also enables profiling.
+if os.getenv("FLASK_DEBUG"):
+    app.config["PROFILE"] = True
+    app.wsgi_app = ProfilerMiddleware(
+        app.wsgi_app,
+        restrictions=[100],
+        sort_by=["cumulative"],
+    )
 app.config["JSON_AS_ASCII"] = False
 swag = Swagger(app, template_file="swagger/linkrecommendations.yml")
 json_logging.init_flask(enable_json=True)
