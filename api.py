@@ -66,17 +66,24 @@ def main():
 
 
 @app.route(
-    "/v0/linkrecommendations/<string:wiki_id>/<string:page_title>",
+    "/v1/linkrecommendations/<string:project>/<string:wiki_domain>/<string:page_title>",
     methods=["POST", "GET"],
 )
-def query(wiki_id, page_title):
+def query(project, wiki_domain, page_title):
+    if project == "wikipedia":
+        # FIXME: What we should do instead is rename the datasets to {project}{domain} e.g. wikipediafr
+        # to avoid this hack
+        wiki_id = "%swiki" % wiki_domain
+    else:
+        wiki_id = "%s%s" % (wiki_domain, project)
+    wiki_id = wiki_id.replace("_", "-")
     datasetloader = DatasetLoader(backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id)
 
     path, valid_domains = datasetloader.get_model_path()
     if not path:
         return (
-            'Unable to process request for domain "%s". List of domains that can be processed by the service: \n- %s\n'
-            % (wiki_id, "\n- ".join(sorted(valid_domains))),
+            "Unable to process request for %s/%s. Project/domain pairs that can be processed by the service: \n- %s\n"
+            % (project, wiki_domain, "\n- ".join(sorted(valid_domains))),
             400,
         )
 
@@ -86,10 +93,11 @@ def query(wiki_id, page_title):
     else:
         try:
             data = getPageDict(
-                page_title,
-                wiki_id,
-                os.environ.get("MEDIAWIKI_API_URL"),
-                os.environ.get("MEDIAWIKI_PROXY_API_URL"),
+                title=page_title,
+                project=project,
+                wiki_domain=wiki_domain,
+                api_url=os.environ.get("MEDIAWIKI_API_URL"),
+                proxy_api_url=os.environ.get("MEDIAWIKI_PROXY_API_URL"),
             )
         except KeyError as e:
             if e.args[0] == "revisions":

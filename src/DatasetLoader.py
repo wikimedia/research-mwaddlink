@@ -63,7 +63,11 @@ class DatasetLoader:
             cursor.execute("SELECT lookup FROM lr_model")
             valid_domains = []
             for domain in cursor.fetchall():
-                valid_domains.append(domain[0])
+                # TODO: After datasets are renamed to {project}{domain} we can remove this hack. For now
+                # this hack is safe as we are only working with Wikipedias and not other wiki IDs (e.g. mediawiki or
+                # metawiki) where this would break.
+                domain_name = domain[0].replace("wiki", "")
+                valid_domains.append("%s/%s" % ("wikipedia", domain_name))
             return "", valid_domains
         file = open(self.model_path, mode="w")
         output = model[0].decode("utf-8")

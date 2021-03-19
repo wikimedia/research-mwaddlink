@@ -55,13 +55,14 @@ info:
   title: Wikimedia Link Recommendation Service
   version: 1.0.0
 paths:
-  "/v0/linkrecommendations/{wiki_id}/{page_title}":
+  "/v1/linkrecommendations/{project}/{domain}/{page_title}":
     post:
       x-monitor: true
       x-amples:
         - request:
             params:
-              wiki_id: cswiki
+              project: wikipedia
+              domain: cs
               page_title: Lipsko
             headers:
               Content-Type: "application/json"
@@ -80,14 +81,21 @@ paths:
                 pageid: 0
                 revid: 0
       parameters:
-        - name: wiki_id
+        - name: project
           type: string
-          description: 'ID of the wiki for processing (e.g. "dewiki" or "simplewiki")'
           in: path
+          description: 'Project that is being queried, e.g. "wikipedia" or "wiktionary"'
+          required: true
+        - name: domain
+          type: string
+          description: 'Subdomain of the wiki for processing, e.g. "de" or "simple". If the project does not have a subdomain (e.g. wikitech.org) then use the language code of the wiki in the request, e.g. "en" for mediawiki.org'
+          in: path
+          required: true
         - name: page_title
           type: string
           description: 'Page title of the article'
           in: path
+          required: true
         - name: threshold
           in: query
           required: false
@@ -124,7 +132,8 @@ paths:
       x-amples:
         - request:
             params:
-              wiki_id: cswiki
+              project: wikipedia
+              domain: cs
               page_title: Lipsko
             query:
               max_recommendations: 1
@@ -134,11 +143,16 @@ paths:
               body:
                 page_title: "Lipsko"
       parameters:
-      - name: wiki_id
+      - name: project
+        type: string
+        in: path
+        description: 'Project that is being queried, e.g. "wikipedia" or "wiktionary"'
+        required: true
+      - name: domain
+        type: string
+        description: 'Subdomain of the wiki for processing, e.g. "de" or "simple". If the project does not have a subdomain (e.g. wikitech.org) then use the language code of the wiki in the request, e.g. "en" for mediawiki.org'
         in: path
         required: true
-        type: string
-        description: 'ID of the wiki for processing (e.g. "dewiki" or "simplewiki")'
       - name: page_title
         in: path
         required: true

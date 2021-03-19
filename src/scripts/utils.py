@@ -149,12 +149,18 @@ def ngram_iterator(text, gram_length_max, gram_length_min=1):
 
 
 def getPageDict(
-    title: str, wiki_id: str, api_url: str = None, proxy_api_url: str = None
+    title: str,
+    wiki_domain: str,
+    project: str = "wikipedia",
+    api_url: str = None,
+    proxy_api_url: str = None,
 ) -> dict:
     """
     Get the wikitext, rev ID and page ID for a title.
     :param title The page title
-    :param wiki_id The wiki ID to use with queries. Current assumption is that it is a Wikipedia wiki ID,
+    :param project The project to use for the request, e.g. "wikipedia" or "wiktionary"
+    :param wiki_domain The wiki domain to use with queries, e.g. "en" for English Wikipedia.
+      Current assumption is that it is a Wikipedia wiki ID,
       non-Wikipedia wiki IDs are not yet supported.
     :param api_url The URL to use for connecting to MediaWiki API, it should contain the full path to api.php,
       e.g. http://localhost:8080/w/api.php
@@ -171,9 +177,6 @@ def getPageDict(
         "format": "json",
         "formatversion": "2",
     }
-    # FIXME: Add support for non-wikipedia wikis (e.g. wikitech.org, mediawiki.org)
-    langcode = wiki_id.replace("wiki", "").replace("_", "-")
-
     # In production, API queries should go to the proxy URL
     if proxy_api_url:
         api_url = proxy_api_url
@@ -181,14 +184,14 @@ def getPageDict(
         # Use the API url if specified via an environment variable or
         # the production wikipedia API endpoint; both of these are developer
         # setup configurations.
-        api_url = api_url or "https://%s.wikipedia.org/w/api.php" % langcode
+        api_url = api_url or "https://%s.%s.org/w/api.php" % (wiki_domain, project)
+
     headers = {
         "User-Agent": "linkrecommendation",
     }
-
     # If we have a proxy URL then we should use the Host header
     if proxy_api_url:
-        headers["Host"] = "%s.wikipedia.org" % langcode
+        headers["Host"] = "%s.%s.org" % (wiki_domain, project)
 
     req = requests.get(api_url, headers=headers, params=params)
     res = req.json()
@@ -197,7 +200,7 @@ def getPageDict(
 
     return {
         "page_title": title,
-        "wiki_id": wiki_id,
+        "wiki_domain": wiki_domain,
         "wikitext": res_rev["slots"]["main"]["content"],
         "pageid": res_page["pageid"],
         "revid": res_rev["revid"],
