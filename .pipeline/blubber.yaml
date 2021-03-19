@@ -34,8 +34,8 @@ variants:
     python:
       requirements: [requirements-query.txt]
   codehealth:
-    base: docker-registry.wikimedia.org/releng/sonar-scanner:1.0.1
-    copies: [build]
+    base: docker-registry.wikimedia.org/releng/sonar-scanner:4.6.0.2311-1
+    includes: [test]
     runs:
       environment: { SONAR_API_KEY: "SONAR_API_KEY" }
       insecurely: true
