@@ -27,7 +27,7 @@ class Query:
     ) -> dict:
 
         start = perf_counter()
-        self.model.load_model(self.datasetloader.get_model_path())
+        self.model.load_model(self.datasetloader.get_model_path()[0])
         anchors = self.datasetloader.get("anchors")
         pageids = self.datasetloader.get("pageids")
         redirects = self.datasetloader.get("redirects")

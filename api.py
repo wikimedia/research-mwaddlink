@@ -70,6 +70,16 @@ def main():
     methods=["POST", "GET"],
 )
 def query(wiki_id, page_title):
+    datasetloader = DatasetLoader(backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id)
+
+    path, valid_domains = datasetloader.get_model_path()
+    if not path:
+        return (
+            'Unable to process request for domain "%s". List of domains that can be processed by the service: \n- %s\n'
+            % (wiki_id, "\n- ".join(sorted(valid_domains))),
+            400,
+        )
+
     if request.method == "POST":
         data = request.json
         validate(data, "Input", "swagger/linkrecommendations.yml")
@@ -89,13 +99,6 @@ def query(wiki_id, page_title):
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
     data["threshold"] = float(request.args.get("threshold", 0.5))
     data["max_recommendations"] = int(request.args.get("max_recommendations", 15))
-
-    datasetloader = DatasetLoader(backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id)
-
-    try:
-        datasetloader.get_model_path()
-    except RuntimeError:
-        return "Unable to load model for %s!" % wiki_id, 400
 
     query_instance = Query(logger, datasetloader)
     return jsonify(
