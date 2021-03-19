@@ -120,9 +120,7 @@ paths:
                 type: integer
                 description: 'Page ID of the article'
     get:
-      # Switch to true when we know that we can make requests to
-      # cs.wikipedia.org/api.php via Envoy (T276217)
-      x-monitor: false
+      x-monitor: true
       x-amples:
         - request:
             params:
@@ -134,9 +132,7 @@ paths:
             response:
               status: 200
               body:
-                links_count: 1
-                links:
-                  link_index: 0
+                page_title: "Lipsko"
       parameters:
       - name: wiki_id
         in: path
