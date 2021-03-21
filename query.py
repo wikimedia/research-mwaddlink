@@ -2,7 +2,8 @@ import argparse
 import json
 import logging
 from sys import stdout
-from src.scripts.utils import getPageDict, normalise_title
+from src.scripts.utils import normalise_title
+from src.MediaWikiApi import MediaWikiApi
 from src.query import Query
 from src.DatasetLoader import DatasetLoader
 
@@ -87,7 +88,8 @@ def main():
     args = parser.parse_args()
     page_title = normalise_title(args.page_title)
     threshold = args.threshold
-    page_dict = getPageDict(page_title, args.wiki_id, args.api_url, args.proxy_api_url)
+    mw_api = MediaWikiApi(api_url=args.api_url, proxy_api_url=args.proxy_api_url)
+    page_dict = mw_api.get_article(page_title, args.wiki_id)
     datasetloader = DatasetLoader(args.database_backend, args.wiki_id)
     query = Query(logger, datasetloader)
     dict_result = query.run(

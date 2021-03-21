@@ -7,7 +7,8 @@ from werkzeug.middleware.profiler import ProfilerMiddleware
 
 from sys import stdout
 from src.DatasetLoader import DatasetLoader
-from src.scripts.utils import getPageDict, normalise_title
+from src.scripts.utils import normalise_title
+from src.MediaWikiApi import MediaWikiApi
 from src.query import Query
 from src.LogstashAwareJSONRequestLogFormatter import (
     LogstashAwareJSONRequestLogFormatter,
@@ -92,12 +93,14 @@ def query(project, wiki_domain, page_title):
         validate(data, "Input", "swagger/linkrecommendations.yml")
     else:
         try:
-            data = getPageDict(
+            mw_api = MediaWikiApi(
+                api_url=os.environ.get("MEDIAWIKI_API_URL"),
+                proxy_api_url=os.environ.get("MEDIAWIKI_PROXY_API_URL"),
+            )
+            data = mw_api.get_article(
                 title=page_title,
                 project=project,
                 wiki_domain=wiki_domain,
-                api_url=os.environ.get("MEDIAWIKI_API_URL"),
-                proxy_api_url=os.environ.get("MEDIAWIKI_PROXY_API_URL"),
             )
         except KeyError as e:
             if e.args[0] == "revisions":
