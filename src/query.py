@@ -34,7 +34,7 @@ class Query:
         word2vec = self.datasetloader.get("w2vfiltered")
         self.datasets = [anchors, pageids, redirects, word2vec]
 
-        added_links = process_page(
+        response = process_page(
             wikitext=wikitext,
             page=page_title,
             anchors=anchors,
@@ -50,7 +50,8 @@ class Query:
         stop = perf_counter()
 
         log_data = {
-            "suggested_links_count": len(added_links),
+            "suggested_links_count": len(response),
+            "info": response["info"],
             "request_parameters": {
                 "article_length": len(wikitext),
                 "page_title": page_title,
@@ -71,7 +72,10 @@ class Query:
         self.logger.info(log_data)
 
         return self.make_result(
-            page_title=page_title, pageid=pageid, revid=revid, added_links=added_links
+            page_title=page_title,
+            pageid=pageid,
+            revid=revid,
+            added_links=response["links"],
         )
 
     def get_query_info(self):

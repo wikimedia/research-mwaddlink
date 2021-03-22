@@ -1,14 +1,13 @@
 from Levenshtein import jaro as levenshtein_score
 from scipy.stats import kurtosis
+import time
 import operator
+import os
 import numpy as np
-
 import urllib.parse as up
-
 import wikitextparser as wtp
 import mwparserfromhell
 import re
-
 import nltk
 
 ######################
@@ -229,6 +228,12 @@ class MaxRecError(Exception):
     pass
 
 
+# Helper class to break out of page processing loop when maximum page processing time
+# has been reached.
+class MaxTimeError(Exception):
+    pass
+
+
 # Actual Linking function
 def process_page(
     wikitext,
@@ -247,7 +252,14 @@ def process_page(
     """
     returns updated wikitext
     """
-    # parse the wikicode
+    response = {"links": [], "info": ""}
+    init_time = time.time()
+    # Give ourselves a one second buffer to return the response after the
+    # configured timeout limit has been reached.
+    max_page_process_time_buffer = 1
+    max_page_process_time = (
+        int(os.environ.get("GUNICORN_TIMEOUT", 30)) - max_page_process_time_buffer
+    )
     page_wikicode = mwparserfromhell.parse(wikitext)
 
     page_wikicode_init = str(page_wikicode)  # save the initial state
@@ -264,7 +276,6 @@ def process_page(
     linked_links.add(normalise_title(page))
 
     tested_mentions = set()
-    added_links = []
 
     # try-except to break out of nested for-loop once we found maxrec links to add
     try:
@@ -284,6 +295,12 @@ def process_page(
             # Reducing the range of the ngram-iterator we have fewer substrings for which we check the
             # anchor-dictionary (and subsequently other lookups from checking whether to put a link).
             for gram in ngram_iterator(text=node, gram_length_max=5, gram_length_min=1):
+                if time.time() > init_time + max_page_process_time:
+                    response["info"] = (
+                        "Stopping page processing as maximum processing time %d seconds reached"
+                        % (max_page_process_time + max_page_process_time_buffer)
+                    )
+                    raise MaxTimeError
                 mention = gram.lower()
                 mention_original = gram
                 # if the mention exist in the DB
@@ -387,18 +404,22 @@ def process_page(
                                 "context_wikitext": context_wikitext,
                                 "context_plaintext": context_substring,
                             }
-                            added_links += [new_link]
+                            response["links"] += [new_link]
                             # stop iterating the wikitext to generate link recommendations
                             # as soon as we have maxrec link-recommendations
-                            if len(added_links) == maxrec:
+                            if len(response["links"]) == maxrec:
+                                response["info"] = (
+                                    "Stopping page processing as max recommendations limit %d reached."
+                                    % maxrec
+                                )
                                 raise MaxRecError
                     # More Book-keeping
                     tested_mentions.add(mention)
-    except MaxRecError:
+    except (MaxRecError, MaxTimeError):
         pass
     # if yes, we return the adapted wikitext
     # else just return list of links with offsets
     if return_wikitext:
         return page_wikicode
     else:
-        return added_links
+        return response

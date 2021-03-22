@@ -1,3 +1,5 @@
+import os
+
 bind = "0.0.0.0:8000"
 # Emit events to sidecar container in production.
 statsd_host = "localhost:9125"
@@ -6,7 +8,7 @@ statsd_prefix = "linkrecommendation"
 # suggests the formula (2 x $num_cores) + 1
 # Conservatively assuming 2 cores
 workers = 5
-# Processing larger pages is slow.
-timeout = 60
-graceful_timeout = 60
+# Processing recommendations for larger pages is slow.
+timeout = os.environ.get("GUNICORN_TIMEOUT", 30)
+graceful_timeout = os.environ.get("GUNICORN_TIMEOUT", 30)
 preload_app = True
