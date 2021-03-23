@@ -9,3 +9,4 @@ workers = 5
 # Processing larger pages is slow.
 timeout = 60
 graceful_timeout = 60
+preload_app = True
