@@ -24,7 +24,29 @@ if os.getenv("FLASK_DEBUG"):
         sort_by=["cumulative"],
     )
 app.config["JSON_AS_ASCII"] = False
-swag = Swagger(app, template_file="swagger/linkrecommendations.yml")
+is_swagger_ui_enabled = os.environ.get("SWAGGER_UI_ENABLED")
+swagger_ui_url_prefix = os.environ.get("SWAGGER_UI_URL_PREFIX", "/")
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": "apispec_1",
+            "route": "/apispec_1.json",
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "url_prefix": swagger_ui_url_prefix,
+    # JSON spec is always enabled, UI is enabled only for external traffic release
+    "swagger_ui": is_swagger_ui_enabled,
+    "specs_route": "/apidocs/",
+}
+swag = Swagger(
+    app,
+    template_file="swagger/linkrecommendations.yml",
+    config=swagger_config,
+)
 json_logging.init_flask(enable_json=True)
 json_logging.init_request_instrument(
     app=app, custom_formatter=LogstashAwareJSONRequestLogFormatter
@@ -38,7 +60,9 @@ load_dotenv()
 
 @app.route("/", methods=["GET"])
 def main():
-    return redirect("/apidocs")
+    if is_swagger_ui_enabled:
+        return redirect("%sapidocs" % swagger_ui_url_prefix)
+    return "Please see https://api.wikimedia.org/wiki/API_reference/Service/Link_Recommendation for documentation."
 
 
 @app.route(

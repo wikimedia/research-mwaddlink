@@ -17,6 +17,7 @@ services:
       DB_HOST: "db"
       DB_DATABASE: "addlink"
       DB_BACKEND: "mysql"
+      SWAGGER_UI_ENABLED: 1
   db:
     image: mariadb
     volumes:
