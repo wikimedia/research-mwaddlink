@@ -1,4 +1,5 @@
 from sqlitedict import SqliteDict
+from typing import Tuple
 from src.mysql import get_mysql_connection
 import tempfile
 from src import MySqlDict
@@ -30,27 +31,42 @@ class DatasetLoader:
                 ("./data/{0}/{0}.%s.sqlite" % tablename).format(self.wiki_id)
             )
 
-    def get_model_path(self):
-        # The model is a special case.
-        # Get the path to the model. If we're using SQLite, it's assumed the model already exists
-        # in the data/{wiki_id} directory. If we're using MySQL, check if the model exists in the temp dir
-        # and if so return that path, otherwise attempt to load from MySQL, save it to the system temp dir
-        # and then return the path.
+    def get_model_path(self) -> Tuple[str, list]:
+        """
+        Get the path to the model. If we're using SQLite, it's assumed the model already exists
+        in the data/{wiki_id} directory. If we're using MySQL, check if the model exists in the temp dir
+        and if so return that path, otherwise attempt to load from MySQL, save it to the system temp dir
+        :return:
+        A tuple of model path (if model is found) and a list of valid domains (if model not found)
+        """
         if os.path.exists(self.model_path):
-            return self.model_path
+            return self.model_path, []
         elif self.backend == "mysql":
-            self._load_model_from_mysql()
-            return self.model_path
+            return self._load_model_from_mysql()
         else:
-            raise RuntimeError("Unable to load model.")
+            # SQLite backend.
+            # TODO: Could generate a list of valid project/subdomain pairs by traversing the
+            # /data directory, but as we are not focused on SQLite for production this could
+            # be left for a follow-up some day.
+            return "", []
 
-    def _load_model_from_mysql(self):
+    def _load_model_from_mysql(self) -> Tuple[str, list]:
+        """
+        Obtain the link recommendation model from a MySQL table and write to disk.
+        :return:
+        A tuple of model path (if model is found) and a list of valid domains (if model not found)
+        """
         cursor = self.mysql_connection.cursor()
         cursor.execute("SELECT value FROM lr_model WHERE lookup = %s", (self.wiki_id,))
         model = cursor.fetchone()
         if model is None:
-            raise Exception("Could not load model from MySQL")
+            cursor.execute("SELECT lookup FROM lr_model")
+            valid_domains = []
+            for domain in cursor.fetchall():
+                valid_domains.append(domain[0])
+            return "", valid_domains
         file = open(self.model_path, mode="w")
         output = model[0].decode("utf-8")
         file.write(output)
         file.close()
+        return self.model_path, []
