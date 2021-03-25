@@ -45,7 +45,7 @@ flask run
 In production, we use `gunicorn` to serve the Flask app, and the MEDIAWIKI_API_URL parameter is omitted, making the app
 select the right Wikipedia URL automatically.
 
-The Swagger UI is enabled resulting in API docs at `http://localhost:5000{$SWAGGER_UI_URL_PREFIX}apidocs`.
+The Swagger UI is enabled resulting in API docs at `http://localhost:5000{$URL_PREFIX}apidocs`.
 
 ### Database backends
 

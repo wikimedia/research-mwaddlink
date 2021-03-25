@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify, redirect, url_for
 from flasgger import Swagger, validate
 import json_logging
 import logging
@@ -15,6 +15,22 @@ from src.LogstashAwareJSONRequestLogFormatter import (
 )
 from dotenv import load_dotenv
 
+
+class ProxyPassMiddleware(object):
+    "Simplified version of flask-reverse-proxy-fix"
+
+    def __init__(self, app, url_prefix):
+        self.app = app
+        self.url_prefix = url_prefix
+
+    def __call__(self, environ, start_response):
+        environ["SCRIPT_NAME"] = self.url_prefix
+        path_info = environ["PATH_INFO"]
+        if path_info.startswith(self.url_prefix):
+            environ["PATH_INFO"] = path_info[len(self.url_prefix) :]
+        return self.app(environ, start_response)
+
+
 app = Flask(__name__)
 # Debug mode also enables profiling.
 if os.getenv("FLASK_DEBUG"):
@@ -25,6 +41,10 @@ if os.getenv("FLASK_DEBUG"):
         sort_by=["cumulative"],
     )
 app.config["JSON_AS_ASCII"] = False
+url_prefix = os.environ.get("URL_PREFIX", "/")
+if url_prefix != "/":
+    app.wsgi_app = ProxyPassMiddleware(app.wsgi_app, url_prefix)
+
 swagger_config = {
     "headers": [],
     "specs": [
@@ -35,11 +55,11 @@ swagger_config = {
             "model_filter": lambda tag: True,
         }
     ],
-    "static_url_path": "%sflasgger_static"
-    % os.environ.get("SWAGGER_UI_URL_PREFIX", "/"),
+    "static_url_path": "/flasgger_static",
     "url_prefix": None,
     "swagger_ui": True,
     "specs_route": "/apidocs/",
+    "basePath": url_prefix,
 }
 swag = Swagger(
     app,
@@ -59,7 +79,7 @@ load_dotenv()
 
 @app.route("/", methods=["GET"])
 def main():
-    return redirect("/apidocs")
+    return redirect(url_for("flasgger.apidocs"))
 
 
 @app.route(
