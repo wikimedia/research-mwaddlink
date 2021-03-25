@@ -25,8 +25,6 @@ if os.getenv("FLASK_DEBUG"):
         sort_by=["cumulative"],
     )
 app.config["JSON_AS_ASCII"] = False
-is_swagger_ui_enabled = os.environ.get("SWAGGER_UI_ENABLED")
-swagger_ui_url_prefix = os.environ.get("SWAGGER_UI_URL_PREFIX", "/")
 swagger_config = {
     "headers": [],
     "specs": [
@@ -37,10 +35,10 @@ swagger_config = {
             "model_filter": lambda tag: True,
         }
     ],
-    "static_url_path": "/flasgger_static",
-    "url_prefix": swagger_ui_url_prefix,
-    # JSON spec is always enabled, UI is enabled only for external traffic release
-    "swagger_ui": is_swagger_ui_enabled,
+    "static_url_path": "%sflasgger_static"
+    % os.environ.get("SWAGGER_UI_URL_PREFIX", "/"),
+    "url_prefix": None,
+    "swagger_ui": True,
     "specs_route": "/apidocs/",
 }
 swag = Swagger(
@@ -61,9 +59,7 @@ load_dotenv()
 
 @app.route("/", methods=["GET"])
 def main():
-    if is_swagger_ui_enabled:
-        return redirect("%sapidocs" % swagger_ui_url_prefix)
-    return "Please see https://api.wikimedia.org/wiki/API_reference/Service/Link_Recommendation for documentation."
+    return redirect("/apidocs")
 
 
 @app.route(

@@ -39,16 +39,13 @@ DB_BACKEND=mysql \
 MEDIAWIKI_API_URL=https://my.wiki.url/w/api.php \
 FLASK_APP=api \
 FLASK_DEBUG=1 \
-SWAGGER_UI_ENABLED=1 \
 flask run
 ```
 
 In production, we use `gunicorn` to serve the Flask app, and the MEDIAWIKI_API_URL parameter is omitted, making the app
 select the right Wikipedia URL automatically.
 
-The Swagger UI is enabled via `SWAGGER_UI_ENABLED` environment variable, resulting in API docs at
-`http://localhost:5000{$SWAGGER_UI_URL_PREFIX}apidocs`. This is enabled for the external traffic release of the
-link recommendation service.
+The Swagger UI is enabled resulting in API docs at `http://localhost:5000{$SWAGGER_UI_URL_PREFIX}apidocs`.
 
 ### Database backends
 
