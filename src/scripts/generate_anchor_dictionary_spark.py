@@ -127,7 +127,7 @@ else:
 
 # define paths to save results (local as well as hadoop for intermediate datasets)
 PATH_local = "../../data/%s/" % wiki_id
-PATH_hadoop = "/tmp/mwaddlink/"
+PATH_hadoop = "/tmp/%s/mwaddlink/" % (os.environ["USER"])  # "/tmp/$USER/mwaddlink
 
 # start spark session
 spark = (

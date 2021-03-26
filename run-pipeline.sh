@@ -21,6 +21,9 @@ echo 'GETTING THE ANCHOR DICTIONARY'
 source /usr/lib/anaconda-wmf/bin/activate
 # PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
 PYSPARK_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 PYSPARK_DRIVER_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
+# get wikidata-properties to filter, e.g., dismabiguation pages as links
+PYSPARK_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 PYSPARK_DRIVER_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_wdproperties_spark.py $WIKI_ID
+python filter_dict_anchor.py $WIKI_ID
 conda deactivate
 
 # activate the custom virtual environment, unless it's already active
@@ -39,7 +42,7 @@ echo 'RUNNING wikipedia2vec on dump'
 wikipedia2vec train \
   --min-entity-count=0 \
   --dim-size 50 \
-  --pool-size 10 \
+  --pool-size 8 \
   "/mnt/data/xmldatadumps/public/${WIKI_ID}/latest/${WIKI_ID}-latest-pages-articles.xml.bz2" \
   "../../data/${WIKI_ID}/${WIKI_ID}.w2v.bin"
 
