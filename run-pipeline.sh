@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 # on stat-machine you might have to "kinit" first
 
