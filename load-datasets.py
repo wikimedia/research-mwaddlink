@@ -112,9 +112,12 @@ def main():
         :param dataset_name_for_table:
         :param wiki_id_for_table:
         """
+        message_prefix = "[general]"
+        if wiki_id_for_table:
+            message_prefix = "[%s]" % wiki_id_for_table
         print(
             "  ",
-            "Ensuring %s table exists..." % dataset_name_for_table,
+            "%s Ensuring %s table exists..." % (message_prefix, dataset_name_for_table),
             end="",
             flush=True,
         )
