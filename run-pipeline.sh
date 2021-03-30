@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 # on stat-machine you might have to "kinit" first
@@ -7,21 +6,17 @@ set -e
 WIKI_ID=${WIKI_ID:-simplewiki}
 DATASET_PATH=$(pwd)/data/${WIKI_ID}
 
-## go to scripts directory
 cd src/scripts/
 
-# # create folder for data
 echo "CREATING FOLDERS for data in ${DATASET_PATH}"
-
 mkdir -p "$DATASET_PATH/training"
 mkdir -p "$DATASET_PATH/testing"
 
 echo 'GETTING THE ANCHOR DICTIONARY'
 # for the anchor dictionary we use the conda-environment on stats
 source /usr/lib/anaconda-wmf/bin/activate
-# PYSPARK_PYTHON=python3.7 PYSPARK_DRIVER_PYTHON=python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
 PYSPARK_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 PYSPARK_DRIVER_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_anchor_dictionary_spark.py $WIKI_ID
-# get wikidata-properties to filter, e.g., dismabiguation pages as links
+# get wikidata-properties to filter, e.g., disambiguation pages as links
 PYSPARK_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 PYSPARK_DRIVER_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  generate_wdproperties_spark.py $WIKI_ID
 python filter_dict_anchor.py $WIKI_ID
 conda deactivate
@@ -36,8 +31,6 @@ fi
 # note that this does not filter by link-probability
 # python generate_anchor_dictionary.py $WIKI_ID
 
-
-## get wikipedia2vec-mebddingq
 echo 'RUNNING wikipedia2vec on dump'
 wikipedia2vec train \
   --min-entity-count=0 \
@@ -48,28 +41,22 @@ wikipedia2vec train \
 
 python filter_dict_w2v.py $WIKI_ID
 
-# # generate backtesting data
-echo 'GENERATING BACKTESTIN DATA'
+echo 'GENERATING BACKTESTING DATA'
 python generate_backtesting_data.py $WIKI_ID
 
-# # turn into features
 echo 'GENERATING FEATURES'
 python generate_training_data.py $WIKI_ID
 
-#  train model
 echo 'TRAINING THE MODEL'
 python generate_addlink_model.py $WIKI_ID
 
-# ## perform automatic backtesting
 echo 'RUNNING BACKTESTING EVALUATION'
 python generate_backtesting_eval.py -id $WIKI_ID -nmax 10000
 
-# # converting data to sqlite format
 echo 'CONVERTING DATA TO SQLITE FORMAT'
 python generate_sqlite_data.py $WIKI_ID
 
 echo 'MOVING SQLITE DATA TO MYSQL-DATABASE (STAGING)'
-# config needed to access database (might be subject to change depending from where this is run)
 cd ../../
 
 DB_USER=${DB_USER:-research}
@@ -102,7 +89,6 @@ python export-tables.py -id "$WIKI_ID" --path "$DATASET_PATH"
 echo "Generated datasets in $DATASET_PATH"
 echo "To publish the datasets, run \"WIKI_ID=$WIKI_ID ./publish-datasets.sh\""
 
-# deactivate the virtual environment
 if [ $VENV_ACTIVATED -ne 0 ]; then
   deactivate
 fi
