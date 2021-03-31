@@ -50,7 +50,7 @@ class Query:
         stop = perf_counter()
 
         log_data = {
-            "suggested_links_count": len(response),
+            "suggested_links_count": len(response["links"]),
             "info": response["info"],
             "request_parameters": {
                 "article_length": len(wikitext),
