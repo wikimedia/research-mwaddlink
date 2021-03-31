@@ -223,6 +223,8 @@ Run lint checks with `flake8`: `.venv_query/bin/flake8` or `tox`.
 
 Format your code with [`black`](https://pypi.org/project/black/).
 
+You can use the environment variable FLASK_DEBUG=1 to make the service run in debug mode (for nice error traces) and FLASK_PROFILING=1 to log detailed profiling data.
+
 ##### Docker Compose
 
 There is a Docker Compose configuration for running the service locally. Run `docker-compose up -d` then use `docker-compose exec linkrecommendation [cmd]` to execute code in the application container.

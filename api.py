@@ -32,8 +32,7 @@ class ProxyPassMiddleware(object):
 
 
 app = Flask(__name__)
-# Debug mode also enables profiling.
-if os.getenv("FLASK_DEBUG"):
+if os.getenv("FLASK_PROFILE"):
     app.config["PROFILE"] = True
     app.wsgi_app = ProfilerMiddleware(
         app.wsgi_app,
