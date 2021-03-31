@@ -56,7 +56,9 @@ def main():
             cursor.execute("TRUNCATE {table}".format(table=tablename))
             logger.info("Inserting %d items" % len(sqlitedict))
             for key, value in sqlitedict.items():
-                query = "INSERT INTO {table} VALUES (%s,%s)".format(table=tablename)
+                query = "INSERT INTO {table} (lookup, value) VALUES (%s,%s)".format(
+                    table=tablename
+                )
                 try:
                     cursor.execute(query, (key, pickle.dumps(value)))
                 except BaseException as err:

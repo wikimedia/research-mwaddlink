@@ -42,12 +42,19 @@ def create_tables(raw_args=None):
 
         create_query = (
             "CREATE TABLE IF NOT EXISTS {tablename} ("
+            "  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,"
             "  `lookup` TEXT NOT NULL,"
             "  `value` LONGBLOB NOT NULL,"
             "  INDEX `lookup_index` (`lookup`(767))"
             ") CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
         ).format(tablename=tablename)
         cursor.execute(create_query)
+        add_primary_key_query = (
+            "ALTER TABLE {tablename} "
+            "ADD COLUMN IF NOT EXISTS "
+            "id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST;"
+        ).format(tablename=tablename)
+        cursor.execute(add_primary_key_query)
 
     cursor.close()
     connection.close()
