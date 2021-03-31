@@ -313,7 +313,16 @@ def main():
                     num_rows = 0
                     for line in gzip.open(get_dataset_filename(dataset)):
                         if line.strip():
+                            # Skip the boilerplate comments at top of the dump file.
+                            if line.find(b"INSERT INTO") == -1:
+                                continue
                             num_rows += 1
+                            # Hack for b/c with older datasets that do not have (lookup, value)
+                            # TODO Remove once all datasets have been regenerated with id column
+                            if b"(lookup, value)" not in line:
+                                line_start = line[0 : line.find(b"` VALUES (") + 2]
+                                line_end = line[line.find(b"` VALUES (") + 1 : -1]
+                                line = bytes(line_start + b"(lookup, value)" + line_end)
                             cursor.execute(line)
                     print(cli_ok_status)
                     print("       %d rows inserted" % num_rows)
@@ -331,7 +340,7 @@ def main():
                     # so it contains the SHA followed by a space and then the filename.
                     remote_checksum = checksum_file.readline().split(" ")[0]
                     cursor.execute(
-                        "INSERT INTO {checksum_table} VALUES(%s,%s)".format(
+                        "INSERT INTO {checksum_table} (lookup, value) VALUES(%s,%s)".format(
                             checksum_table=checksum_table
                         ),
                         (

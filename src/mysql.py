@@ -45,5 +45,5 @@ def import_model_to_table(cursor: object, linkmodel: str, wiki_id: str):
         "DELETE FROM lr_model WHERE lookup = %s LIMIT 1",
         (wiki_id,),
     )
-    query = "INSERT INTO lr_model VALUES (%s,%s)"
+    query = "INSERT INTO lr_model (lookup, value) VALUES (%s,%s)"
     cursor.execute(query, (wiki_id, linkmodel))
