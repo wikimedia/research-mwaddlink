@@ -36,7 +36,7 @@ DB_PORT=3306 \
 DB_HOST=127.0.0.1 \
 DB_DATABASE=addlink \
 DB_BACKEND=mysql \
-MEDIAWIKI_API_URL=https://my.wiki.url/w/api.php \
+MEDIAWIKI_API_URL=https://my.wiki.url/w/rest.php \
 FLASK_APP=api \
 FLASK_DEBUG=1 \
 flask run

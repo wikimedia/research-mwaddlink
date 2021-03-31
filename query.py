@@ -35,12 +35,19 @@ def main():
     )
 
     parser.add_argument(
-        "--wiki-id",
-        "-id",
+        "--wiki-domain",
         default=None,
         type=str,
         required=True,
-        help="Wiki ID for which to get recommendations.",
+        help="Wiki domain for which to get recommendations (e.g. 'cs').",
+    )
+
+    parser.add_argument(
+        "--project",
+        default="wikipedia",
+        type=str,
+        required=True,
+        help="Wiki project for which to get recommendations (e.g. 'wikipedia').",
     )
 
     parser.add_argument(
@@ -48,7 +55,7 @@ def main():
         default=None,
         type=str,
         required=False,
-        help="Full URL to api.php.",
+        help="Full URL to rest.php.",
     )
 
     parser.add_argument(
@@ -56,7 +63,7 @@ def main():
         default=None,
         type=str,
         required=False,
-        help="Full URL to a proxy to api.php.",
+        help="Full URL to a proxy to rest.php.",
     )
 
     parser.add_argument(
@@ -88,8 +95,13 @@ def main():
     args = parser.parse_args()
     page_title = normalise_title(args.page_title)
     threshold = args.threshold
-    mw_api = MediaWikiApi(api_url=args.api_url, proxy_api_url=args.proxy_api_url)
-    page_dict = mw_api.get_article(page_title, args.wiki_id)
+    mw_api = MediaWikiApi(
+        api_url=args.api_url,
+        proxy_api_url=args.proxy_api_url,
+        wiki_domain=args.wiki_domain,
+        project=args.project,
+    )
+    page_dict = mw_api.get_article(page_title)
     datasetloader = DatasetLoader(args.database_backend, args.wiki_id)
     query = Query(logger, datasetloader)
     dict_result = query.run(
