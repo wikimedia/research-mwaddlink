@@ -25,7 +25,7 @@ variants:
       packages: [python3.7,build-essential,mariadb-client,cmake]
   production:
     includes: [production-build]
-    entrypoint: ["gunicorn", "api:app"]
+    entrypoint: ["gunicorn", "app:app"]
     runs:
       environment:
         NLTK_DATA: '/home/somebody/nltk_data'
