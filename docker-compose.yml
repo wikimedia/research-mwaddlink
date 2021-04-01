@@ -9,7 +9,7 @@ services:
       - 8000:8000
     environment:
       FLASK_DEBUG: 1
-      FLASK_APP: "api"
+      FLASK_APP: "app"
       FLASK_RUN_PORT: 8000
       FLASK_RUN_HOST: "0.0.0.0"
       DB_USER: "root"
