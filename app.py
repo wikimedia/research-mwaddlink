@@ -1,4 +1,13 @@
-from flask import Flask, request, jsonify, redirect, url_for
+import click
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    redirect,
+    url_for,
+    has_app_context,
+    has_request_context,
+)
 from flasgger import Swagger, validate
 import json_logging
 import logging
@@ -18,7 +27,7 @@ from dotenv import load_dotenv
 
 
 class ProxyPassMiddleware(object):
-    "Simplified version of flask-reverse-proxy-fix"
+    """Simplified version of flask-reverse-proxy-fix"""
 
     def __init__(self, app, url_prefix):
         self.app = app
@@ -88,12 +97,43 @@ def main():
     return redirect(url_for("flasgger.apidocs"))
 
 
+@app.cli.command("query")
+@click.option(
+    "--page-title", type=str, help="Page title to use in the query", required=True
+)
+@click.option(
+    "--project",
+    default="wikipedia",
+    required=True,
+    type=str,
+    help="Wiki project for which to get recommendations (e.g. 'wikipedia', 'wiktionary'",
+)
+@click.option(
+    "--wiki-domain",
+    type=str,
+    required=True,
+    help="Wiki domain for which to get recommendations (e.g. 'cs')",
+)
+@click.option(
+    "--threshold",
+    default=0.5,
+    required=False,
+    type=float,
+    help="Threshold value for links to be recommended",
+)
+@click.option(
+    "--max-recommendations",
+    default=15,
+    type=int,
+    required=False,
+    help="Maximum number of link recommendations to query (set to -1 for all)",
+)
 @app.route(
     "/v1/linkrecommendations/<string:project>/<string:wiki_domain>/<title:page_title>",
     methods=["POST", "GET"],
     merge_slashes=False,
 )
-def query(project, wiki_domain, page_title):
+def query(project, wiki_domain, page_title, threshold=None, max_recommendations=None):
     if project == "wikipedia":
         # FIXME: What we should do instead is rename the datasets to {project}{domain} e.g. wikipediafr
         # to avoid this hack
@@ -105,13 +145,17 @@ def query(project, wiki_domain, page_title):
 
     path, valid_domains = datasetloader.get_model_path()
     if not path:
-        return (
+        warning_message = (
             "Unable to process request for %s/%s. Project/domain pairs that can be processed by the service: \n- %s\n"
             % (project, wiki_domain, "\n- ".join(sorted(valid_domains))),
             400,
         )
+        logger.warning(warning_message)
+        if has_app_context():
+            print(warning_message)
+        return warning_message
 
-    if request.method == "POST":
+    if has_request_context() and request.method == "POST":
         data = request.json
         validate(data, "Input", "swagger/linkrecommendations.yml")
     else:
@@ -125,15 +169,21 @@ def query(project, wiki_domain, page_title):
             data = mw_api.get_article(page_title)
         except KeyError as e:
             if e.args[0] == "source":
-                return "Page not found: %s" % page_title, 404
+                page_not_found_message = "Page not found: %s" % page_title, 404
+                logger.warning(page_not_found_message)
+                if has_app_context():
+                    print(page_not_found_message)
+                return page_not_found_message
             raise e
 
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
-    data["threshold"] = float(request.args.get("threshold", 0.5))
-    data["max_recommendations"] = int(request.args.get("max_recommendations", 15))
+    data["threshold"] = threshold or float(request.args.get("threshold", 0.5))
+    data["max_recommendations"] = max_recommendations or int(
+        request.args.get("max_recommendations", 15)
+    )
 
     query_instance = Query(logger, datasetloader)
-    return jsonify(
+    response = jsonify(
         query_instance.run(
             wikitext=data["wikitext"],
             revid=data["revid"],
@@ -144,6 +194,10 @@ def query(project, wiki_domain, page_title):
             max_recommendations=data["max_recommendations"],
         )
     )
+    logger.debug(response)
+    if has_app_context():
+        print(response.get_json())
+    return response
 
 
 @app.route("/healthz", methods=["GET"])
@@ -154,3 +208,7 @@ def healthz():
     An empty string and a HTTP 200 response.
     """
     return "", 200
+
+
+if __name__ == "__main__":
+    query()
