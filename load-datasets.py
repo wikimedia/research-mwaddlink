@@ -174,6 +174,8 @@ def main():
 
     mysql_connection = get_mysql_connection()
     for wiki_id in wiki_ids:
+        # Start a transaction for each wiki. COMMIT happens after all datasets for the wiki have been updated.
+        mysql_connection.begin()
         local_dataset_directory = "%s/%s" % (args.path, wiki_id)
         if args.download:
             print(
