@@ -163,7 +163,6 @@ def main():
     datasets = args.datasets
     datasets_to_import = []
 
-    mysql_connection = get_mysql_connection()
     print("== Initializing ==")
     ensure_table_exists("checksum")
     ensure_table_exists("model")
@@ -173,6 +172,7 @@ def main():
 
     print("  ", "Beginning process to load datasets for %s" % ", ".join(wiki_ids))
 
+    mysql_connection = get_mysql_connection()
     for wiki_id in wiki_ids:
         local_dataset_directory = "%s/%s" % (args.path, wiki_id)
         if args.download:
