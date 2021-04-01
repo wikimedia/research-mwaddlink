@@ -3,6 +3,7 @@ from flasgger import Swagger, validate
 import json_logging
 import logging
 import os
+from werkzeug.routing import PathConverter
 from werkzeug.middleware.profiler import ProfilerMiddleware
 
 from sys import stdout
@@ -31,6 +32,11 @@ class ProxyPassMiddleware(object):
         return self.app(environ, start_response)
 
 
+class TitleConverter(PathConverter):
+    # copy of $wgLegalTitleChars in MediaWiki's DefaultSettings.php
+    regex = "[ %!\"$&'()*,\\-.\\/0-9:;=?@A-Z\\\\^_`a-z~\\x80-\\xFF+]+"
+
+
 app = Flask(__name__)
 if os.getenv("FLASK_PROFILE"):
     app.config["PROFILE"] = True
@@ -43,6 +49,7 @@ app.config["JSON_AS_ASCII"] = False
 url_prefix = os.environ.get("URL_PREFIX", "/")
 if url_prefix != "/":
     app.wsgi_app = ProxyPassMiddleware(app.wsgi_app, url_prefix)
+app.url_map.converters["title"] = TitleConverter
 
 swagger_config = {
     "headers": [],
@@ -82,8 +89,9 @@ def main():
 
 
 @app.route(
-    "/v1/linkrecommendations/<string:project>/<string:wiki_domain>/<string:page_title>",
+    "/v1/linkrecommendations/<string:project>/<string:wiki_domain>/<title:page_title>",
     methods=["POST", "GET"],
+    merge_slashes=False,
 )
 def query(project, wiki_domain, page_title):
     if project == "wikipedia":
