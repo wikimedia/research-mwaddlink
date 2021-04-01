@@ -105,11 +105,12 @@ def main():
             )
         print(cli_ok_status)
 
-    def ensure_table_exists(dataset_name_for_table, wiki_id_for_table=None):
+    def ensure_table_exists(dataset_name_for_table, connection, wiki_id_for_table=None):
         """
         Check to see if a table exists, if not, create it using the standard schema
         used for all tables the link recommendation service utilizes.
         :param dataset_name_for_table:
+        :param connection: A MySQL connection object
         :param wiki_id_for_table:
         """
         message_prefix = "[general]"
@@ -125,7 +126,7 @@ def main():
         if wiki_id_for_table:
             table_args += ["-id", wiki_id_for_table]
         table_args += ["--tables", dataset_name_for_table]
-        create_tables(table_args)
+        create_tables(raw_args=table_args, mysql_connection=connection)
         print(cli_ok_status)
 
     def verify_checksum(dataset_name):
@@ -164,201 +165,213 @@ def main():
     datasets_to_import = []
 
     print("== Initializing ==")
-    ensure_table_exists("checksum")
-    ensure_table_exists("model")
-    for wiki_id in wiki_ids:
-        for dataset in datasets:
-            ensure_table_exists(dataset, wiki_id)
-
-    print("  ", "Beginning process to load datasets for %s" % ", ".join(wiki_ids))
-
-    mysql_connection = get_mysql_connection()
-    for wiki_id in wiki_ids:
-        # Start a transaction for each wiki. COMMIT happens after all datasets for the wiki have been updated.
-        mysql_connection.begin()
-        local_dataset_directory = "%s/%s" % (args.path, wiki_id)
-        if args.download:
-            print(
-                "== Attempting to download datasets (%s) for %s =="
-                % (", ".join(datasets), wiki_id)
-            )
-            base_url = requests.compat.urljoin(ANALYTICS_BASE_URL, wiki_id)
-
-            if not os.path.exists(local_dataset_directory):
-                os.makedirs(local_dataset_directory)
-
+    with get_mysql_connection() as mysql_connection:
+        ensure_table_exists(
+            dataset_name_for_table="checksum", connection=mysql_connection
+        )
+        ensure_table_exists(dataset_name_for_table="model", connection=mysql_connection)
+        for wiki_id in wiki_ids:
             for dataset in datasets:
-                with requests.get(
-                    "%s/%s.checksum" % (base_url, get_dataset_filename(dataset)),
-                    cache_bust_url_query_params(),
-                ) as remote_checksum:
-                    if remote_checksum.status_code != 200:
-                        raise RuntimeError(
-                            "Unable to download checksum for %s, status code: %s."
-                            % (dataset, remote_checksum.status_code)
-                        )
+                ensure_table_exists(
+                    dataset_name_for_table=dataset,
+                    connection=mysql_connection,
+                    wiki_id_for_table=wiki_id,
+                )
 
-                    # Now compare the checksum with what we have stored in the database, if anything
-                    with mysql_connection.cursor() as cursor:
-                        checksum_query = (
-                            "SELECT value FROM {checksum_table} WHERE lookup = %s"
-                        ).format(checksum_table="%s_checksum" % table_prefix)
-                        cursor.execute(
-                            checksum_query,
-                            ("%s_%s" % (wiki_id, dataset),),
-                        )
-                        result = cursor.fetchone()
-                        if (
-                            result is not None
-                            and str(result[0].decode("utf-8"))
-                            == remote_checksum.text.split(" ")[0]
-                        ):
-                            print(
-                                "   Checksum in database matches remote checksum, skipping download for %s"
-                                % dataset
+        print("  ", "Beginning process to load datasets for %s" % ", ".join(wiki_ids))
+
+        for wiki_id in wiki_ids:
+            # Start a transaction for each wiki. COMMIT happens after all datasets for the wiki have been updated.
+            mysql_connection.begin()
+            local_dataset_directory = "%s/%s" % (args.path, wiki_id)
+            if args.download:
+                print(
+                    "== Attempting to download datasets (%s) for %s =="
+                    % (", ".join(datasets), wiki_id)
+                )
+                base_url = requests.compat.urljoin(ANALYTICS_BASE_URL, wiki_id)
+
+                if not os.path.exists(local_dataset_directory):
+                    os.makedirs(local_dataset_directory)
+
+                for dataset in datasets:
+                    with requests.get(
+                        "%s/%s.checksum" % (base_url, get_dataset_filename(dataset)),
+                        cache_bust_url_query_params(),
+                    ) as remote_checksum:
+                        if remote_checksum.status_code != 200:
+                            raise RuntimeError(
+                                "Unable to download checksum for %s, status code: %s."
+                                % (dataset, remote_checksum.status_code)
                             )
-                            continue
-                        if result is None:
-                            print(
-                                "   No checksum found for %s in local database, will attempt to download"
-                                % dataset
+
+                        # Now compare the checksum with what we have stored in the database, if anything
+                        with mysql_connection.cursor() as cursor:
+                            checksum_query = (
+                                "SELECT value FROM {checksum_table} WHERE lookup = %s"
+                            ).format(checksum_table="%s_checksum" % table_prefix)
+                            cursor.execute(
+                                checksum_query,
+                                ("%s_%s" % (wiki_id, dataset),),
                             )
-                        datasets_to_import.append(dataset)
-                        # Download the dataset to local directory.
-                        local_dataset = "%s/%s" % (
-                            local_dataset_directory,
-                            get_dataset_filename(dataset),
-                        )
-                        remote_dataset_url = "%s/%s" % (
-                            base_url,
-                            get_dataset_filename(dataset),
-                        )
+                            result = cursor.fetchone()
+                            if (
+                                result is not None
+                                and str(result[0].decode("utf-8"))
+                                == remote_checksum.text.split(" ")[0]
+                            ):
+                                print(
+                                    "   Checksum in database matches remote checksum, skipping download for %s"
+                                    % dataset
+                                )
+                                continue
+                            if result is None:
+                                print(
+                                    "   No checksum found for %s in local database, will attempt to download"
+                                    % dataset
+                                )
+                            datasets_to_import.append(dataset)
+                            # Download the dataset to local directory.
+                            local_dataset = "%s/%s" % (
+                                local_dataset_directory,
+                                get_dataset_filename(dataset),
+                            )
+                            remote_dataset_url = "%s/%s" % (
+                                base_url,
+                                get_dataset_filename(dataset),
+                            )
+                            print(
+                                "   Downloading dataset %s..." % remote_dataset_url,
+                                end="",
+                                flush=True,
+                            )
+                            with requests.get(
+                                remote_dataset_url,
+                                stream=True,
+                                params=cache_bust_url_query_params(),
+                            ) as remote_dataset:
+                                if remote_dataset.status_code != 200:
+                                    raise RuntimeError(
+                                        "Unable to download dataset from %s, status code: %s."
+                                        % (
+                                            remote_dataset_url,
+                                            remote_checksum.status_code,
+                                        )
+                                    )
+                                with open(
+                                    local_dataset, "wt" if dataset == "model" else "wb"
+                                ) as local_dataset_file:
+                                    if dataset == "model":
+                                        local_dataset_file.write(remote_dataset.text)
+                                    else:
+                                        shutil.copyfileobj(
+                                            remote_dataset.raw, local_dataset_file
+                                        )
+                                    print(cli_ok_status)
+                                    local_dataset_checksum = (
+                                        "%s.checksum" % local_dataset
+                                    )
+                                    with open(
+                                        local_dataset_checksum, "wt"
+                                    ) as local_dataset_checksum_file:
+                                        local_dataset_checksum_file.writelines(
+                                            remote_checksum.text
+                                        )
+            else:
+                datasets_to_import = datasets
+
+            if not len(datasets_to_import):
+                print("  ", "All datasets for %s are up-to-date!" % wiki_id)
+                continue
+
+            os.chdir("%s" % local_dataset_directory)
+            print(
+                "== Importing datasets (%s) for %s =="
+                % (", ".join(datasets_to_import), wiki_id)
+            )
+            for dataset in datasets_to_import:
+                verify_files_exist(dataset)
+                verify_checksum(dataset)
+
+            with mysql_connection.cursor() as cursor:
+                for dataset in datasets_to_import:
+                    print("  ", "Processing dataset: %s" % dataset)
+                    if dataset == "model":
+                        print("    ", "Inserting link model...", end="", flush=True)
+                        with open("%s.linkmodel.json" % wiki_id, mode="r") as data:
+                            import_model_to_table(
+                                # This is a small file (few MB) so calling data.read() is safe
+                                cursor=cursor,
+                                linkmodel=data.read(),
+                                wiki_id=wiki_id,
+                            )
+                        print(cli_ok_status)
+                    else:
+                        tablename = "%s_%s_%s" % (table_prefix, wiki_id, dataset)
                         print(
-                            "   Downloading dataset %s..." % remote_dataset_url,
+                            "    ",
+                            "Deleting all values from %s..." % tablename,
                             end="",
                             flush=True,
                         )
-                        with requests.get(
-                            remote_dataset_url,
-                            stream=True,
-                            params=cache_bust_url_query_params(),
-                        ) as remote_dataset:
-                            if remote_dataset.status_code != 200:
-                                raise RuntimeError(
-                                    "Unable to download dataset from %s, status code: %s."
-                                    % (remote_dataset_url, remote_checksum.status_code)
-                                )
-                            with open(
-                                local_dataset, "wt" if dataset == "model" else "wb"
-                            ) as local_dataset_file:
-                                if dataset == "model":
-                                    local_dataset_file.write(remote_dataset.text)
-                                else:
-                                    shutil.copyfileobj(
-                                        remote_dataset.raw, local_dataset_file
+                        cursor.execute(
+                            "DELETE FROM {tablename}".format(tablename=tablename)
+                        )
+                        print(cli_ok_status)
+                        print(
+                            "    ",
+                            "Inserting content into %s..." % tablename,
+                            end="",
+                            flush=True,
+                        )
+                        num_rows = 0
+                        for line in gzip.open(get_dataset_filename(dataset)):
+                            if line.strip():
+                                # Skip the boilerplate comments at top of the dump file.
+                                if line.find(b"INSERT INTO") == -1:
+                                    continue
+                                num_rows += 1
+                                # Hack for b/c with older datasets that do not have (lookup, value)
+                                # TODO Remove once all datasets have been regenerated with id column
+                                if b"(lookup, value)" not in line:
+                                    line_start = line[0 : line.find(b"` VALUES (") + 2]
+                                    line_end = line[line.find(b"` VALUES (") + 1 : -1]
+                                    line = bytes(
+                                        line_start + b"(lookup, value)" + line_end
                                     )
-                                print(cli_ok_status)
-                                local_dataset_checksum = "%s.checksum" % local_dataset
-                                with open(
-                                    local_dataset_checksum, "wt"
-                                ) as local_dataset_checksum_file:
-                                    local_dataset_checksum_file.writelines(
-                                        remote_checksum.text
-                                    )
-        else:
-            datasets_to_import = datasets
-
-        if not len(datasets_to_import):
-            print("  ", "All datasets for %s are up-to-date!" % wiki_id)
-            continue
-
-        os.chdir("%s" % local_dataset_directory)
-        print(
-            "== Importing datasets (%s) for %s =="
-            % (", ".join(datasets_to_import), wiki_id)
-        )
-        for dataset in datasets_to_import:
-            verify_files_exist(dataset)
-            verify_checksum(dataset)
-
-        with mysql_connection.cursor() as cursor:
-            for dataset in datasets_to_import:
-                print("  ", "Processing dataset: %s" % dataset)
-                if dataset == "model":
-                    print("    ", "Inserting link model...", end="", flush=True)
-                    with open("%s.linkmodel.json" % wiki_id, mode="r") as data:
-                        import_model_to_table(
-                            # This is a small file (few MB) so calling data.read() is safe
-                            cursor=cursor,
-                            linkmodel=data.read(),
-                            wiki_id=wiki_id,
+                                cursor.execute(line)
+                        print(cli_ok_status)
+                        print("       %d rows inserted" % num_rows)
+                    print("    ", "Updating stored checksum...", end="", flush=True)
+                    with open(
+                        "%s.checksum" % get_dataset_filename(dataset)
+                    ) as checksum_file:
+                        cursor.execute(
+                            "DELETE FROM {checksum_table} WHERE lookup = %s".format(
+                                checksum_table=checksum_table
+                            ),
+                            ("%s_%s" % (wiki_id, dataset)),
+                        )
+                        # checksum file is in the default format output from shasum utility,
+                        # so it contains the SHA followed by a space and then the filename.
+                        remote_checksum = checksum_file.readline().split(" ")[0]
+                        cursor.execute(
+                            "INSERT INTO {checksum_table} (lookup, value) VALUES(%s,%s)".format(
+                                checksum_table=checksum_table
+                            ),
+                            (
+                                "%s_%s" % (wiki_id, dataset),
+                                remote_checksum,
+                            ),
                         )
                     print(cli_ok_status)
-                else:
-                    tablename = "%s_%s_%s" % (table_prefix, wiki_id, dataset)
-                    print(
-                        "    ",
-                        "Deleting all values from %s..." % tablename,
-                        end="",
-                        flush=True,
-                    )
-                    cursor.execute(
-                        "DELETE FROM {tablename}".format(tablename=tablename)
-                    )
-                    print(cli_ok_status)
-                    print(
-                        "    ",
-                        "Inserting content into %s..." % tablename,
-                        end="",
-                        flush=True,
-                    )
-                    num_rows = 0
-                    for line in gzip.open(get_dataset_filename(dataset)):
-                        if line.strip():
-                            # Skip the boilerplate comments at top of the dump file.
-                            if line.find(b"INSERT INTO") == -1:
-                                continue
-                            num_rows += 1
-                            # Hack for b/c with older datasets that do not have (lookup, value)
-                            # TODO Remove once all datasets have been regenerated with id column
-                            if b"(lookup, value)" not in line:
-                                line_start = line[0 : line.find(b"` VALUES (") + 2]
-                                line_end = line[line.find(b"` VALUES (") + 1 : -1]
-                                line = bytes(line_start + b"(lookup, value)" + line_end)
-                            cursor.execute(line)
-                    print(cli_ok_status)
-                    print("       %d rows inserted" % num_rows)
-                print("    ", "Updating stored checksum...", end="", flush=True)
-                with open(
-                    "%s.checksum" % get_dataset_filename(dataset)
-                ) as checksum_file:
-                    cursor.execute(
-                        "DELETE FROM {checksum_table} WHERE lookup = %s".format(
-                            checksum_table=checksum_table
-                        ),
-                        ("%s_%s" % (wiki_id, dataset)),
-                    )
-                    # checksum file is in the default format output from shasum utility,
-                    # so it contains the SHA followed by a space and then the filename.
-                    remote_checksum = checksum_file.readline().split(" ")[0]
-                    cursor.execute(
-                        "INSERT INTO {checksum_table} (lookup, value) VALUES(%s,%s)".format(
-                            checksum_table=checksum_table
-                        ),
-                        (
-                            "%s_%s" % (wiki_id, dataset),
-                            remote_checksum,
-                        ),
-                    )
+
+                print("  ", "Committing...", end="", flush=True)
+                mysql_connection.commit()
                 print(cli_ok_status)
+                print("  ", "Finished importing for %s!" % wiki_id)
 
-            print("  ", "Committing...", end="", flush=True)
-            mysql_connection.commit()
-            print(cli_ok_status)
-            print("  ", "Finished importing for %s!" % wiki_id)
-
-    print("Finished importing datasets for %s" % ", ".join(wiki_ids))
-    mysql_connection.close()
+        print("Finished importing datasets for %s" % ", ".join(wiki_ids))
 
 
 if __name__ == "__main__":
