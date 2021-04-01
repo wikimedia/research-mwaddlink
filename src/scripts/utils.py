@@ -214,6 +214,8 @@ def classify_links(page, text, anchors, word2vec, model, threshold=0.95):
         )[0, 1]
 
     # Compute the top candidate
+    if not cand_prediction:
+        return None
     top_candidate = max(cand_prediction.items(), key=operator.itemgetter(1))
 
     # Check if the max probability meets the threshold before returning

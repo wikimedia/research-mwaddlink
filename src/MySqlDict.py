@@ -3,6 +3,12 @@ import pickle
 from dotenv import load_dotenv
 
 
+class NotFound(UserDict):
+    def __init__(self, **kwargs):
+        """Helper class used to signify that a lookup value was not found."""
+        super().__init__(**kwargs)
+
+
 class MySqlDict(UserDict):
     def __init__(self, tablename=None, conn=None, datasetname=None, **kwargs):
         """
@@ -99,7 +105,7 @@ class MySqlDict(UserDict):
     def __contains__(self, key):
         if key in self.in_process_cache:
             self.query_details["in_process_cache_access_count"] += 1
-            return True
+            return not isinstance(self.in_process_cache[key], NotFound)
         has_item_query = (
             "SELECT value FROM {tablename} WHERE lookup = %s LIMIT 1".format(
                 tablename=self.tablename
@@ -111,10 +117,14 @@ class MySqlDict(UserDict):
         item = self.cursor.fetchone()
         if item is not None:
             self.in_process_cache[key] = pickle.loads(item[0])
+        else:
+            self.in_process_cache[key] = NotFound()
         return item is not None
 
     def __getitem__(self, key):
         if key in self.in_process_cache:
+            if isinstance(self.in_process_cache[key], NotFound):
+                raise KeyError(key)
             self.query_details["in_process_cache_access_count"] += 1
             return self.in_process_cache[key]
         get_item_query = (
