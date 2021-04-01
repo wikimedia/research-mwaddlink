@@ -27,7 +27,7 @@ def get_connection_dict() -> dict:
         "database": os.environ.get("DB_DATABASE"),
         "port": int(os.environ.get("DB_PORT", 3306)),
         "read_default_file": os.environ.get("DB_READ_DEFAULT_FILE"),
-        "charset": "utf8",
+        "charset": "utf8mb4",
         "use_unicode": True,
     }
 
