@@ -16,7 +16,7 @@ class MySqlDict(UserDict):
 
         Uses an in process cache to avoid issuing the same SQL queries.
         :param tablename: The tablename to connect to
-        :param conn: The connection object from pymysql
+        :param conn: The MySQL connection object
         :param datasetname: The name of the dataset to query
         :param kwargs: Additional arguments (currently unused)
         """

@@ -350,7 +350,7 @@ def main():
                             "DELETE FROM {checksum_table} WHERE lookup = %s".format(
                                 checksum_table=checksum_table
                             ),
-                            ("%s_%s" % (wiki_id, dataset)),
+                            ("%s_%s" % (wiki_id, dataset),),
                         )
                         # checksum file is in the default format output from shasum utility,
                         # so it contains the SHA followed by a space and then the filename.
