@@ -38,6 +38,7 @@ mwcli==0.0.3
 mwparserfromhell==0.5.4
 mwtypes==0.3.2
 mwxml==0.3.3
+mysqlclient==2.0.3
 nbclient==0.5.0
 nbconvert==6.0.6
 nbformat==5.0.7
@@ -58,7 +59,6 @@ ptyprocess==0.6.0
 pybind11==2.5.0
 pycparser==2.20
 Pygments==2.7.1
-PyMySQL~=1.0.2
 pyparsing==2.4.7
 pyrsistent==0.17.3
 python-dateutil==2.8.1
