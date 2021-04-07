@@ -331,14 +331,6 @@ def main():
                                 if line.find(b"INSERT INTO") == -1:
                                     continue
                                 num_rows += 1
-                                # Hack for b/c with older datasets that do not have (lookup, value)
-                                # TODO Remove once all datasets have been regenerated with id column
-                                if b"(lookup, value)" not in line:
-                                    line_start = line[0 : line.find(b"` VALUES (") + 2]
-                                    line_end = line[line.find(b"` VALUES (") + 1 : -1]
-                                    line = bytes(
-                                        line_start + b"(lookup, value)" + line_end
-                                    )
                                 cursor.execute(line)
                         print(cli_ok_status)
                         print("       %d rows inserted" % num_rows)
