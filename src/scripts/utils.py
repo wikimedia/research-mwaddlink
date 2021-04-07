@@ -105,7 +105,7 @@ def get_tokens(sent):
     """
     tokens = []
     for w in sent.split(" "):
-        for w_ in nltk.word_tokenize(w):
+        for w_ in nltk.word_tokenize(w, preserve_line=True):
             tokens += [w_]
         tokens += [" "]
     # the last token will always be whitespace (can be removed)
