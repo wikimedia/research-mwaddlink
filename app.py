@@ -16,6 +16,7 @@ from werkzeug.routing import PathConverter
 from werkzeug.middleware.profiler import ProfilerMiddleware
 
 from sys import stdout
+from src.ClickProfiler import ClickProfiler
 from src.DatasetLoader import DatasetLoader
 from src.scripts.utils import normalise_title
 from src.MediaWikiApi import MediaWikiApi
@@ -129,6 +130,13 @@ def main():
     required=False,
     help="Maximum number of link recommendations to query (set to -1 for all)",
 )
+@click.pass_context
+def cli_query(ctx: click.Context, *args, **kwargs):
+    if os.getenv("FLASK_PROFILE"):
+        ClickProfiler(restrictions=[100], sort_by=["cumulative"]).profile(ctx)
+    query(*args, **kwargs)
+
+
 @app.route(
     "/v1/linkrecommendations/<string:project>/<string:wiki_domain>/<title:page_title>",
     methods=["POST", "GET"],
