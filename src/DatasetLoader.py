@@ -2,7 +2,7 @@ from typing import Tuple
 import tempfile
 import os
 
-if os.getenv("DB_BACKEND") == "sqlite":
+if os.getenv("DB_BACKEND") != "mysql":
     from sqlitedict import SqliteDict
 else:
     from src import MySqlDict

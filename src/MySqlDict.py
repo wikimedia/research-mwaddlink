@@ -112,18 +112,16 @@ class MySqlDict(UserDict):
         chunk_size = 50
         for i in range(0, len(keys), chunk_size):
             chunked_keys = keys[i : i + chunk_size]
-            format_strings = ",".join(["%s"] * len(chunked_keys))
-            query = (
-                "SELECT lookup, value FROM {tablename} WHERE lookup IN (%s)".format(
-                    tablename=self.tablename
-                )
-                % format_strings
+            item_list = ",".join(["%s"] * len(chunked_keys))
+            query = "SELECT lookup, value FROM {tablename} WHERE lookup IN ({item_list})".format(
+                tablename=self.tablename,
+                item_list=item_list,
             )
             self.query_details["filter"] += 1
             self.query_count += 1
             self.cursor.execute(query, tuple(chunked_keys))
             for found in self.cursor.fetchall():
-                filtered[found[0]] = found[1]
+                filtered[found[0]] = pickle.loads(found[1])
 
         return filtered
 

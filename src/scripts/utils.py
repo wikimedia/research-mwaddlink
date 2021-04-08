@@ -307,14 +307,14 @@ def process_page(
                     raise MaxTimeError
                 mentions[gram.lower()] = gram
 
-            if not len(mentions.keys()):
+            if not mentions:
                 continue
 
             # Get the subset of anchors that contain a mention; this batches a SELECT ... IN query rather
             # than performing (thousands of) individual SELECT queries.
             if isinstance(anchors, MySqlDict):
                 anchors_with_mentions = anchors.filter(list(mentions))
-                if not len(anchors_with_mentions.keys()):
+                if not anchors_with_mentions:
                     continue
             else:
                 # SQLite will not batch its queries.
@@ -327,7 +327,9 @@ def process_page(
                     # it was not previously linked (or part of a link)
                     and not any(mention in s for s in linked_mentions)
                     # none of its candidate links is already used
-                    and not bool(set(anchors[mention].keys()) & linked_links)
+                    and not bool(
+                        set(anchors_with_mentions[mention].keys()) & linked_links
+                    )
                     # it was not tested before (for efficiency)
                     and mention not in tested_mentions
                 ):
@@ -336,7 +338,7 @@ def process_page(
                     candidate = classify_links(
                         page,
                         mention,
-                        anchors,
+                        anchors_with_mentions,
                         word2vec,
                         model,
                         threshold=threshold,
