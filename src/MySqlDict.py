@@ -30,6 +30,7 @@ class MySqlDict(UserDict):
         self.query_details = {
             "__len__": 0,
             "__bool__": 0,
+            "filter": 0,
             "iterkeys": 0,
             "itervalues": 0,
             "iteritems": 0,
@@ -97,6 +98,34 @@ class MySqlDict(UserDict):
 
     def items(self):
         return self.iteritems()
+
+    def filter(self, keys: list) -> dict:
+        """
+        :rtype: dict A filtered dictionary with lookup/value as the key/value pairs.
+        :type keys: list A list of strings to use with a IN query to get a filtered set of the dictionary.
+        """
+        filtered = {}
+
+        if not len(keys):
+            return {}
+
+        chunk_size = 50
+        for i in range(0, len(keys), chunk_size):
+            chunked_keys = keys[i : i + chunk_size]
+            format_strings = ",".join(["%s"] * len(chunked_keys))
+            query = (
+                "SELECT lookup, value FROM {tablename} WHERE lookup IN (%s)".format(
+                    tablename=self.tablename
+                )
+                % format_strings
+            )
+            self.query_details["filter"] += 1
+            self.query_count += 1
+            self.cursor.execute(query, tuple(chunked_keys))
+            for found in self.cursor.fetchall():
+                filtered[found[0]] = found[1]
+
+        return filtered
 
     def close(self):
         self.cursor.close()

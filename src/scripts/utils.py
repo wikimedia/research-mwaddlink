@@ -1,5 +1,6 @@
 from Levenshtein import jaro as levenshtein_score
 from scipy.stats import kurtosis
+from src.MySqlDict import MySqlDict
 import time
 import operator
 import os
@@ -282,6 +283,7 @@ def process_page(
     # try-except to break out of nested for-loop once we found maxrec links to add
     try:
         for node in page_wikicode_text_nodes:
+            mentions = {}
             # check the offset of the node in the wikitext_init
             node_val = node.value
             i1_node_init = page_wikicode_init.find(node_val)
@@ -303,16 +305,30 @@ def process_page(
                         % (max_page_process_time + max_page_process_time_buffer)
                     )
                     raise MaxTimeError
-                mention = gram.lower()
-                mention_original = gram
-                # if the mention exist in the DB
-                # it was not previously linked (or part of a link)
-                # none of its candidate links is already used
-                # it was not tested before (for efficiency)
+                mentions[gram.lower()] = gram
+
+            if not len(mentions.keys()):
+                continue
+
+            # Get the subset of anchors that contain a mention; this batches a SELECT ... IN query rather
+            # than performing (thousands of) individual SELECT queries.
+            if isinstance(anchors, MySqlDict):
+                anchors_with_mentions = anchors.filter(list(mentions))
+                if not len(anchors_with_mentions.keys()):
+                    continue
+            else:
+                # SQLite will not batch its queries.
+                anchors_with_mentions = anchors
+
+            for mention, mention_original in mentions.items():
                 if (
-                    mention in anchors
+                    # if the mention exist in the DB
+                    mention in anchors_with_mentions
+                    # it was not previously linked (or part of a link)
                     and not any(mention in s for s in linked_mentions)
+                    # none of its candidate links is already used
                     and not bool(set(anchors[mention].keys()) & linked_links)
+                    # it was not tested before (for efficiency)
                     and mention not in tested_mentions
                 ):
                     # logic
