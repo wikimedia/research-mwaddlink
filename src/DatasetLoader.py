@@ -1,9 +1,12 @@
-from sqlitedict import SqliteDict
 from typing import Tuple
-from src.mysql import get_mysql_connection
 import tempfile
-from src import MySqlDict
 import os
+
+if os.getenv("DB_BACKEND") == "sqlite":
+    from sqlitedict import SqliteDict
+else:
+    from src import MySqlDict
+    from src.mysql import get_mysql_connection
 
 
 class DatasetLoader:
