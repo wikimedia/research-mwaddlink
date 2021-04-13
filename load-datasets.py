@@ -162,7 +162,6 @@ def main():
         wiki_ids = [args.wiki_id]
 
     datasets = args.datasets
-    datasets_to_import = []
 
     print("== Initializing ==")
     with get_mysql_connection() as mysql_connection:
@@ -181,6 +180,7 @@ def main():
         print("  ", "Beginning process to load datasets for %s" % ", ".join(wiki_ids))
 
         for wiki_id in wiki_ids:
+            datasets_to_import = []
             # Start a transaction for each wiki. COMMIT happens after all datasets for the wiki have been updated.
             mysql_connection.begin()
             local_dataset_directory = "%s/%s" % (args.path, wiki_id)
