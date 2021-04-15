@@ -24,8 +24,12 @@ class DatasetLoader:
 
     def get(self, tablename=None):
         if self.backend == "mysql":
+            if tablename in ["model", "checksum"]:
+                table = "%s_%s" % (self.table_prefix, tablename)
+            else:
+                table = "%s_%s_%s" % (self.table_prefix, self.wiki_id, tablename)
             return MySqlDict.MySqlDict(
-                tablename="%s_%s_%s" % (self.table_prefix, self.wiki_id, tablename),
+                tablename=table,
                 conn=self.mysql_connection,
                 datasetname=tablename,
             )

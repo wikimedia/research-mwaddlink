@@ -11,7 +11,9 @@ from flask import (
 from flasgger import Swagger, validate
 import json_logging
 import logging
+import json
 import os
+import subprocess
 from werkzeug.routing import PathConverter
 from werkzeug.middleware.profiler import ProfilerMiddleware
 
@@ -192,20 +194,25 @@ def query(project, wiki_domain, page_title, threshold=None, max_recommendations=
     )
 
     query_instance = Query(logger, datasetloader)
-    response = jsonify(
-        query_instance.run(
-            wikitext=data["wikitext"],
-            revid=data["revid"],
-            pageid=data["pageid"],
-            threshold=data["threshold"],
-            wiki_id=wiki_id,
-            page_title=normalise_title(page_title),
-            max_recommendations=data["max_recommendations"],
-        )
+    result = query_instance.run(
+        wikitext=data["wikitext"],
+        revid=data["revid"],
+        pageid=data["pageid"],
+        threshold=data["threshold"],
+        wiki_id=wiki_id,
+        page_title=normalise_title(page_title),
+        max_recommendations=data["max_recommendations"],
     )
+    result["meta"]["application_version"] = (
+        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+        .decode("ascii")
+        .strip()
+    )
+    response = jsonify(result)
+
     logger.debug(response)
     if has_app_context():
-        print(response.get_json())
+        print(json.dumps(response.get_json(), indent=4))
     return response
 
 

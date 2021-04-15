@@ -1,8 +1,39 @@
 ---
 definitions:
+  DatasetChecksums:
+    type: object
+    properties:
+      anchors:
+        type: string
+        description: "Checksum value for the anchors dataset"
+      w2vfiltered:
+        type: string
+        description: "Checksum value for the w2vfiltered dataset"
+      redirects:
+        type: string
+        description: "Checksum value for the redirects dataset"
+      pageids:
+        type: string
+        description: "Checksum value for the pageids dataset"
+      model:
+        type: string
+        description: "Checksum value for the model dataset"
+  Meta:
+    type: object
+    properties:
+      format_version:
+        type: integer
+        description: "The format version for the response."
+      application_version:
+        type: string
+        description: "The git commit hash associated with the application that generated the response"
+      dataset_checksums:
+        $ref: '#/definitions/DatasetChecksums'
   LinkRecommendationSet:
     type: object
     properties:
+      meta:
+        $ref: '#/definitions/Meta'
       links:
         type: array
         description: 'An array of link recommendation objects.'
@@ -79,6 +110,8 @@ paths:
                 page_title: "Lipsko"
                 pageid: 0
                 revid: 0
+                meta:
+                  format_version: 1
       parameters:
         - name: project
           type: string
@@ -144,6 +177,8 @@ paths:
               threshold: 0.1
             response:
               status: 200
+              meta:
+                format_version: 1
               body:
                 page_title: "Lipsko"
       parameters:

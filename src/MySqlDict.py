@@ -165,5 +165,10 @@ class MySqlDict(UserDict):
         item = self.cursor.fetchone()
         if item is None:
             raise KeyError(key)
-        self.in_process_cache[key] = pickle.loads(item[0])
+        try:
+            self.in_process_cache[key] = pickle.loads(item[0])
+        except pickle.UnpicklingError:
+            # TODO: Apply this pattern across other usages of pickle.loads? It's not needed for now.
+            # lr_checksum and lr_model values are not pickled.
+            self.in_process_cache[key] = item[0].decode("utf-8")
         return self.in_process_cache[key]

@@ -8,12 +8,15 @@ from time import perf_counter
 
 class Query:
     def __init__(self, logger, datasetloader: DatasetLoader):
+        # Increment this version only for major changes in the output format.
+        self.format_version = 1
         self.logger = logger
         self.datasetloader = datasetloader
         self.model = xgb.XGBClassifier(
             n_jobs=min([int(multiprocessing.cpu_count() / 4), 8])
         )
         self.datasets = []
+        self.wiki_id = None
 
     def run(
         self,
@@ -32,7 +35,9 @@ class Query:
         pageids = self.datasetloader.get("pageids")
         redirects = self.datasetloader.get("redirects")
         word2vec = self.datasetloader.get("w2vfiltered")
-        self.datasets = [anchors, pageids, redirects, word2vec]
+        model = self.datasetloader.get("model")
+        self.datasets = [anchors, pageids, redirects, word2vec, model]
+        self.wiki_id = wiki_id
 
         response = process_page(
             wikitext=wikitext,
@@ -96,11 +101,30 @@ class Query:
             "pageid": pageid,
             "revid": revid,
             "links_count": len(added_links),
+            "meta": {
+                "format_version": self.format_version,
+                "dataset_checksums": self.get_dataset_checksums(),
+            },
             "links": [
                 self.make_link(link, pos)
                 for pos, link in enumerate(added_links, start=0)
             ],
         }
+
+    def get_dataset_checksums(self) -> dict:
+        """
+        :return: Dictionary with dataset names as the keys and their stored checksums as the values.
+        """
+        checksum_detail = {}
+        datasets = self.datasets
+        checksums = self.datasetloader.get("checksum")
+        if self.datasetloader.backend != "mysql":
+            return checksum_detail
+        for dataset in datasets:
+            checksum_detail[dataset.datasetname] = checksums[
+                "%s_%s" % (self.wiki_id, dataset.datasetname)
+            ]
+        return checksum_detail
 
     def make_link(self, link: dict, pos: int):
         return {
