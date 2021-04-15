@@ -126,6 +126,11 @@ paths:
               pageid:
                 type: integer
                 description: 'Page ID of the article'
+      responses:
+        200:
+          description: LinkRecommendationSet
+          schema:
+            $ref: '#/definitions/LinkRecommendationSet'
     get:
       x-monitor: true
       x-amples:
