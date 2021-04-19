@@ -1,5 +1,10 @@
 from Levenshtein import jaro as levenshtein_score
 from scipy.stats import kurtosis
+import sys, os
+
+# if we are currently in /src/scripts we have to add the main folder (via ../..) to sys-path in order to be able to import src.MySqlDict
+if os.getcwd().endswith("/src/scripts"):
+    sys.path.append(os.path.join(os.pardir, os.pardir))
 from src.MySqlDict import MySqlDict
 import time
 import operator
