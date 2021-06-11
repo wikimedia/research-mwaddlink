@@ -12,8 +12,6 @@ if len(sys.argv) >= 2:
 else:
     wiki_id = "enwiki"
 
-# TODO: automatically update snapshot
-snapshot = "2021-03-01"
 # list of propoerties for which to extract the qid-values
 # P31=instance-of
 # TODO: make this custopmizable
@@ -25,6 +23,11 @@ spark = (
     .enableHiveSupport()
     .getOrCreate()
 )
+
+# get the lastest available snapshot (static snapshots will be outdated and not available in hive anymore)
+snapshot = (
+    spark.read.table("wmf.wikidata_item_page_link").select("snapshot").distinct()
+).rdd.max()[0]
 
 ## all wikidata items with wikipedia-article in a given project (main namespace)
 df_wd = (

@@ -32,7 +32,7 @@ fi
 # python generate_anchor_dictionary.py $WIKI_ID
 
 echo 'RUNNING wikipedia2vec on dump'
-wikipedia2vec train \
+ionice wikipedia2vec train \
   --min-entity-count=0 \
   --dim-size 50 \
   --pool-size 8 \

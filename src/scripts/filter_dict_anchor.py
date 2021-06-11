@@ -14,6 +14,23 @@ list_qid_filter = [
     "Q13406463",  # list-pages
     "Q3186692",  # calendar year-pages
     "Q577",  # year
+    "Q573",  # day
+    "Q39911",  # decade
+    "Q578",  # century
+    "Q36507",  # millenium
+    "Q47150325",  # calendar day of a given year
+    "Q47018478",  # calendar month of a given year
+    "Q205892",  # calendar date
+    "Q14795564",  # Point in time with respect to recurrent timeframe
+    "Q18340514",  # events in a specific year or time period
+    "Q1978718",  # unit of length
+    "Q1790144",  # unit of time
+    "Q1302471",  # unit of volume
+    "Q3647172",  # unit of mass
+    "Q2916980",  # unit of energy
+    "Q3550873",  # unit of information
+    "Q8142",  # currency
+    "Q27084",  # parts-per-notation
 ]
 
 anchors = pickle.load(open("../../data/{0}/{0}.anchors.pkl".format(wiki_id), "rb"))

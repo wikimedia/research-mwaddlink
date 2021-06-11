@@ -76,7 +76,7 @@ references_regex = re.compile(r"<ref[^>]*>[^<]+<\/ref>")
 
 
 def get_plain_text_without_links(row):
-    """ Replace the links with a dot to interrupt the sentence and get the plain text """
+    """Replace the links with a dot to interrupt the sentence and get the plain text"""
     wikicode = row.wikitext
     wikicode_without_links = re.sub(links_regex, ".", wikicode)
     wikicode_without_links = re.sub(references_regex, ".", wikicode_without_links)

@@ -57,7 +57,7 @@ def main():
         mysqldump_command = [
             "mysqldump",
         ]
-        if connection_dict["read_default_file"]:
+        if connection_dict.get("read_default_file"):
             mysqldump_command += [
                 "--defaults-extra-file=%s" % connection_dict["read_default_file"]
             ]
@@ -69,7 +69,7 @@ def main():
             "-u%s" % connection_dict["user"],
         ]
 
-        if connection_dict["password"]:
+        if connection_dict.get("password"):
             mysqldump_command += ["-p%s" % connection_dict["password"]]
 
         mysqldump_command += [
