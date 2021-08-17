@@ -90,7 +90,7 @@ json_logging.init_request_instrument(
     app=app, custom_formatter=LogstashAwareJSONRequestLogFormatter
 )
 logger = logging.getLogger("logger")
-logger.setLevel(logging.INFO)
+logger.setLevel(os.environ.get("FLASK_LOGLEVEL", logging.WARNING))
 logger.addHandler(logging.StreamHandler(stdout))
 
 load_dotenv()
