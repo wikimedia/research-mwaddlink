@@ -11,4 +11,5 @@ workers = 5
 # Processing recommendations for larger pages is slow.
 timeout = os.environ.get("GUNICORN_TIMEOUT", 30)
 graceful_timeout = os.environ.get("GUNICORN_TIMEOUT", 30)
+loglevel = os.environ.get("GUNICORN_LOGLEVEL", "warning")
 preload_app = True
