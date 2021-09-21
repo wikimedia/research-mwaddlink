@@ -156,8 +156,8 @@ def linked_sents_extractor(title, wikicode):
 
     # bengali has special character for full stop https://en.wikipedia.org/wiki/Bengali_language
     # replace by .\n to ensure that sentence gets split (problems with \w{3,} in bengali script)
-    wikicode = wikicode.replace("।", ".\n")
     try:
+        wikicode = wikicode.replace("।", ".\n")
         filter_wtp = re.sub(r"<\s*ref.*(<\s*/ref\s*>|/\s*>)", "", wikicode)
         wtp_code = wtp.parse(filter_wtp)
         filter_wtp = re.sub(
