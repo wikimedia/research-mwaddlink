@@ -212,7 +212,7 @@ def query(project, wiki_domain, page_title, threshold=None, max_recommendations=
 
     logger.debug(response)
     if has_app_context():
-        print(json.dumps(response.get_json(), indent=4))
+        print(json.dumps(response.get_json()))
     return response
 
 
