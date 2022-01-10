@@ -172,14 +172,14 @@ def query(project, wiki_domain, page_title, threshold=None, max_recommendations=
     else:
         try:
             mw_api = MediaWikiApi(
-                api_url=os.environ.get("MEDIAWIKI_API_URL"),
-                proxy_api_url=os.environ.get("MEDIAWIKI_PROXY_API_URL"),
+                api_url=os.environ.get("MEDIAWIKI_API_BASE_URL"),
+                proxy_api_url=os.environ.get("MEDIAWIKI_PROXY_API_BASE_URL"),
                 project=project,
                 wiki_domain=wiki_domain,
             )
             data = mw_api.get_article(page_title)
         except KeyError as e:
-            if e.args[0] == "source":
+            if e.args[0] == "revisions":
                 page_not_found_message = "Page not found: %s" % page_title, 404
                 logger.warning(page_not_found_message)
                 if has_app_context():

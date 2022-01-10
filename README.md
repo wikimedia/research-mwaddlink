@@ -173,6 +173,7 @@ DB_HOST=127.0.0.1 \
 DB_DATABASE=addlink \
 DB_BACKEND=mysql \
 MEDIAWIKI_API_URL=https://my.wiki.url/w/rest.php \
+MEDIAWIKI_API_BASE_URL=https://my.wiki.url/w/ \
 FLASK_APP=app \
 FLASK_DEBUG=1 \
 flask run

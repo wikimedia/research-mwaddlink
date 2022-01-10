@@ -1,5 +1,4 @@
 import requests
-import urllib.parse
 
 
 class MediaWikiApi:
@@ -34,20 +33,25 @@ class MediaWikiApi:
         :param title The page title, not urlencoded.
         """
 
-        # Use the REST API url if specified via an environment variable or
+        # Use the API url if specified via an environment variable or
         # the production API endpoint; both of these are developer
         # setup configurations.
         if not self.proxy_api_url:
-            self.api_url = self.api_url or "https://%s.%s.org/w/rest.php" % (
+            self.api_url = self.api_url or "https://%s.%s.org/w/" % (
                 self.wiki_domain,
                 self.project,
             )
 
-        request_url = "%s/v1/page/%s" % (
-            self.api_url,
-            # urlencode the title, and allow for encoding /
-            urllib.parse.quote(title, safe=""),
-        )
+        request_params = {
+            "action": "query",
+            "prop": "revisions",
+            "rvprop": "content|ids",
+            "rvslots": "main",
+            "rvlimit": 1,
+            "format": "json",
+            "formatversion": "2",
+            "titles": title,
+        }
 
         headers = {
             "User-Agent": "linkrecommendation",
@@ -56,13 +60,17 @@ class MediaWikiApi:
         if self.proxy_api_url:
             headers["Host"] = "%s.%s.org" % (self.wiki_domain, self.project)
 
-        response = requests.get(request_url, headers=headers)
+        response = requests.get(
+            self.api_url + "api.php", headers=headers, params=request_params
+        )
         return self.make_response(response.json())
 
     @staticmethod
     def make_response(response: dict) -> dict:
         return {
-            "wikitext": response["source"],
-            "pageid": response["id"],
-            "revid": response["latest"]["id"],
+            "wikitext": response["query"]["pages"][0]["revisions"][0]["slots"]["main"][
+                "content"
+            ],
+            "pageid": response["query"]["pages"][0]["pageid"],
+            "revid": response["query"]["pages"][0]["revisions"][0]["revid"],
         }
