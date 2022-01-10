@@ -27,10 +27,11 @@ class MediaWikiApi:
         if self.proxy_api_url:
             self.api_url = self.proxy_api_url
 
-    def get_article(self, title: str) -> dict:
+    def get_article(self, title: str, revision: int = None) -> dict:
         """
         Get the wikitext, rev ID and page ID for a title.
         :param title The page title, not urlencoded.
+        :param revision Page revision (defaults to latest)
         """
 
         # Use the API url if specified via an environment variable or
@@ -47,11 +48,14 @@ class MediaWikiApi:
             "prop": "revisions",
             "rvprop": "content|ids",
             "rvslots": "main",
-            "rvlimit": 1,
             "format": "json",
             "formatversion": "2",
-            "titles": title,
         }
+        if revision:
+            request_params["revids"] = revision
+        else:
+            request_params["titles"] = title
+            request_params["rvlimit"] = 1
 
         headers = {
             "User-Agent": "linkrecommendation",
