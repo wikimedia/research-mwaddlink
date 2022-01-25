@@ -197,6 +197,11 @@ paths:
         required: true
         type: string
         description: 'Page title of the article'
+      - name: revision
+        in: query
+        required: false
+        type: number
+        description: 'Page revision to use (defaults to latest)'
       - name: threshold
         in: query
         required: false

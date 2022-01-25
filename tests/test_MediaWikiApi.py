@@ -25,6 +25,20 @@ def test_get_article():
         }
 
 
+def test_get_article_revision():
+    mw_api = MediaWikiApi(wiki_domain="cs", api_url="https://api/")
+    with requests_mock.Mocker() as m:
+        m.get(
+            "https://api/api.php?action=query&prop=revisions&revids=100",
+            json=get_default_response(),
+        )
+        assert mw_api.get_article("Lipsko", revision=100) == {
+            "wikitext": "Foo",
+            "pageid": 12345,
+            "revid": 56789,
+        }
+
+
 def test_host_headers():
     mw_api = MediaWikiApi(
         wiki_domain="cs", project="wikipedia", proxy_api_url="https://proxy/"

@@ -103,9 +103,6 @@ def main():
 
 @app.cli.command("query")
 @click.option(
-    "--page-title", type=str, help="Page title to use in the query", required=True
-)
-@click.option(
     "--project",
     default="wikipedia",
     required=True,
@@ -114,9 +111,18 @@ def main():
 )
 @click.option(
     "--wiki-domain",
-    type=str,
     required=True,
+    type=str,
     help="Wiki domain for which to get recommendations (e.g. 'cs')",
+)
+@click.option(
+    "--page-title", type=str, help="Page title to use in the query", required=True
+)
+@click.option(
+    "--revision",
+    required=False,
+    type=int,
+    help="Page revision (defaults to latest)",
 )
 @click.option(
     "--threshold",
@@ -128,8 +134,8 @@ def main():
 @click.option(
     "--max-recommendations",
     default=15,
-    type=int,
     required=False,
+    type=int,
     help="Maximum number of link recommendations to query (set to -1 for all)",
 )
 @click.pass_context
@@ -144,7 +150,14 @@ def cli_query(ctx: click.Context, *args, **kwargs):
     methods=["POST", "GET"],
     merge_slashes=False,
 )
-def query(project, wiki_domain, page_title, threshold=None, max_recommendations=None):
+def query(
+    project,
+    wiki_domain,
+    page_title,
+    revision=None,
+    threshold=None,
+    max_recommendations=None,
+):
     if project == "wikipedia":
         # FIXME: What we should do instead is rename the datasets to {project}{domain} e.g. wikipediafr
         # to avoid this hack
@@ -177,7 +190,7 @@ def query(project, wiki_domain, page_title, threshold=None, max_recommendations=
                 project=project,
                 wiki_domain=wiki_domain,
             )
-            data = mw_api.get_article(page_title)
+            data = mw_api.get_article(page_title, revision=revision)
         except KeyError as e:
             if e.args[0] == "revisions":
                 page_not_found_message = "Page not found: %s" % page_title, 404
