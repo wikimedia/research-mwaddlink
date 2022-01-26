@@ -5,7 +5,6 @@ from flask import (
     jsonify,
     redirect,
     url_for,
-    has_app_context,
     has_request_context,
 )
 from flasgger import Swagger, validate
@@ -15,7 +14,6 @@ import json
 import os
 import subprocess
 from werkzeug.routing import PathConverter
-from werkzeug.middleware.profiler import ProfilerMiddleware
 
 from sys import stdout
 from src.ClickProfiler import ClickProfiler
@@ -51,13 +49,6 @@ class TitleConverter(PathConverter):
 
 
 app = Flask(__name__)
-if os.getenv("FLASK_PROFILE"):
-    app.config["PROFILE"] = True
-    app.wsgi_app = ProfilerMiddleware(
-        app.wsgi_app,
-        restrictions=[100],
-        sort_by=["cumulative"],
-    )
 app.config["JSON_AS_ASCII"] = False
 url_prefix = os.environ.get("URL_PREFIX", "/")
 if url_prefix != "/":
@@ -175,7 +166,7 @@ def query(
             400,
         )
         logger.warning(warning_message)
-        if has_app_context():
+        if not has_request_context():
             print(warning_message)
         return warning_message
 
@@ -195,7 +186,7 @@ def query(
             if e.args[0] == "revisions":
                 page_not_found_message = "Page not found: %s" % page_title, 404
                 logger.warning(page_not_found_message)
-                if has_app_context():
+                if not has_request_context():
                     print(page_not_found_message)
                 return page_not_found_message
             raise e
@@ -224,8 +215,8 @@ def query(
     response = jsonify(result)
 
     logger.debug(response)
-    if has_app_context():
-        print(json.dumps(response.get_json()))
+    if not has_request_context():
+        print(json.dumps(response.get_json(), indent=4))
     return response
 
 
