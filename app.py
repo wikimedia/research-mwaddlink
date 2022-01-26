@@ -17,7 +17,6 @@ import subprocess
 from werkzeug.routing import PathConverter
 from werkzeug.exceptions import InternalServerError
 
-from sys import stdout
 from src.ClickProfiler import ClickProfiler
 from src.DatasetLoader import DatasetLoader
 from src.scripts.utils import normalise_title
@@ -84,7 +83,7 @@ json_logging.init_request_instrument(
 )
 logger = logging.getLogger("logger")
 logger.setLevel(os.environ.get("FLASK_LOGLEVEL", logging.WARNING))
-logger.addHandler(logging.StreamHandler(stdout))
+logger.addHandler(logging.StreamHandler())
 
 load_dotenv()
 
