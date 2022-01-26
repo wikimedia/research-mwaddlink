@@ -12,8 +12,10 @@ import json_logging
 import logging
 import json
 import os
+import traceback
 import subprocess
 from werkzeug.routing import PathConverter
+from werkzeug.exceptions import InternalServerError
 
 from sys import stdout
 from src.ClickProfiler import ClickProfiler
@@ -85,6 +87,29 @@ logger.setLevel(os.environ.get("FLASK_LOGLEVEL", logging.WARNING))
 logger.addHandler(logging.StreamHandler(stdout))
 
 load_dotenv()
+
+
+@app.errorhandler(InternalServerError)
+def handle_bad_request(e: InternalServerError):
+    e_original = e.original_exception
+    if e_original:
+        logger.error(
+            {
+                "type": type(e_original).__name__,
+                "description": str(e_original),
+                "trace": traceback.format_tb(e_original.__traceback__),
+            }
+        )
+    response = e.get_response()
+    response.data = json.dumps(
+        {
+            "code": e.code,
+            "name": e.name,
+            "description": e.description,
+        }
+    )
+    response.content_type = "application/json"
+    return response
 
 
 @app.route("/", methods=["GET"])
