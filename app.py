@@ -11,6 +11,7 @@ from flasgger import Swagger, validate
 import json_logging
 import logging
 import json
+import sys
 import os
 import traceback
 import subprocess
@@ -82,8 +83,10 @@ json_logging.init_request_instrument(
     app=app, custom_formatter=LogstashAwareJSONRequestLogFormatter
 )
 logger = logging.getLogger("logger")
-logger.setLevel(os.environ.get("FLASK_LOGLEVEL", logging.WARNING))
-logger.addHandler(logging.StreamHandler())
+loglevel = os.environ.get("FLASK_LOGLEVEL", logging.WARNING)
+logger.setLevel(loglevel)
+json_logging.get_request_logger().setLevel(loglevel)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 load_dotenv()
 
