@@ -47,7 +47,7 @@ nbformat==5.0.7
 nest-asyncio==1.4.1
 nltk==3.5
 notebook==6.1.4
-numpy==1.19.2
+numpy==1.21.4
 packaging==20.4
 pandas==1.1.2
 pandocfilters==1.4.2
@@ -73,7 +73,7 @@ QtPy==1.9.0
 regex==2020.9.27
 requests==2.24.0
 scikit-learn==0.23.2
-scipy==1.5.2
+scipy==1.7.3
 Send2Trash==1.5.0
 six==1.15.0
 smart-open==2.2.0
@@ -89,6 +89,6 @@ wcwidth==0.2.5
 webencodings==0.5.1
 widgetsnbextension==3.5.1
 wikipedia2vec==1.0.4
-wikitextparser==0.44.0
+wikitextparser==0.45.1
 xgboost==1.2.0
 zipp==3.2.0
