@@ -46,7 +46,7 @@ class ProxyPassMiddleware(object):
 class TitleConverter(PathConverter):
     # copy of $wgLegalTitleChars in MediaWiki's DefaultSettings.php,
     # slightly modified since it will be applied to a Unicode string
-    regex = u"[ %!\"$&'()*,\\-.\\/0-9:;=?@A-Z\\\\^_`a-z~\u0080-\U0010FFFF+]+"
+    regex = "[ %!\"$&'()*,\\-.\\/0-9:;=?@A-Z\\\\^_`a-z~\u0080-\U0010FFFF+]+"
 
 
 app = Flask(__name__)
