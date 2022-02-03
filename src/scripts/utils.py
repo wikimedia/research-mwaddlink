@@ -258,7 +258,24 @@ def process_page(
     maxrec=-1,
 ):
     """
-    returns updated wikitext
+    Recommend links for a given wikitext.
+
+    :param str wikitext: Page source
+    :param str page: Page title
+    :param dict anchors: Anchor dataset for the wiki (link text -> {link target title -> frequency})
+    :param dict pageids: Pageid dataset for the wiki (title -> id)
+    :param dict redirects: Redirect dataset for the wiki (original title -> redirect target)
+    :param dict word2vec: word2vec dataset for the wiki (word -> vector)
+    :param xgboost.XGBClassifier model: The wiki's model for predicting link targets for words
+    :param float threshold: Minimum probability score required to include a prediction
+    :param bool pr: Whether to include probability scores in the wikitext as 'pr' link parameters
+    :param bool return_wikitext: Whether to return wikitext or data.
+    :param int context: The number of characters before/after the link to include when returning data
+    :param int maxrec: Maximum number of recommendations to return (-1 for unlimited)
+    :return: When return_wikitext is true, return updated wikitext with the new links added (or
+    pseudo-wikitext with the custom 'pr' parameters if pr=True). Otherwise, return a data structure
+    suitable for returning from the API.
+    :rtype: string or dict
     """
     response = {"links": [], "info": ""}
     init_time = time.time()
@@ -353,17 +370,20 @@ def process_page(
                         # print(">> ", mention, candidate)
                         ############## Critical ##############
                         # Insert The Link in the current wikitext
-                        match = re.compile(
+                        mention_regex = re.compile(
                             r"(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])".format(
                                 re.escape(mention_original)
                             )
+                        )
+                        mention_regex_i = re.compile(
+                            mention_regex.pattern, re.IGNORECASE
                         )
                         new_str = "[[" + candidate_link + "|" + mention_original
                         # add the probability
                         if pr:
                             new_str += "|pr=" + str(candidate_proba)
                         new_str += "]]"
-                        newval, found = match.subn(new_str, node.value, 1)
+                        newval, found = mention_regex.subn(new_str, node.value, 1)
                         node.value = newval
                         ######################################
                         # Book-keeping
@@ -373,7 +393,10 @@ def process_page(
                             page_wikicode_init_substr = page_wikicode_init[
                                 i1_node_init:i2_node_init
                             ]
-                            i1_sub = page_wikicode_init_substr.lower().find(mention)
+                            match = mention_regex_i.search(
+                                page_wikicode_init_substr.lower()
+                            )
+                            i1_sub = match.start()
                             start_offset = i1_node_init + i1_sub
                             end_offset = start_offset + len(mention)
                             ## provide context of the mention (+/- c characters in substring and wikitext)

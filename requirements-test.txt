@@ -1,10 +1,9 @@
+# also needs requirements-query.txt, but can't depend on it here
+# due to https://github.com/pypa/pip/issues/3772
 black
 flake8
-mysqlclient==2.0.3
 tox
 python-dotenv~=0.15.0
 pytest==6.2.5
 pytest-cov==3.0.0
-json-logging==1.2.10
-requests==2.24.0
 requests-mock==1.8.0

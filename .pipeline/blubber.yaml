@@ -16,7 +16,7 @@ variants:
     includes: [build]
     entrypoint: [tox]
     python:
-      requirements: [requirements-test.txt]
+      requirements: [requirements-query.txt,requirements-test.txt]
       use-system-flag: false
   production-build:
     includes: [build]
