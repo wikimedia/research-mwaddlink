@@ -13,10 +13,10 @@ ANALYTICS_BASE_URL = os.getenv(
     "ANALYTICS_BASE_URL",
     "https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/",
 )
+cli_ok_status = "[OK]"
 
 
-def main():
-    cli_ok_status = "[OK]"
+def handle_args():
     parser = argparse.ArgumentParser(
         description="Load datasets from dumped MySQL tables and link model in JSON format into a MySQL database."
     )
@@ -70,87 +70,95 @@ def main():
         If the checksums differ, the datasets are downloaded to the directory specified by --path, verified, and loaded.
         """,
     )
+    return parser.parse_args()
 
-    def get_dataset_filename(dataset_name):
-        if dataset_name == "model":
-            dataset_filename = "%s.linkmodel.json" % wiki_id
-        else:
-            dataset_filename = "%s_%s_%s.sql.gz" % (table_prefix, wiki_id, dataset_name)
-        return dataset_filename
 
-    def cache_bust_url_query_params():
-        return {
-            "cache_bust": (
-                "".join(
-                    random.choice(string.ascii_lowercase + string.digits)
-                    for _ in range(8)
-                ),
-            )
-        }
+def get_dataset_filename(dataset_name, wiki_id, table_prefix):
+    if dataset_name == "model":
+        dataset_filename = "%s.linkmodel.json" % wiki_id
+    else:
+        dataset_filename = "%s_%s_%s.sql.gz" % (table_prefix, wiki_id, dataset_name)
+    return dataset_filename
 
-    def verify_files_exist(dataset_name):
-        print(
-            "  ",
-            "Verifying file and checksum exists for %s..." % dataset_name,
-            end="",
-            flush=True,
+
+def cache_bust_url_query_params():
+    return {
+        "cache_bust": (
+            "".join(
+                random.choice(string.ascii_lowercase + string.digits) for _ in range(8)
+            ),
         )
-        dataset_filename = get_dataset_filename(dataset_name)
-        dataset_checksum_filename = "%s.checksum" % dataset_filename
-        if not os.path.exists(dataset_filename):
-            raise FileNotFoundError("Could not find dataset %s" % dataset_filename)
-        if not os.path.exists(dataset_checksum_filename):
-            raise FileNotFoundError(
-                "Could not find checksum %s" % dataset_checksum_filename
-            )
-        print(cli_ok_status)
+    }
 
-    def ensure_table_exists(dataset_name_for_table, connection, wiki_id_for_table=None):
-        """
-        Check to see if a table exists, if not, create it using the standard schema
-        used for all tables the link recommendation service utilizes.
-        :param dataset_name_for_table:
-        :param connection: A MySQL connection object
-        :param wiki_id_for_table:
-        """
-        message_prefix = "[general]"
-        if wiki_id_for_table:
-            message_prefix = "[%s]" % wiki_id_for_table
-        print(
-            "  ",
-            "%s Ensuring %s table exists..." % (message_prefix, dataset_name_for_table),
-            end="",
-            flush=True,
+
+def verify_files_exist(dataset_name, wiki_id, table_prefix):
+    print(
+        "  ",
+        "Verifying file and checksum exists for %s..." % dataset_name,
+        end="",
+        flush=True,
+    )
+    dataset_filename = get_dataset_filename(dataset_name, wiki_id, table_prefix)
+    dataset_checksum_filename = "%s.checksum" % dataset_filename
+    if not os.path.exists(dataset_filename):
+        raise FileNotFoundError("Could not find dataset %s" % dataset_filename)
+    if not os.path.exists(dataset_checksum_filename):
+        raise FileNotFoundError(
+            "Could not find checksum %s" % dataset_checksum_filename
         )
-        table_args = []
-        if wiki_id_for_table:
-            table_args += ["-id", wiki_id_for_table]
-        table_args += ["--tables", dataset_name_for_table]
-        create_tables(raw_args=table_args, mysql_connection=connection)
-        print(cli_ok_status)
+    print(cli_ok_status)
 
-    def verify_checksum(dataset_name):
-        print("  ", "Verifying checksum for %s..." % dataset_name, end="", flush=True)
-        devnull = open(os.devnull, "w")
-        checksum_verification_result = subprocess.run(
-            [
-                "shasum",
-                "-a",
-                "256",
-                "-c",
-                "%s.checksum" % get_dataset_filename(dataset_name),
-            ],
-            stdout=devnull,
+
+def ensure_table_exists(dataset_name_for_table, connection, wiki_id_for_table=None):
+    """
+    Check to see if a table exists, if not, create it using the standard schema
+    used for all tables the link recommendation service utilizes.
+    :param dataset_name_for_table:
+    :param connection: A MySQL connection object
+    :param wiki_id_for_table:
+    """
+    message_prefix = "[general]"
+    if wiki_id_for_table:
+        message_prefix = "[%s]" % wiki_id_for_table
+    print(
+        "  ",
+        "%s Ensuring %s table exists..." % (message_prefix, dataset_name_for_table),
+        end="",
+        flush=True,
+    )
+    table_args = []
+    if wiki_id_for_table:
+        table_args += ["-id", wiki_id_for_table]
+    table_args += ["--tables", dataset_name_for_table]
+    create_tables(raw_args=table_args, mysql_connection=connection)
+    print(cli_ok_status)
+
+
+def verify_checksum(dataset_name, wiki_id, table_prefix):
+    print("  ", "Verifying checksum for %s..." % dataset_name, end="", flush=True)
+    devnull = open(os.devnull, "w")
+    checksum_verification_result = subprocess.run(
+        [
+            "shasum",
+            "-a",
+            "256",
+            "-c",
+            "%s.checksum" % get_dataset_filename(dataset_name, wiki_id, table_prefix),
+        ],
+        stdout=devnull,
+    )
+    if checksum_verification_result.returncode != 0:
+        raise AssertionError(
+            "Failed to verify checksum for %s"
+            % get_dataset_filename(dataset_name, wiki_id, table_prefix)
         )
-        if checksum_verification_result.returncode != 0:
-            raise AssertionError(
-                "Failed to verify checksum for %s" % get_dataset_filename(dataset_name)
-            )
-        print(cli_ok_status)
+    print(cli_ok_status)
 
+
+def main():
     table_prefix = "lr"
     checksum_table = "%s_checksum" % table_prefix
-    args = parser.parse_args()
+    args = handle_args()
     all_datasets_url = requests.compat.urljoin(ANALYTICS_BASE_URL, "wikis.txt")
     if not args.wiki_id:
         with requests.get(
@@ -196,7 +204,11 @@ def main():
 
                 for dataset in datasets:
                     with requests.get(
-                        "%s/%s.checksum" % (base_url, get_dataset_filename(dataset)),
+                        "%s/%s.checksum"
+                        % (
+                            base_url,
+                            get_dataset_filename(dataset, wiki_id, table_prefix),
+                        ),
                         cache_bust_url_query_params(),
                     ) as remote_checksum:
                         if remote_checksum.status_code != 200:
@@ -234,11 +246,11 @@ def main():
                             # Download the dataset to local directory.
                             local_dataset = "%s/%s" % (
                                 local_dataset_directory,
-                                get_dataset_filename(dataset),
+                                get_dataset_filename(dataset, wiki_id, table_prefix),
                             )
                             remote_dataset_url = "%s/%s" % (
                                 base_url,
-                                get_dataset_filename(dataset),
+                                get_dataset_filename(dataset, wiki_id, table_prefix),
                             )
                             print(
                                 "   Downloading dataset %s..." % remote_dataset_url,
@@ -290,8 +302,8 @@ def main():
                 % (", ".join(datasets_to_import), wiki_id)
             )
             for dataset in datasets_to_import:
-                verify_files_exist(dataset)
-                verify_checksum(dataset)
+                verify_files_exist(dataset, wiki_id, table_prefix)
+                verify_checksum(dataset, wiki_id, table_prefix)
 
             with mysql_connection.cursor() as cursor:
                 for dataset in datasets_to_import:
@@ -325,7 +337,9 @@ def main():
                             flush=True,
                         )
                         num_rows = 0
-                        for line in gzip.open(get_dataset_filename(dataset)):
+                        for line in gzip.open(
+                            get_dataset_filename(dataset, wiki_id, table_prefix)
+                        ):
                             if line.strip():
                                 # Skip the boilerplate comments at top of the dump file.
                                 if line.find(b"INSERT INTO") == -1:
@@ -336,7 +350,8 @@ def main():
                         print("       %d rows inserted" % num_rows)
                     print("    ", "Updating stored checksum...", end="", flush=True)
                     with open(
-                        "%s.checksum" % get_dataset_filename(dataset)
+                        "%s.checksum"
+                        % get_dataset_filename(dataset, wiki_id, table_prefix)
                     ) as checksum_file:
                         cursor.execute(
                             "DELETE FROM {checksum_table} WHERE lookup = %s".format(
