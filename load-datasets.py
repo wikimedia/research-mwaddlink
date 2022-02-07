@@ -1,19 +1,40 @@
 import argparse
+import functools
+import io
 import os
+import sys
+
 import requests
 import random
 import string
 import shutil
 import subprocess
-from src.mysql import get_mysql_connection, import_model_to_table
 import gzip
+import logging
+import json_logging
+from contextlib import redirect_stdout
+
+from src.mysql import get_mysql_connection, import_model_to_table
 from create_tables import create_tables
 
 ANALYTICS_BASE_URL = os.getenv(
     "ANALYTICS_BASE_URL",
     "https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/",
 )
+LOGLEVEL = os.environ.get("FLASK_LOGLEVEL", logging.INFO)
 cli_ok_status = "[OK]"
+output_buffer: io.StringIO
+
+
+def handle_exception(logger, exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logger.error(
+        "Uncaught exception",
+        exc_info=(exc_type, exc_value, exc_traceback),
+        extra={"props": {"output": output_buffer.getvalue()}},
+    )
 
 
 def handle_args():
@@ -68,6 +89,17 @@ def handle_args():
         Attempt to download datasets from analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/
         If the datasets exist, the dataset checksums are compared with existing datasets stored in the database, if any.
         If the checksums differ, the datasets are downloaded to the directory specified by --path, verified, and loaded.
+        """,
+    )
+    parser.add_argument(
+        "--output-format",
+        choices=["print", "json"],
+        default="print",
+        required=False,
+        help="""
+        Output format to use. Allowed values:
+        - print (default): just write to stdout in human-readable format
+        - json: write to stdout as Logstash-friendly JSON lines
         """,
     )
     return parser.parse_args()
@@ -155,10 +187,9 @@ def verify_checksum(dataset_name, wiki_id, table_prefix):
     print(cli_ok_status)
 
 
-def main():
+def run(args: argparse.Namespace):
     table_prefix = "lr"
     checksum_table = "%s_checksum" % table_prefix
-    args = handle_args()
     all_datasets_url = requests.compat.urljoin(ANALYTICS_BASE_URL, "wikis.txt")
     if not args.wiki_id:
         with requests.get(
@@ -379,6 +410,23 @@ def main():
                 print("  ", "Finished importing for %s!" % wiki_id)
 
         print("Finished importing datasets for %s" % ", ".join(wiki_ids))
+
+
+def main():
+    args = handle_args()
+    if args.output_format == "json":
+        logger = logging.getLogger(__name__)
+        logger.setLevel(LOGLEVEL)
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+        json_logging.init_non_web(enable_json=True)
+        sys.excepthook = functools.partial(handle_exception, logger)
+        with redirect_stdout(io.StringIO()) as output:
+            global output_buffer
+            output_buffer = output
+            run(args)
+            logger.info(output_buffer.getvalue())
+    else:
+        run(args)
 
 
 if __name__ == "__main__":
