@@ -10,8 +10,10 @@ else:
 ## filter the anchor dictionary based on wikidata-properties
 ## filter all links that are an instance-of the following wikidata-items
 list_qid_filter = [
+    # non-content pages
     "Q4167410",  # disambiguation-pages
     "Q13406463",  # list-pages
+    # dates
     "Q3186692",  # calendar year-pages
     "Q577",  # year
     "Q573",  # day
@@ -23,6 +25,7 @@ list_qid_filter = [
     "Q205892",  # calendar date
     "Q14795564",  # Point in time with respect to recurrent timeframe
     "Q18340514",  # events in a specific year or time period
+    # units
     "Q1978718",  # unit of length
     "Q1790144",  # unit of time
     "Q1302471",  # unit of volume
@@ -31,6 +34,12 @@ list_qid_filter = [
     "Q3550873",  # unit of information
     "Q8142",  # currency
     "Q27084",  # parts-per-notation
+    # names
+    "Q202444",  # given name
+    "Q1243157",  # double name
+    "Q3409032",  # unisex given name
+    "Q12308941",  # male given name
+    "Q11879590",  # female given name
 ]
 
 anchors = pickle.load(open("../../data/{0}/{0}.anchors.pkl".format(wiki_id), "rb"))
