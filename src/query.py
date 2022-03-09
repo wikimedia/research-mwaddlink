@@ -27,6 +27,7 @@ class Query:
         wiki_id: str,
         threshold: float,
         max_recommendations: int,
+        sections_to_exclude: list,
     ) -> dict:
 
         start = perf_counter()
@@ -50,6 +51,7 @@ class Query:
             threshold=threshold,
             return_wikitext=False,
             maxrec=max_recommendations,
+            sections_to_exclude=sections_to_exclude,
         )
 
         stop = perf_counter()

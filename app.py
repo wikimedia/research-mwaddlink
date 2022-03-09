@@ -156,6 +156,14 @@ def main():
     type=int,
     help="Maximum number of link recommendations to query (set to -1 for all)",
 )
+@click.option(
+    "--sections-to-exclude",
+    default=[],
+    required=False,
+    type=str,
+    multiple=True,
+    help="Section title to exclude from link suggestion generation.",
+)
 @click.pass_context
 def cli_query(ctx: click.Context, *args, **kwargs):
     if os.getenv("FLASK_PROFILE"):
@@ -175,6 +183,7 @@ def query(
     revision=None,
     threshold=None,
     max_recommendations=None,
+    sections_to_exclude=None,
 ):
     if project == "wikipedia":
         # FIXME: What we should do instead is rename the datasets to {project}{domain} e.g. wikipediafr
@@ -219,6 +228,9 @@ def query(
             raise e
 
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
+    data["sections_to_exclude"] = list(sections_to_exclude)
+    if has_request_context():
+        data["sections_to_exclude"] = request.args.getlist("sections_to_exclude")
     data["threshold"] = threshold or float(request.args.get("threshold", 0.5))
     data["max_recommendations"] = max_recommendations or int(
         request.args.get("max_recommendations", 15)
@@ -233,6 +245,8 @@ def query(
         wiki_id=wiki_id,
         page_title=normalise_title(page_title),
         max_recommendations=data["max_recommendations"],
+        # Cap the list of sections to exclude at 25.
+        sections_to_exclude=data["sections_to_exclude"][:25],
     )
     result["meta"]["application_version"] = (
         subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])

@@ -143,7 +143,7 @@ def ngram_iterator(text, gram_length_max, gram_length_min=1):
     - tokenizes
     - create string of n tokens for variable n
     """
-    lines = text.split("\n")
+    lines = list(filter(None, text.split("\n")))
     for line in lines:
         for sent in tokenizeSent(line):
             for gram_length in range(gram_length_max, gram_length_min - 1, -1):
@@ -256,6 +256,7 @@ def process_page(
     return_wikitext=True,
     context=10,
     maxrec=-1,
+    sections_to_exclude=None,
 ):
     """
     Recommend links for a given wikitext.
@@ -272,11 +273,15 @@ def process_page(
     :param bool return_wikitext: Whether to return wikitext or data.
     :param int context: The number of characters before/after the link to include when returning data
     :param int maxrec: Maximum number of recommendations to return (-1 for unlimited)
+    :param list sections_to_exclude: List of section names to exclude from link suggestion generation,
+    e.g. "References"
     :return: When return_wikitext is true, return updated wikitext with the new links added (or
     pseudo-wikitext with the custom 'pr' parameters if pr=True). Otherwise, return a data structure
     suitable for returning from the API.
     :rtype: string or dict
     """
+    if sections_to_exclude is None:
+        sections_to_exclude = []
     response = {"links": [], "info": ""}
     init_time = time.time()
     # Give ourselves a one second buffer to return the response after the
@@ -304,165 +309,183 @@ def process_page(
 
     # try-except to break out of nested for-loop once we found maxrec links to add
     try:
-        for node in page_wikicode_text_nodes:
-            mentions = {}
-            # check the offset of the node in the wikitext_init
-            node_val = node.value
-            i1_node_init = page_wikicode_init.find(node_val)
-            i2_node_init = i1_node_init + len(node_val)
-            # The ngram_iterator generates substrings from the text of the article to check as candidate-anchors
-            # for links. It will do that by concatenating individual word-tokens (roughly speaking everything that
-            # is separated by a whitespace) to ngrams (strings that consist of n tokens); for example "Atlantic Ocean"
-            # would be a 2-gram. The arguments gram_length_max, gram_length_min define the range in which we vary n
-            # The current range n=5,...,1 means we first check all substrings of length 5, then 4, and so on until we
-            # reach 1. This range is defined by looking at the typical size of existing links in the anchor-dictionary.
-            # There are text-anchors that are not covered by this; they have much larger values for n; however,
-            # most anchors have small values of n.
-            # Reducing the range of the ngram-iterator we have fewer substrings for which we check the
-            # anchor-dictionary (and subsequently other lookups from checking whether to put a link).
-            for gram in ngram_iterator(text=node, gram_length_max=5, gram_length_min=1):
-                if time.time() > init_time + max_page_process_time:
-                    response["info"] = (
-                        "Stopping page processing as maximum processing time %d seconds reached"
-                        % (max_page_process_time + max_page_process_time_buffer)
-                    )
-                    raise MaxTimeError
-                mentions[gram.lower()] = gram
-
-            if not mentions:
+        for section in page_wikicode.get_sections(
+            include_lead=True, include_headings=True, flat=True
+        ):
+            # Special-handling for lead section, which doesn't have a name.
+            if (
+                not isinstance(section.nodes[0], mwparserfromhell.nodes.heading.Heading)
+                and "%LEAD%" in sections_to_exclude
+            ):
                 continue
 
-            # Get the subset of anchors that contain a mention; this batches a SELECT ... IN query rather
-            # than performing (thousands of) individual SELECT queries.
-            if isinstance(anchors, MySqlDict):
-                anchors_with_mentions = anchors.filter(list(mentions))
-                if not anchors_with_mentions:
-                    continue
-            else:
-                # SQLite will not batch its queries.
-                anchors_with_mentions = anchors
+            section_heading = str(section.nodes[0].title).strip()
+            for node in section.filter_text(recursive=False):
+                if section_heading in sections_to_exclude:
+                    break
+                mentions = {}
+                # check the offset of the node in the wikitext_init
+                node_val = node.value
+                i1_node_init = page_wikicode_init.find(node_val)
+                i2_node_init = i1_node_init + len(node_val)
+                # The ngram_iterator generates substrings from the text of the article to check as candidate-anchors
+                # for links. It will do that by concatenating individual word-tokens (roughly speaking everything that
+                # is separated by a whitespace) to ngrams (strings that consist of n tokens); for example "Atlantic Ocean"
+                # would be a 2-gram. The arguments gram_length_max, gram_length_min define the range in which we vary n
+                # The current range n=5,...,1 means we first check all substrings of length 5, then 4, and so on until we
+                # reach 1. This range is defined by looking at the typical size of existing links in the anchor-dictionary.
+                # There are text-anchors that are not covered by this; they have much larger values for n; however,
+                # most anchors have small values of n.
+                # Reducing the range of the ngram-iterator we have fewer substrings for which we check the
+                # anchor-dictionary (and subsequently other lookups from checking whether to put a link).
+                grams = ngram_iterator(text=node, gram_length_max=5, gram_length_min=1)
+                for gram in grams:
+                    if time.time() > init_time + max_page_process_time:
+                        response["info"] = (
+                            "Stopping page processing as maximum processing time %d seconds reached"
+                            % (max_page_process_time + max_page_process_time_buffer)
+                        )
+                        raise MaxTimeError
+                    mentions[gram.lower()] = gram
 
-            for mention, mention_original in mentions.items():
-                if (
-                    # if the mention exist in the DB
-                    mention in anchors_with_mentions
-                    # it was not previously linked (or part of a link)
-                    and not any(mention in s for s in linked_mentions)
-                    # none of its candidate links is already used
-                    and not bool(
-                        set(anchors_with_mentions[mention].keys()) & linked_links
-                    )
-                    # it was not tested before (for efficiency)
-                    and mention not in tested_mentions
-                ):
-                    # logic
-                    # print("testing:", mention, len(anchors[mention]))
-                    candidate = classify_links(
-                        page,
-                        mention,
-                        anchors_with_mentions,
-                        word2vec,
-                        model,
-                        threshold=threshold,
-                    )
-                    if candidate:
-                        candidate_link, candidate_proba = candidate
-                        # print(">> ", mention, candidate)
-                        ############## Critical ##############
-                        # Insert The Link in the current wikitext
-                        mention_regex = re.compile(
-                            r"(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])".format(
-                                re.escape(mention_original)
-                            )
+                if not mentions:
+                    continue
+
+                # Get the subset of anchors that contain a mention; this batches a SELECT ... IN query rather
+                # than performing (thousands of) individual SELECT queries.
+                if isinstance(anchors, MySqlDict):
+                    anchors_with_mentions = anchors.filter(list(mentions))
+                    if not anchors_with_mentions:
+                        continue
+                else:
+                    # SQLite will not batch its queries.
+                    anchors_with_mentions = anchors
+
+                for mention, mention_original in mentions.items():
+                    if (
+                        # if the mention exist in the DB
+                        mention in anchors_with_mentions
+                        # it was not previously linked (or part of a link)
+                        and not any(mention in s for s in linked_mentions)
+                        # none of its candidate links is already used
+                        and not bool(
+                            set(anchors_with_mentions[mention].keys()) & linked_links
                         )
-                        mention_regex_i = re.compile(
-                            mention_regex.pattern, re.IGNORECASE
+                        # it was not tested before (for efficiency)
+                        and mention not in tested_mentions
+                    ):
+                        # logic
+                        # print("testing:", mention, len(anchors[mention]))
+                        candidate = classify_links(
+                            page,
+                            mention,
+                            anchors_with_mentions,
+                            word2vec,
+                            model,
+                            threshold=threshold,
                         )
-                        new_str = "[[" + candidate_link + "|" + mention_original
-                        # add the probability
-                        if pr:
-                            new_str += "|pr=" + str(candidate_proba)
-                        new_str += "]]"
-                        newval, found = mention_regex.subn(new_str, node.value, 1)
-                        node.value = newval
-                        ######################################
-                        # Book-keeping
-                        linked_mentions.add(mention)
-                        linked_links.add(candidate_link)
-                        if found == 1:
-                            page_wikicode_init_substr = page_wikicode_init[
-                                i1_node_init:i2_node_init
-                            ]
-                            match = mention_regex_i.search(
-                                page_wikicode_init_substr.lower()
+                        if candidate:
+                            candidate_link, candidate_proba = candidate
+                            # print(">> ", mention, candidate)
+                            ############## Critical ##############
+                            # Insert The Link in the current wikitext
+                            mention_regex = re.compile(
+                                r"(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])".format(
+                                    re.escape(mention_original)
+                                )
                             )
-                            i1_sub = match.start()
-                            start_offset = i1_node_init + i1_sub
-                            end_offset = start_offset + len(mention)
-                            ## provide context of the mention (+/- c characters in substring and wikitext)
-                            if context == None:
-                                context_wikitext = mention_original
-                                context_substring = mention_original
-                            else:
-                                ## context substring
-                                str_context = page_wikicode_init_substr
-                                i1_c = max([0, i1_sub - context])
-                                i2_c = min(
-                                    [
-                                        len(str_context),
-                                        i1_sub + len(mention_original) + context,
-                                    ]
-                                )
-                                context_substring = [
-                                    str_context[i1_c:i1_sub],
-                                    str_context[i1_sub + len(mention_original) : i2_c],
-                                ]
-                                ## wikitext substring
-                                str_context = wikitext
-                                i1_c = max([0, start_offset - context])
-                                i2_c = min(
-                                    [
-                                        len(str_context),
-                                        end_offset + context,
-                                    ]
-                                )
-                                context_wikitext = [
-                                    str_context[i1_c:i1_sub],
-                                    str_context[i1_sub + len(mention_original) : i2_c],
-                                ]
-                            # Find 0-based index of anchor text match in a way that hopefully mostly survives
-                            # wikitext -> HTML transformation: count occurrences of the text in top-level
-                            # text nodes u
-                            preceding_nodes = page_wikicode_text_nodes[
-                                : page_wikicode_text_nodes.index(node)
-                            ]
-                            match_index = sum(
-                                str(node).count(mention_original)
-                                for node in preceding_nodes
-                            ) + page_wikicode_init_substr[:i1_sub].count(
-                                mention_original
+                            mention_regex_i = re.compile(
+                                mention_regex.pattern, re.IGNORECASE
                             )
-                            new_link = {
-                                "link_target": candidate_link,
-                                "link_text": mention_original,
-                                "score": float(candidate_proba),
-                                "start_offset": start_offset,
-                                "end_offset": end_offset,
-                                "match_index": match_index,
-                                "context_wikitext": context_wikitext,
-                                "context_plaintext": context_substring,
-                            }
-                            response["links"] += [new_link]
-                            # stop iterating the wikitext to generate link recommendations
-                            # as soon as we have maxrec link-recommendations
-                            if len(response["links"]) == maxrec:
-                                response["info"] = (
-                                    "Stopping page processing as max recommendations limit %d reached."
-                                    % maxrec
+                            new_str = "[[" + candidate_link + "|" + mention_original
+                            # add the probability
+                            if pr:
+                                new_str += "|pr=" + str(candidate_proba)
+                            new_str += "]]"
+                            newval, found = mention_regex.subn(new_str, node.value, 1)
+                            node.value = newval
+                            ######################################
+                            # Book-keeping
+                            linked_mentions.add(mention)
+                            linked_links.add(candidate_link)
+                            if found == 1:
+                                page_wikicode_init_substr = page_wikicode_init[
+                                    i1_node_init:i2_node_init
+                                ]
+                                match = mention_regex_i.search(
+                                    page_wikicode_init_substr.lower()
                                 )
-                                raise MaxRecError
-                    # More Book-keeping
-                    tested_mentions.add(mention)
+                                i1_sub = match.start()
+                                start_offset = i1_node_init + i1_sub
+                                end_offset = start_offset + len(mention)
+                                ## provide context of the mention (+/- c characters in substring and wikitext)
+                                if context == None:
+                                    context_wikitext = mention_original
+                                    context_substring = mention_original
+                                else:
+                                    ## context substring
+                                    str_context = page_wikicode_init_substr
+                                    i1_c = max([0, i1_sub - context])
+                                    i2_c = min(
+                                        [
+                                            len(str_context),
+                                            i1_sub + len(mention_original) + context,
+                                        ]
+                                    )
+                                    context_substring = [
+                                        str_context[i1_c:i1_sub],
+                                        str_context[
+                                            i1_sub + len(mention_original) : i2_c
+                                        ],
+                                    ]
+                                    ## wikitext substring
+                                    str_context = wikitext
+                                    i1_c = max([0, start_offset - context])
+                                    i2_c = min(
+                                        [
+                                            len(str_context),
+                                            end_offset + context,
+                                        ]
+                                    )
+                                    context_wikitext = [
+                                        str_context[i1_c:i1_sub],
+                                        str_context[
+                                            i1_sub + len(mention_original) : i2_c
+                                        ],
+                                    ]
+                                # Find 0-based index of anchor text match in a way that hopefully mostly survives
+                                # wikitext -> HTML transformation: count occurrences of the text in top-level
+                                # text nodes u
+                                preceding_nodes = page_wikicode_text_nodes[
+                                    : page_wikicode_text_nodes.index(node)
+                                ]
+                                match_index = sum(
+                                    str(node).count(mention_original)
+                                    for node in preceding_nodes
+                                ) + page_wikicode_init_substr[:i1_sub].count(
+                                    mention_original
+                                )
+                                new_link = {
+                                    "link_target": candidate_link,
+                                    "link_text": mention_original,
+                                    "score": float(candidate_proba),
+                                    "start_offset": start_offset,
+                                    "end_offset": end_offset,
+                                    "match_index": match_index,
+                                    "context_wikitext": context_wikitext,
+                                    "context_plaintext": context_substring,
+                                }
+                                response["links"] += [new_link]
+                                # stop iterating the wikitext to generate link recommendations
+                                # as soon as we have maxrec link-recommendations
+                                if len(response["links"]) == maxrec:
+                                    response["info"] = (
+                                        "Stopping page processing as max recommendations limit %d reached."
+                                        % maxrec
+                                    )
+                                    raise MaxRecError
+                        # More Book-keeping
+                        tested_mentions.add(mention)
     except (MaxRecError, MaxTimeError):
         pass
     # if yes, we return the adapted wikitext
