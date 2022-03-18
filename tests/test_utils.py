@@ -105,6 +105,20 @@ def provide_process_page():
             [{"link_target": "Page1", "link_text": "anchor1", "match_index": 1}],
         ],
         [
+            # Does not error up when there is no lead.
+            "==Foo==\n anchor1 blah",
+            [],
+            "==Foo==\n [[Page1|anchor1]] blah",
+            [{"link_target": "Page1", "link_text": "anchor1", "match_index": 0}],
+        ],
+        [
+            # Does not error up when there is an empty section.
+            "Foo\n==Foo==\n anchor1 blah\n==bar==\n==baz==\n",
+            [],
+            "Foo\n==Foo==\n [[Page1|anchor1]] blah\n==bar==\n==baz==\n",
+            [{"link_target": "Page1", "link_text": "anchor1", "match_index": 0}],
+        ],
+        [
             # should only match whole words
             "Lorem ipsum xanchor1 dolor sit amet",
             [],

@@ -312,6 +312,10 @@ def process_page(
         for section in page_wikicode.get_sections(
             include_lead=True, include_headings=True, flat=True
         ):
+            if not section:
+                # This means the section is empty; one instance where this occurs
+                # is in articles that have no lead and instead begin with a section heading
+                continue
             # Special-handling for lead section, which doesn't have a name.
             if (
                 not isinstance(section.nodes[0], mwparserfromhell.nodes.heading.Heading)
