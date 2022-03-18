@@ -185,6 +185,8 @@ def query(
     max_recommendations=None,
     sections_to_exclude=None,
 ):
+    if sections_to_exclude is None:
+        sections_to_exclude = []
     if project == "wikipedia":
         # FIXME: What we should do instead is rename the datasets to {project}{domain} e.g. wikipediafr
         # to avoid this hack
@@ -228,9 +230,10 @@ def query(
             raise e
 
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
-    data["sections_to_exclude"] = list(sections_to_exclude)
     if has_request_context():
         data["sections_to_exclude"] = request.args.getlist("sections_to_exclude")
+    else:
+        data["sections_to_exclude"] = sections_to_exclude
     data["threshold"] = threshold or float(request.args.get("threshold", 0.5))
     data["max_recommendations"] = max_recommendations or int(
         request.args.get("max_recommendations", 15)
