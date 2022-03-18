@@ -1,6 +1,7 @@
 # research/mwaddlink
 
 This is the repository that backs the [Wikimedia Link Recommendation service](https://wikitech.wikimedia.org/wiki/Add_Link).
+
 It contains code for training a model and generating datasets, as well as an HTTP API and command line interface for
 fetching link recommendations for Wikipedia articles.
 
@@ -184,6 +185,7 @@ select the right Wikipedia URL automatically.
 
 The Swagger UI is enabled resulting in API docs at `http://localhost:5000{$URL_PREFIX}apidocs`.
 
+The production URL for the Swagger docs is https://api.wikimedia.org/service/linkrecommendation/apidocs/
 
 ## Development
 
