@@ -282,6 +282,9 @@ def process_page(
     """
     if sections_to_exclude is None:
         sections_to_exclude = []
+    sections_to_exclude_nocase = list(
+        section.casefold() for section in sections_to_exclude
+    )
     response = {"links": [], "info": ""}
     init_time = time.time()
     # Give ourselves a one second buffer to return the response after the
@@ -324,9 +327,9 @@ def process_page(
                 continue
 
             section_heading = str(section.nodes[0].title).strip()
+            if section_heading.casefold() in sections_to_exclude_nocase:
+                continue
             for node in section.filter_text(recursive=False):
-                if section_heading in sections_to_exclude:
-                    break
                 mentions = {}
                 # check the offset of the node in the wikitext_init
                 node_val = node.value

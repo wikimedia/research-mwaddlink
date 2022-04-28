@@ -32,6 +32,13 @@ def provide_process_page():
             [],
         ],
         [
+            # sections are case-insensitive
+            "Lorem ipsum xanchor1 dolor sit amet\n== reFerences ==\n foo anchor1 blah\n",
+            ["References"],
+            "Lorem ipsum xanchor1 dolor sit amet\n== reFerences ==\n foo anchor1 blah\n",
+            [],
+        ],
+        [
             # exclusion does not flow down to sub-sections; links can be generated for sub-sections
             # even if the main section is excluded
             "Lorem ipsum xanchor1 dolor sit amet\n== References ==\n foo\n=== Bar ===\n baz anchor1 blah\n",
