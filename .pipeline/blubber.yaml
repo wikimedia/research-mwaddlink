@@ -3,8 +3,13 @@ base: docker-registry.wikimedia.org/python3
 variants:
   build:
     base: docker-registry.wikimedia.org/python3-build-buster
+    runs:
+      environment:
+        NLTK_DATA: '/home/somebody/nltk_data'
+    builder:
+      command: [ "PYTHONPATH=/opt/lib/python/site-packages", "python3.7", "-m", "nltk.downloader", "punkt" ]
     apt:
-      packages: [python3-setuptools, default-libmysqlclient-dev, python3-dev, build-essential, python3-pip]
+      packages: [python3-setuptools, default-libmysqlclient-dev, python3-dev, build-essential, python3-pip, curl]
     copies: [local]
     python:
       version: python3
@@ -20,17 +25,11 @@ variants:
       use-system-flag: false
   production-build:
     includes: [build]
-    base: docker-registry.wikimedia.org/python3-build-buster
     apt:
       packages: [python3.7,build-essential,mariadb-client,cmake]
   production:
     includes: [production-build]
     entrypoint: ["gunicorn", "app:app"]
-    runs:
-      environment:
-        NLTK_DATA: '/home/somebody/nltk_data'
-    builder:
-      command: ["PYTHONPATH=/opt/lib/python/site-packages", "python3.7", "-m", "nltk.downloader", "punkt"]
     python:
       requirements: [requirements-query.txt]
   codehealth:
