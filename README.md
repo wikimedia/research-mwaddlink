@@ -163,7 +163,7 @@ flask query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de
 - MySQL-backend
 ``` DB_USER=research DB_BACKEND=mysql DB_DATABASE=staging DB_HOST=dbstore1005.eqiad.wmnet DB_PORT=3350 DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf flask query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de
 ```
-Alternatively, you can query the model using the the MySQL-tables. Note that this requires that the checksums are available as MySQL-tables. This happens only when calling ```load-dataset.py```. This step is typically only performed in production and not on stat1008. Thus, by default this will not work at this stage.
+Alternatively, you can query the model using the MySQL-tables. Note that this requires that the checksums are available as MySQL-tables. This happens only when calling ```load-dataset.py```. This step is typically only performed in production and not on stat1008. Thus, by default this will not work at this stage.
 
 - HTTP API
 ``` bash
