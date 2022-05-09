@@ -194,7 +194,9 @@ def query(
     else:
         wiki_id = "%s%s" % (wiki_domain, project)
     wiki_id = wiki_id.replace("_", "-")
-    datasetloader = DatasetLoader(backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id)
+    datasetloader = DatasetLoader(
+        backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id, data_dir=app.root_path
+    )
 
     path, valid_domains = datasetloader.get_model_path()
     if not path:

@@ -10,7 +10,8 @@ else:
 
 
 class DatasetLoader:
-    def __init__(self, backend="mysql", wiki_id=None, table_prefix="lr"):
+    def __init__(self, backend="mysql", wiki_id=None, table_prefix="lr", data_dir=None):
+        self.data_dir = data_dir
         self.backend = backend
         self.wiki_id = wiki_id
         self.table_prefix = table_prefix
@@ -20,7 +21,9 @@ class DatasetLoader:
             )
             self.mysql_connection = get_mysql_connection()
         else:
-            self.model_path = "./data/{0}/{0}.linkmodel.json".format(wiki_id)
+            self.model_path = os.path.join(
+                data_dir, "data/{0}/{0}.linkmodel.json".format(wiki_id)
+            )
 
     def get(self, tablename=None):
         if self.backend == "mysql":
@@ -35,7 +38,10 @@ class DatasetLoader:
             )
         else:
             return SqliteDict(
-                ("./data/{0}/{0}.%s.sqlite" % tablename).format(self.wiki_id)
+                os.path.join(
+                    self.data_dir,
+                    ("data/{0}/{0}.%s.sqlite" % tablename).format(self.wiki_id),
+                )
             )
 
     def get_model_path(self) -> Tuple[str, list]:
