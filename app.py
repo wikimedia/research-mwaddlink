@@ -1,5 +1,6 @@
 import click
 from flask import (
+    Blueprint,
     Flask,
     request,
     jsonify,
@@ -44,54 +45,50 @@ class ProxyPassMiddleware(object):
         return self.app(environ, start_response)
 
 
+load_dotenv()
+blueprint = Blueprint("mwaddlink", __name__)
+
+
 class TitleConverter(PathConverter):
     # copy of $wgLegalTitleChars in MediaWiki's DefaultSettings.php,
     # slightly modified since it will be applied to a Unicode string
     regex = "[ %!\"$&'()*,\\-.\\/0-9:;=?@A-Z\\\\^_`a-z~\u0080-\U0010FFFF+]+"
 
 
-app = Flask(__name__)
-app.config["JSON_AS_ASCII"] = False
-url_prefix = os.environ.get("URL_PREFIX", "/")
-if url_prefix != "/":
-    app.wsgi_app = ProxyPassMiddleware(app.wsgi_app, url_prefix)
-app.url_map.converters["title"] = TitleConverter
+def create_app():
+    flask_app = Flask(__name__)
+    flask_app.url_map.converters["title"] = TitleConverter
+    flask_app.register_blueprint(blueprint)
+    flask_app.config["JSON_AS_ASCII"] = False
+    url_prefix = os.environ.get("URL_PREFIX", "/")
+    if url_prefix != "/":
+        flask_app.wsgi_app = ProxyPassMiddleware(flask_app.wsgi_app, url_prefix)
 
-swagger_config = {
-    "headers": [],
-    "specs": [
-        {
-            "endpoint": "apispec_1",
-            "route": "/apispec_1.json",
-            "rule_filter": lambda rule: True,
-            "model_filter": lambda tag: True,
-        }
-    ],
-    "static_url_path": "/flasgger_static",
-    "url_prefix": None,
-    "swagger_ui": True,
-    "specs_route": "/apidocs/",
-    "basePath": url_prefix,
-}
-swag = Swagger(
-    app,
-    template_file="swagger/linkrecommendations.yml",
-    config=swagger_config,
-)
-json_logging.init_flask(enable_json=True)
-json_logging.init_request_instrument(
-    app=app, custom_formatter=LogstashAwareJSONRequestLogFormatter
-)
-logger = logging.getLogger("logger")
-loglevel = os.environ.get("FLASK_LOGLEVEL", logging.WARNING)
-logger.setLevel(loglevel)
-json_logging.get_request_logger().setLevel(loglevel)
-logger.addHandler(logging.StreamHandler(sys.stdout))
-
-load_dotenv()
+    swagger_config = {
+        "headers": [],
+        "specs": [
+            {
+                "endpoint": "apispec_1",
+                "route": "/apispec_1.json",
+                "rule_filter": lambda rule: True,
+                "model_filter": lambda tag: True,
+            }
+        ],
+        "static_url_path": "/flasgger_static",
+        "url_prefix": None,
+        "swagger_ui": True,
+        "specs_route": "/apidocs/",
+        "basePath": url_prefix,
+    }
+    Swagger(
+        flask_app,
+        template_file="swagger/linkrecommendations.yml",
+        config=swagger_config,
+    )
+    return flask_app
 
 
-@app.errorhandler(InternalServerError)
+@blueprint.errorhandler(InternalServerError)
 def handle_bad_request(e: InternalServerError):
     e_original = e.original_exception
     if e_original:
@@ -114,12 +111,12 @@ def handle_bad_request(e: InternalServerError):
     return response
 
 
-@app.route("/", methods=["GET"])
+@blueprint.route("/", methods=["GET"])
 def main():
     return redirect(url_for("flasgger.apidocs"))
 
 
-@app.cli.command("query")
+@blueprint.cli.command("query")
 @click.option(
     "--project",
     default="wikipedia",
@@ -171,7 +168,7 @@ def cli_query(ctx: click.Context, *args, **kwargs):
     query(*args, **kwargs)
 
 
-@app.route(
+@blueprint.route(
     "/v1/linkrecommendations/<string:project>/<string:wiki_domain>/<title:page_title>",
     methods=["POST", "GET"],
     merge_slashes=False,
@@ -194,6 +191,7 @@ def query(
     else:
         wiki_id = "%s%s" % (wiki_domain, project)
     wiki_id = wiki_id.replace("_", "-")
+    revision = revision or request.args.get("revision", 0, int)
     datasetloader = DatasetLoader(
         backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id, data_dir=app.root_path
     )
@@ -222,6 +220,8 @@ def query(
                 wiki_domain=wiki_domain,
             )
             data = mw_api.get_article(page_title, revision=revision)
+            if revision:
+                data["revid"] = int(revision)
         except KeyError as e:
             if e.args[0] == "revisions":
                 page_not_found_message = "Page not found: %s" % page_title, 404
@@ -246,7 +246,7 @@ def query(
     query_instance = Query(logger, datasetloader)
     result = query_instance.run(
         wikitext=data["wikitext"],
-        revid=data["revid"],
+        revid=int(data["revid"]),
         pageid=data["pageid"],
         threshold=data["threshold"],
         wiki_id=wiki_id,
@@ -268,7 +268,7 @@ def query(
     return response
 
 
-@app.route("/healthz", methods=["GET"])
+@blueprint.route("/healthz", methods=["GET"])
 def healthz():
     """
     Kubernetes will use this endpoint to know if it should route traffic to the application.
@@ -276,6 +276,18 @@ def healthz():
     An empty string and a HTTP 200 response.
     """
     return "", 200
+
+
+app = create_app()
+json_logging.init_flask(enable_json=True)
+json_logging.init_request_instrument(
+    app=app, custom_formatter=LogstashAwareJSONRequestLogFormatter
+)
+logger = logging.getLogger("logger")
+loglevel = os.environ.get("FLASK_LOGLEVEL", logging.WARNING)
+logger.setLevel(loglevel)
+json_logging.get_request_logger().setLevel(loglevel)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 if __name__ == "__main__":

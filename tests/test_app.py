@@ -1,9 +1,15 @@
 import json
+from json.decoder import JSONDecodeError
+import os
 
 import pytest
 from pytest_cases import parametrize, fixture
 
 import app
+
+# Needed so that the tests will make use of SQLite files downloaded by
+# .pipeline/integration.sh
+os.environ.setdefault("DB_BACKEND", "sqlite")
 
 
 @fixture()
@@ -34,7 +40,7 @@ def test_apispec_json(client):
 def test_apidocs(client):
     # GET to / redirects to API docs
     res = client.get("/", follow_redirects=True)
-    assert res.data.find(b"Flasgger") > 0
+    assert res.data.decode().find("Flasgger") > 0
 
 
 def provide_query_get():
@@ -43,6 +49,9 @@ def provide_query_get():
             "wikipedia",
             "simple",
             "Cat",
+            # Use a revision ID so that the results are deterministic.
+            # The only reason the results would change are if significantly
+            # different datasets are generated or the algorithm changes.
             8097163,
             0.5,
             2,
@@ -56,18 +65,18 @@ def provide_query_get():
                         "link_target": "Hunting",
                         "link_text": "hunting",
                         "match_index": 0,
-                        "score": 0.50495445728302,
+                        "score": 0.5160561203956604,
                         "wikitext_offset": 3334,
                     },
                     {
                         "context_after": " cat that ",
-                        "context_before": ". A ",
+                        "context_before": " A ",
                         "link_index": 1,
-                        "link_target": "Male",
-                        "link_text": "male",
-                        "match_index": 1,
-                        "score": 0.6259557008743286,
-                        "wikitext_offset": 4532,
+                        "link_target": "Female",
+                        "link_text": "female",
+                        "match_index": 0,
+                        "score": 0.5170595645904541,
+                        "wikitext_offset": 4443,
                     },
                 ],
                 "links_count": 2,
@@ -84,7 +93,7 @@ def provide_query_get():
                 },
                 "page_title": "Cat",
                 "pageid": 2815,
-                "revid": 8137430,
+                "revid": 8097163,
             },
             200,
             True,
@@ -110,7 +119,7 @@ def provide_query_get():
             None,
             None,
             "Unable to process request for wikipedia/foo. Project/domain pairs that can be processed by the service: \n"
-            "- wikipedia/simple\n",
+            "- \n",  # The app doesn't provide a list of valid project/domain pairs for SQLite.
             400,
             True,
         ],
@@ -146,7 +155,6 @@ def test_query_get(
     if threshold:
         params["threshold"] = threshold
     url = "v1/linkrecommendations/%s/%s/%s" % (project, wiki_domain, page_title)
-    # FIXME The query parameters are not getting passed through.
     res = client.get(url, query_string=params)
     assert res.status_code == expected_status_code
     # assert that the shape of the response is correct
@@ -167,5 +175,9 @@ def test_query_get(
             if "meta" in expected_data:
                 del expected_data["meta"]
             assert json.dumps(response_json) == json.dumps(expected_data)
-    except ValueError:
-        assert res.data == expected_data
+    except JSONDecodeError:
+        # The API doesn't return a JSON response when the application errors
+        # due to not finding the dataset. We should fix that in a follow-up, but
+        # for now this code exists to handle the case where the response isn't
+        # JSON and we still want to compare the response with what we expected.
+        assert res.data.decode() == expected_data
