@@ -134,14 +134,6 @@ paths:
           type: number
           default: 0.5
           description: 'Number between 0 and 1 for the threshold to use.'
-        - name: sections_to_exclude
-          in: query
-          required: false
-          schema:
-            items:
-              type: string
-            type: array
-          description: 'Sections to exclude from link suggestion generation. Exact match is used. Up to 25 items can be set. Excluding the lead section can be done with the %LEAD%'
         - name: max_recommendations
           in: query
           required: false
@@ -167,6 +159,11 @@ paths:
               pageid:
                 type: integer
                 description: 'Page ID of the article'
+              sections_to_exclude:
+                type: array
+                items:
+                  type: string
+                description: 'Sections to exclude from link suggestion generation. Exact match is used. Up to 25 items can be set. Excluding the lead section can be done with the %LEAD%'
       responses:
         200:
           description: LinkRecommendationSet
