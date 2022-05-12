@@ -231,7 +231,9 @@ def query(
 
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
     if has_request_context():
-        data["sections_to_exclude"] = request.args.getlist("sections_to_exclude")
+        # FIXME use POST data but fall back to GET data for migration period
+        if "sections_to_exclude" not in data:
+            data["sections_to_exclude"] = request.args.getlist("sections_to_exclude")
     else:
         data["sections_to_exclude"] = sections_to_exclude
     data["threshold"] = threshold or float(request.args.get("threshold", 0.5))
