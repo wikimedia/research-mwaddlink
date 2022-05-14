@@ -30,21 +30,11 @@ download_and_verify_sqlite() {
   gunzip --force $2
 }
 
-CHECKSUM_FILENAME=$WIKI_ID.anchors.sqlite.checksum
-FILENAME=$WIKI_ID.anchors.sqlite.gz
-download_and_verify_sqlite $CHECKSUM_FILENAME $FILENAME
-
-CHECKSUM_FILENAME=$WIKI_ID.pageids.sqlite.checksum
-FILENAME=$WIKI_ID.pageids.sqlite.gz
-download_and_verify_sqlite $CHECKSUM_FILENAME $FILENAME
-
-CHECKSUM_FILENAME=$WIKI_ID.redirects.sqlite.checksum
-FILENAME=$WIKI_ID.redirects.sqlite.gz
-download_and_verify_sqlite $CHECKSUM_FILENAME $FILENAME
-
-CHECKSUM_FILENAME=$WIKI_ID.w2vfiltered.sqlite.checksum
-FILENAME=$WIKI_ID.w2vfiltered.sqlite.gz
-download_and_verify_sqlite $CHECKSUM_FILENAME $FILENAME
+for TABLE in anchors pageids redirects w2vfiltered; do
+  CHECKSUM_FILENAME=$WIKI_ID.$TABLE.sqlite.checksum
+  FILENAME=$WIKI_ID.$TABLE.sqlite.gz
+  download_and_verify_sqlite $CHECKSUM_FILENAME $FILENAME
+done
 
 # Back to app root
 cd "$APP_DIR"
