@@ -1,8 +1,7 @@
 import json
-from json.decoder import JSONDecodeError
+import pytest
 import os
 
-import pytest
 from pytest_cases import parametrize, fixture
 
 import app
@@ -46,104 +45,59 @@ def test_apidocs(client):
 def provide_query_get():
     return [
         [
-            "wikipedia",
-            "simple",
-            "Cat",
-            # Use a revision ID so that the results are deterministic.
-            # The only reason the results would change are if significantly
-            # different datasets are generated or the algorithm changes.
-            8097163,
-            0.5,
-            2,
-            None,
-            {
-                "links": [
-                    {
-                        "context_after": " rodents a",
-                        "context_before": "s for ",
-                        "link_index": 0,
-                        "link_target": "Hunting",
-                        "link_text": "hunting",
-                        "match_index": 0,
-                        "score": 0.5160561203956604,
-                        "wikitext_offset": 3334,
-                    },
-                    {
-                        "context_after": " cat that ",
-                        "context_before": " A ",
-                        "link_index": 1,
-                        "link_target": "Female",
-                        "link_text": "female",
-                        "match_index": 0,
-                        "score": 0.5170595645904541,
-                        "wikitext_offset": 4443,
-                    },
-                ],
-                "links_count": 2,
-                "meta": {
-                    "application_version": "2b19309",
-                    "dataset_checksums": {
-                        "anchors": "0ee38697e1bb61df56c52b0a2617ceb33660e941238e65499acf96266639e9d6",
-                        "model": "3de13ab5975aabe92fbb06453f17ca2b5605907fba5eaf5bc2f0b0c65677af93",
-                        "pageids": "a1c8fd9e73b998c8a77310104278e2d94c4a60e49dab644fefcafea5d19b20d6",
-                        "redirects": "842fe2a920a34c48d86427ec4cbae7f5ca736642303af3969e1479f7f8e8a258",
-                        "w2vfiltered": "5ca140e629dbd882c8b02d5e9cc69571bef1146408eff31cd9ecff3c3af10608",
-                    },
-                    "format_version": 1,
-                },
-                "page_title": "Cat",
-                "pageid": 2815,
-                "revid": 8097163,
-            },
-            200,
-            True,
+            0,  # Fixture number
+            "wikipedia",  # Project
+            "simple",  # Domain
+            "Cat",  # Page title
+            8097163,  # Revision ID
+            0.5,  # Threshold
+            2,  # Max link recommendations
+            None,  # Sections to exclude
+            200,  # Status code
         ],
         [
-            "wikipedia",
-            "simple",
-            "Somepagethatwontbefound",
-            None,
-            None,
-            None,
-            None,
-            "Page not found: Somepagethatwontbefound",
-            404,
-            False,
+            1,  # Fixture number
+            "wikipedia",  # Project
+            "simple",  # Domain
+            "Somepagethatwontbefound",  # Page title
+            None,  # Revision ID
+            None,  # Threshold
+            None,  # Max link recommendations
+            None,  # Sections to exclude
+            404,  # Status code
         ],
         [
-            "wikipedia",
-            "foo",
-            "Bar",
-            None,
-            None,
-            None,
-            None,
-            "Unable to process request for wikipedia/foo. Project/domain pairs that can be processed by the service: \n"
-            "- \n",  # The app doesn't provide a list of valid project/domain pairs for SQLite.
+            2,  # Fixture number
+            "wikipedia",  # Project
+            "foo",  # Domain
+            "Bar",  # Page title
+            None,  # Revision ID
+            None,  # Threshold
+            None,  # Max link recommendations
+            None,  # Sections to exclude
             400,
-            True,
         ],
     ]
 
 
 @pytest.mark.integration
 @parametrize(
-    "project,wiki_domain,page_title,revision,threshold,max_recommendations,"
-    "sections_to_exclude,expected_data,expected_status_code,assert_expected_data",
+    "fixture_number,project,wiki_domain,page_title,revision,threshold,max_recommendations,"
+    "sections_to_exclude,expected_status_code",
     provide_query_get(),
 )
 def test_query_get(
     client,
+    pytestconfig,
+    fixture_number,
     project,
     wiki_domain,
     page_title,
-    expected_data,
     revision,
     threshold,
     max_recommendations,
     sections_to_exclude,
     expected_status_code,
-    assert_expected_data,
 ):
     params = {}
     if revision:
@@ -158,8 +112,22 @@ def test_query_get(
     res = client.get(url, query_string=params)
     assert res.status_code == expected_status_code
     # assert that the shape of the response is correct
-    try:
-        response_json = json.loads(res.data)
+    with open(
+        os.path.join(
+            pytestconfig.rootdir,
+            "tests",
+            "fixtures",
+            "provide_query_get",
+            str(fixture_number),
+            "expected_data.json",
+        ),
+        mode="r",
+    ) as file:
+        expected_data = json.loads(file.read())
+    response_json = json.loads(res.data)
+
+    if "meta" in expected_data:
+        del expected_data["meta"]
         assert list(response_json.keys()) == [
             "links",
             "links_count",
@@ -168,16 +136,117 @@ def test_query_get(
             "pageid",
             "revid",
         ]
-        if assert_expected_data:
-            # Remove the meta key, as the dataset hashes can change, as can the
-            # application version
-            del response_json["meta"]
-            if "meta" in expected_data:
-                del expected_data["meta"]
-            assert json.dumps(response_json) == json.dumps(expected_data)
-    except JSONDecodeError:
-        # The API doesn't return a JSON response when the application errors
-        # due to not finding the dataset. We should fix that in a follow-up, but
-        # for now this code exists to handle the case where the response isn't
-        # JSON and we still want to compare the response with what we expected.
-        assert res.data.decode() == expected_data
+        # Remove the meta key, as the dataset hashes can change, as can the
+        # application version
+        del response_json["meta"]
+    assert json.dumps(response_json) == json.dumps(expected_data)
+
+
+def provide_query_post():
+    return [
+        [
+            0,  # fixture number
+            "wikipedia",  # project
+            "simple",  # domain
+            "Cat",  # page title
+            8097163,  # Revision
+            0.5,  # Threshold
+            2,  # Max recommendations
+            None,  # Sections to exclude
+            2815,  # Page ID
+            200,  # Expected response code
+            True,  # Assert the response
+        ],
+        [
+            1,  # fixture number
+            "wikipedia",  # project
+            "foo",  # domain
+            "Bar",  # Page title
+            0,  # Revision
+            None,  # Threshold
+            None,  # Max recommendations
+            None,  # Sections to exclude
+            0,  # Page ID
+            400,  # Expected response code
+            False,  # Assert the response
+        ],
+    ]
+
+
+@pytest.mark.integration
+@parametrize(
+    "fixture_number,project,wiki_domain,page_title,revision,threshold,max_recommendations,"
+    "sections_to_exclude,pageid,expected_status_code,assert_expected_data",
+    provide_query_post(),
+)
+def test_query_post(
+    client,
+    pytestconfig,
+    fixture_number,
+    project,
+    wiki_domain,
+    page_title,
+    revision,
+    threshold,
+    max_recommendations,
+    sections_to_exclude,
+    pageid,
+    expected_status_code,
+    assert_expected_data,
+):
+    query_params = {}
+
+    if max_recommendations:
+        query_params["max_recommendations"] = max_recommendations
+    if threshold:
+        query_params["threshold"] = threshold
+
+    with open(
+        os.path.join(
+            os.getcwd(),
+            pytestconfig.rootdir,
+            "tests",
+            "fixtures",
+            "provide_query_post",
+            str(fixture_number),
+            "source.wikitext",
+        ),
+        mode="r",
+    ) as file:
+        json_params = {"revid": revision, "pageid": pageid, "wikitext": file.read()}
+    if sections_to_exclude:
+        json_params["sections_to_exclude"] = sections_to_exclude
+    url = "v1/linkrecommendations/%s/%s/%s" % (project, wiki_domain, page_title)
+    res = client.post(url, json=json_params, query_string=query_params)
+    assert res.status_code == expected_status_code
+
+    # assert that the shape of the response is correct
+    with open(
+        os.path.join(
+            pytestconfig.rootdir,
+            "tests",
+            "fixtures",
+            "provide_query_post",
+            str(fixture_number),
+            "expected_data.json",
+        ),
+        mode="r",
+    ) as file:
+        expected_data = json.loads(file.read())
+    response_json = json.loads(res.data)
+    if "meta" in response_json:
+        assert list(response_json.keys()) == [
+            "links",
+            "links_count",
+            "meta",
+            "page_title",
+            "pageid",
+            "revid",
+        ]
+        # Remove the meta key, as the dataset hashes can change, as can the
+        # application version
+        del response_json["meta"]
+        if "meta" in expected_data:
+            del expected_data["meta"]
+
+    assert json.dumps(response_json) == json.dumps(expected_data)

@@ -49,6 +49,23 @@ load_dotenv()
 blueprint = Blueprint("mwaddlink", __name__)
 
 
+class InvalidAPIUsage(Exception):
+    # Custom response class for API errors.
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        super().__init__()
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv["message"] = self.message
+        return rv
+
+
 class TitleConverter(PathConverter):
     # copy of $wgLegalTitleChars in MediaWiki's DefaultSettings.php,
     # slightly modified since it will be applied to a Unicode string
@@ -86,6 +103,11 @@ def create_app():
         config=swagger_config,
     )
     return flask_app
+
+
+@blueprint.errorhandler(InvalidAPIUsage)
+def invalid_api_usage(e):
+    return jsonify(e.to_dict()), e.status_code
 
 
 @blueprint.errorhandler(InternalServerError)
@@ -198,15 +220,15 @@ def query(
 
     path, valid_domains = datasetloader.get_model_path()
     if not path:
-        warning_message = (
-            "Unable to process request for %s/%s. Project/domain pairs that can be processed by the service: \n- %s\n"
-            % (project, wiki_domain, "\n- ".join(sorted(valid_domains))),
-            400,
-        )
+        warning_message = "Unable to process request for %s/%s" % (project, wiki_domain)
         logger.warning(warning_message)
         if not has_request_context():
             print(warning_message)
-        return warning_message
+        raise InvalidAPIUsage(
+            warning_message,
+            status_code=400,
+            payload={"valid_project_domain_pairs": valid_domains},
+        )
 
     if has_request_context() and request.method == "POST":
         data = request.json
@@ -224,11 +246,11 @@ def query(
                 data["revid"] = int(revision)
         except KeyError as e:
             if e.args[0] == "revisions":
-                page_not_found_message = "Page not found: %s" % page_title, 404
+                page_not_found_message = "Page not found: %s" % page_title
                 logger.warning(page_not_found_message)
                 if not has_request_context():
                     print(page_not_found_message)
-                return page_not_found_message
+                raise InvalidAPIUsage(message=page_not_found_message, status_code=404)
             raise e
 
     # FIXME: We're supposed to be able to read these defaults from the Swagger spec
