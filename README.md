@@ -22,6 +22,7 @@ There are a few caveats:
 - some parts in the script rely on using the spark cluster using a specific conda-environment from a specific stat-machine (stat1008).
 - on the stat-machines, make sure you have the http-proxy set up https://wikitech.wikimedia.org/wiki/HTTP_proxy
 - you might have to install the following nltk-package manually: ```python -m nltk.downloader punkt```
+- [PyICU](https://gitlab.pyicu.org/main/pyicu) has its own installation process; see [#installing-pyicu](https://gitlab.pyicu.org/main/pyicu#installing-pyicu) for up-to-date instructions.
 
 ## Training the model
 
@@ -198,6 +199,17 @@ You can use the environment variable FLASK_DEBUG=1 to make the service run in de
 ## Docker Compose
 
 There is a Docker Compose configuration for running the service locally. Run `docker-compose up -d` then use `docker-compose exec linkrecommendation [cmd]` to execute code in the application container.
+
+You can also override the `docker-compose.yml` configuration with `docker-compose.override.yml`, here is an example to use with running tests:
+
+```yaml
+version: "3.9"
+services:
+  linkrecommendation:
+    image: docker-registry.wikimedia.org/wikimedia/research-mwaddlink:test
+    environment:
+      DB_BACKEND: 'sqlite'
+```
 
 Note that on macOS hosts there is currently an issue with XGBoost when loading the JSON model:
 

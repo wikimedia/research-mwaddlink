@@ -26,6 +26,15 @@ def main():
     )
 
     parser.add_argument(
+        "--language-code",
+        "-l",
+        default=None,
+        type=str,
+        required=True,
+        help="The ISO-639 language code for the wiki, e.g. 'az' for Azeri",
+    )
+
+    parser.add_argument(
         "--nmax",
         "-nmax",
         default=-1,
@@ -48,6 +57,7 @@ def main():
 
     args = parser.parse_args()
     threshold = args.threshold
+    language_code = args.language_code
     wiki_id = args.wiki_id
     N_max = args.nmax
     # N_interval = args.nint
@@ -109,6 +119,7 @@ def main():
                     redirects,
                     word2vec,
                     model,
+                    language_code,
                     threshold=threshold,
                     pr=False,
                 )

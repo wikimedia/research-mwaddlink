@@ -21,7 +21,7 @@ from werkzeug.exceptions import InternalServerError
 
 from src.ClickProfiler import ClickProfiler
 from src.DatasetLoader import DatasetLoader
-from src.scripts.utils import normalise_title
+from src.scripts.utils import normalise_title, MentionRegexException
 from src.MediaWikiApi import MediaWikiApi
 from src.query import Query
 from src.LogstashAwareJSONRequestLogFormatter import (
@@ -153,6 +153,12 @@ def main():
     help="Wiki domain for which to get recommendations (e.g. 'cs')",
 )
 @click.option(
+    "--language-code",
+    required=True,
+    type=str,
+    help="The ISO-639 language code to use for the request (e.g. 'az' for Azeri)",
+)
+@click.option(
     "--page-title", type=str, help="Page title to use in the query", required=True
 )
 @click.option(
@@ -203,7 +209,9 @@ def query(
     threshold=None,
     max_recommendations=None,
     sections_to_exclude=None,
+    language_code=None,
 ):
+
     if sections_to_exclude is None:
         sections_to_exclude = []
     if project == "wikipedia":
@@ -264,27 +272,46 @@ def query(
     data["max_recommendations"] = max_recommendations or int(
         request.args.get("max_recommendations", 15)
     )
+    # Fall back to wiki_domain for language code. It's not always correct, as e.g. simple
+    # (for simple.wikipedia.org) is not a valid language code, but fine to include until the
+    # refreshLinkRecommendations.php script is updated. If the language code is invalid,
+    # the PyICU will use the default 'en' language code.
+    data["language_code"] = language_code or request.args.get(
+        "language_code", wiki_domain
+    )
 
     query_instance = Query(logger, datasetloader)
-    result = query_instance.run(
-        wikitext=data["wikitext"],
-        revid=int(data["revid"]),
-        pageid=data["pageid"],
-        threshold=data["threshold"],
-        wiki_id=wiki_id,
-        page_title=normalise_title(page_title),
-        max_recommendations=data["max_recommendations"],
-        # Cap the list of sections to exclude at 25.
-        sections_to_exclude=data["sections_to_exclude"][:25],
-    )
-    result["meta"]["application_version"] = (
-        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-        .decode("ascii")
-        .strip()
-    )
-    response = jsonify(result)
+    try:
+        result = query_instance.run(
+            wikitext=data["wikitext"],
+            revid=int(data["revid"]),
+            pageid=data["pageid"],
+            threshold=data["threshold"],
+            wiki_id=wiki_id,
+            language_code=data["language_code"],
+            page_title=normalise_title(page_title),
+            max_recommendations=data["max_recommendations"],
+            # Cap the list of sections to exclude at 25.
+            sections_to_exclude=data["sections_to_exclude"][:25],
+        )
+        result["meta"]["application_version"] = (
+            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+            .decode("ascii")
+            .strip()
+        )
+        response = jsonify(result)
 
-    logger.debug(response)
+        logger.debug(response)
+    except MentionRegexException as e:
+        raise InvalidAPIUsage(
+            e.message,
+            payload={
+                "wiki_id": wiki_id,
+                "language_code": data["language_code"],
+                "pageid": data["pageid"],
+                "revid": data["revid"],
+            },
+        )
     if not has_request_context():
         print(json.dumps(response.get_json(), indent=4))
     return response
