@@ -3,6 +3,7 @@
 black
 flake8
 tox
+PyICU==2.9
 python-dotenv~=0.15.0
 pytest==6.2.5
 pytest-cov==3.0.0

@@ -20,6 +20,8 @@ variants:
       insecurely: true
     includes: [build]
     entrypoint: [tox]
+    apt:
+      packages: [python3-icu, pkg-config, libicu-dev]
     python:
       requirements: [requirements-query.txt,requirements-test.txt]
       use-system-flag: false
