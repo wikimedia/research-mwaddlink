@@ -157,11 +157,18 @@ Once the model has been trained, one can make queries to generate link recommend
 
 Locally, the easiest way is to use the SQLite-files for querying. For example, to get the recommendations for the article [Garnet Carter in German Wikipedia](https://de.wikipedia.org/wiki/Garnet_Carter) (dewiki):
 - SQLite-backend
-``` DB_BACKEND=sqlite \
-flask query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de
+``` bash
+DB_BACKEND=sqlite \
+flask mwaddlink query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de --revision=0
 ```
 - MySQL-backend
-``` DB_USER=research DB_BACKEND=mysql DB_DATABASE=staging DB_HOST=dbstore1005.eqiad.wmnet DB_PORT=3350 DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf flask query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de
+``` bash
+DB_USER=research \
+DB_BACKEND=mysql \
+DB_DATABASE=staging \
+DB_HOST=dbstore1005.eqiad.wmnet \
+DB_PORT=3350 DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf \
+flask mwaddlink query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de --revision=0
 ```
 Alternatively, you can query the model using the MySQL-tables. Note that this requires that the checksums are available as MySQL-tables. This happens only when calling ```load-dataset.py```. This step is typically only performed in production and not on stat1008. Thus, by default this will not work at this stage.
 

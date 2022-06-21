@@ -213,7 +213,9 @@ def query(
     else:
         wiki_id = "%s%s" % (wiki_domain, project)
     wiki_id = wiki_id.replace("_", "-")
-    revision = revision or request.args.get("revision", 0, int)
+    revision = (
+        revision if revision is not None else request.args.get("revision", 0, int)
+    )
     datasetloader = DatasetLoader(
         backend=os.environ.get("DB_BACKEND"), wiki_id=wiki_id, data_dir=app.root_path
     )
