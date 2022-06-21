@@ -34,3 +34,8 @@ pipelines:
         publish:
           image:
             tags: [stable]
+      - name: test
+        build: test
+        publish:
+          image:
+            tags: [test]
