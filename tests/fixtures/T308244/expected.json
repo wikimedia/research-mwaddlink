@@ -1,0 +1,23 @@
+{
+  "links": [
+    {
+      "context_after": " danışığı ",
+      "context_before": "ı vardır. ",
+      "link_index": 0,
+      "link_target": "İngilis dili",
+      "link_text": "İngiliscə",
+      "match_index": 0,
+      "score": 0.6471115946769714,
+      "wikitext_offset": 693
+    }
+  ],
+  "links_count": 1,
+  "meta": {
+    "application_version": "907e49c",
+    "dataset_checksums": {},
+    "format_version": 1
+  },
+  "page_title": "Rufus (personaj)",
+  "pageid": 271505,
+  "revid": 6024182
+}

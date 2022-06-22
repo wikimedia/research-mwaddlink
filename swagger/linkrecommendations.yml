@@ -103,6 +103,7 @@ paths:
             query:
               max_recommendations: 1
               threshold: 0.1
+              language_code: cs
             response:
               status: 200
               body:
@@ -128,6 +129,11 @@ paths:
           description: 'Page title of the article'
           in: path
           required: true
+        - name: language_code
+          type: string
+          description: 'ISO Language Code (ISO-639) language code to use with the request. If not provided, defaults to the "subdomain".'
+          in: query
+          required: false
         - name: threshold
           in: query
           required: false
@@ -188,6 +194,7 @@ paths:
             query:
               max_recommendations: 1
               threshold: 0.1
+              language_code: cs
             response:
               status: 200
               meta:
@@ -210,6 +217,11 @@ paths:
         required: true
         type: string
         description: 'Page title of the article'
+      - name: language_code
+        type: string
+        description: 'ISO Language Code (ISO-639) language code to use with the request. If not provided, defaults to the "subdomain".'
+        in: query
+        required: false
       - name: revision
         in: query
         required: false

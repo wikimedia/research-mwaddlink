@@ -9,7 +9,8 @@ variants:
     builder:
       command: [ "PYTHONPATH=/opt/lib/python/site-packages", "python3.7", "-m", "nltk.downloader", "punkt" ]
     apt:
-      packages: [python3-setuptools, default-libmysqlclient-dev, python3-dev, build-essential, python3-pip, curl]
+      # python3-icu is installed here and not via pip / requirements.txt, see https://gitlab.pyicu.org/main/pyicu
+      packages: [python3-icu, python3-setuptools, default-libmysqlclient-dev, python3-dev, build-essential, python3-pip, curl]
     copies: [local]
     python:
       version: python3
@@ -21,7 +22,7 @@ variants:
     includes: [build]
     entrypoint: [tox]
     apt:
-      packages: [python3-icu, pkg-config, libicu-dev]
+      packages: [pkg-config, libicu-dev]
     python:
       requirements: [requirements-query.txt,requirements-test.txt]
       use-system-flag: false

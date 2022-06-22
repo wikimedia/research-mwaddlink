@@ -1,7 +1,9 @@
+import json
+import os
 import pytest
 
 from types import SimpleNamespace
-from src.scripts.utils import process_page
+from src.scripts.utils import process_page, MentionRegexException
 
 
 anchors = {
@@ -171,6 +173,7 @@ def test_process_page(
         redirects,
         word2vec,
         model,
+        language_code="en",
         pr=False,
         return_wikitext=True,
         sections_to_exclude=sections_to_exclude,
@@ -185,6 +188,7 @@ def test_process_page(
         redirects,
         word2vec,
         model,
+        language_code="en",
         pr=False,
         return_wikitext=False,
         sections_to_exclude=sections_to_exclude,
@@ -194,3 +198,66 @@ def test_process_page(
     expected_data.sort()
     for actual_item, expected_item in zip(actual_data, expected_data):
         assert expected_item.items() <= actual_item.items()
+
+
+def test_process_page_lowercase(pytestconfig):
+    """
+    Regression test for T308244. Exception should be thrown with "en" language code on this text; no exception
+    when we provide the "az" language code.
+    """
+    with open(
+        os.path.join(
+            pytestconfig.rootdir,
+            "tests",
+            "fixtures",
+            "T308244",
+            "article.wikitext",
+        ),
+        mode="r",
+    ) as file:
+        wikitext = file.read()
+
+    # Check that processing with en language code fails.
+    with pytest.raises(MentionRegexException):
+        process_page(
+            wikitext,
+            "Page",
+            {"i̇ngiliscə": {"İngilis dili": 647}},
+            {"İngilis dili": 647},
+            redirects,
+            word2vec,
+            model,
+            language_code="en",
+            pr=False,
+            return_wikitext=False,
+            sections_to_exclude=[],
+        )["links"]
+
+    # Now supply the correct language code
+    actual_data = process_page(
+        wikitext,
+        "Page",
+        {"i̇ngiliscə": {"İngilis dili": 647}},
+        {"İngilis dili": 647},
+        redirects,
+        word2vec,
+        model,
+        language_code="az",
+        pr=False,
+        return_wikitext=False,
+        sections_to_exclude=[],
+    )["links"]
+
+    with open(
+        os.path.join(
+            pytestconfig.rootdir,
+            "tests",
+            "fixtures",
+            "T308244",
+            "expected.json",
+        ),
+        mode="r",
+    ) as file:
+        expected_data = json.loads(file.read())["links"]
+    assert expected_data[0]["link_text"] == actual_data[0]["link_text"]
+    assert expected_data[0]["link_target"] == actual_data[0]["link_target"]

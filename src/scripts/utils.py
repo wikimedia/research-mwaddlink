@@ -1,20 +1,34 @@
 from Levenshtein import jaro as levenshtein_score
+from icu import UnicodeString, Locale
 from scipy.stats import kurtosis
-import sys, os
+import os
+import sys
 
-# if we are currently in /src/scripts we have to add the main folder (via ../..) to sys-path in order to be able to import src.MySqlDict
+# if we are currently in /src/scripts we have to add the main folder (via ../..) to sys-path in order to be able to
+# import src.MySqlDict
 if os.getcwd().endswith("/src/scripts"):
     sys.path.append(os.path.join(os.pardir, os.pardir))
 from src.MySqlDict import MySqlDict
 import time
 import operator
-import os
 import numpy as np
 import urllib.parse as up
 import wikitextparser as wtp
 import mwparserfromhell
 import re
 import nltk
+
+
+class MentionRegexException(Exception):
+    status_code = 400
+
+    def __init__(self, mention, wikitext):
+        super().__init__()
+        self.message = 'Unable to find match for "%s" in "%s"' % (mention, wikitext)
+
+    def to_dict(self):
+        return {"message": self.message}
+
 
 ######################
 # parsing titles
@@ -251,6 +265,7 @@ def process_page(
     redirects,
     word2vec,
     model,
+    language_code,
     threshold=0.8,
     pr=True,
     return_wikitext=True,
@@ -268,6 +283,7 @@ def process_page(
     :param dict redirects: Redirect dataset for the wiki (original title -> redirect target)
     :param dict word2vec: word2vec dataset for the wiki (word -> vector)
     :param xgboost.XGBClassifier model: The wiki's model for predicting link targets for words
+    :param string language_code: The ISO 639 language code to use with processing.
     :param float threshold: Minimum probability score required to include a prediction
     :param bool pr: Whether to include probability scores in the wikitext as 'pr' link parameters
     :param bool return_wikitext: Whether to return wikitext or data.
@@ -419,9 +435,21 @@ def process_page(
                                 page_wikicode_init_substr = page_wikicode_init[
                                     i1_node_init:i2_node_init
                                 ]
-                                match = mention_regex_i.search(
-                                    page_wikicode_init_substr.lower()
+                                # Handle lower-casing of characters in some languages, e.g.
+                                # in Azeri, İnsan should be lowercased to insan, but the default lower-casing
+                                # in python will change the İ to an i with two dots.
+                                page_wikicode_init_substr_lower = str(
+                                    UnicodeString(page_wikicode_init_substr).toLower(
+                                        Locale(language_code)
+                                    )
                                 )
+                                match = mention_regex_i.search(
+                                    page_wikicode_init_substr_lower
+                                )
+                                if match is None:
+                                    raise MentionRegexException(
+                                        mention, page_wikicode_init_substr_lower
+                                    )
                                 i1_sub = match.start()
                                 start_offset = i1_node_init + i1_sub
                                 end_offset = start_offset + len(mention)
