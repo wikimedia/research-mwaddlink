@@ -61,7 +61,16 @@ predictions = [round(value) for value in y_pred]
 
 # evaluate predictions
 predictions = model.predict_proba(X_test)[:, 1]
-print("ROC AUC=%.3f" % roc_auc_score(y_test, predictions))
+try:
+    print("ROC AUC=%.3f" % roc_auc_score(y_test, predictions))
+except ValueError as e:
+    if (
+        str(e)
+        == "Only one class present in y_true. ROC AUC score is not defined in that case."
+    ):
+        print("ROC AUC not defined")
+    else:
+        raise
 
 # save the model
 data_dir = "../../data/%s" % wiki_id

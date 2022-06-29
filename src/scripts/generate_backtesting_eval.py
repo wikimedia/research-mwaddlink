@@ -6,6 +6,7 @@ import mwparserfromhell as mwph
 import pandas as pd
 import xgboost as xgb
 
+from math import nan
 from utils import getLinks
 from utils import process_page
 
@@ -144,8 +145,14 @@ def main():
             if count_doc == N_max:
                 break
 
-        micro_precision = tot_TP / tot_ret
-        micro_recall = tot_TP / tot_rel
+        if tot_ret > 0:
+            micro_precision = tot_TP / tot_ret
+        else:
+            micro_precision = nan
+        if tot_rel > 0:
+            micro_recall = tot_TP / tot_rel
+        else:
+            micro_recall = nan
         print("finished: %s sentences" % count_doc)
         print("micro_precision:\t", micro_precision)
         print("micro_recall:\t", micro_recall)
