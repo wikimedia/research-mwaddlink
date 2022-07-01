@@ -31,7 +31,6 @@ def main():
         "-l",
         default=None,
         type=str,
-        required=True,
         help="The ISO-639 language code for the wiki, e.g. 'az' for Azeri",
     )
 
