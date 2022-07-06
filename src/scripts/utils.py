@@ -16,6 +16,7 @@ import urllib.parse as up
 import wikitextparser as wtp
 import mwparserfromhell
 import re
+import requests
 import nltk
 
 
@@ -529,3 +530,36 @@ def process_page(
         return page_wikicode
     else:
         return response
+
+
+def get_wiki_url(wiki_id):
+    """
+    generate a wiki's url by replacing underscores "_" with hyphen "-" and
+        matching wikipedia domain e.g "bat_smgwiki" becomes
+        "https://bat-smg.wikipedia.org/w/api.php"
+
+    :param str wiki_id: Wikipedia wiki ID
+    """
+    chars_to_replace = {"_": "-", "wiki": ".wikipedia.org"}
+    for k, v in chars_to_replace.items():
+        wiki_id = wiki_id.replace(k, v)
+    wiki_url = "https://" + wiki_id + "/w/api.php"
+    return wiki_url
+
+
+def get_language_code(wiki_url):
+    """
+    use a wiki's url to get its language code via API siteinfo
+
+    :param str wiki_url: Wikipedia API URL
+    """
+    params = {
+        "action": "query",
+        "meta": "siteinfo",
+        "formatversion": "2",
+        "format": "json",
+    }
+    response = requests.get(url=wiki_url, params=params)
+    data = response.json()
+    language_code = data["query"]["general"]["lang"]
+    return language_code

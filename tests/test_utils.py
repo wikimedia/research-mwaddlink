@@ -3,7 +3,12 @@ import os
 import pytest
 
 from types import SimpleNamespace
-from src.scripts.utils import process_page, MentionRegexException
+from src.scripts.utils import (
+    process_page,
+    MentionRegexException,
+    get_wiki_url,
+    get_language_code,
+)
 
 
 anchors = {
@@ -261,3 +266,15 @@ def test_process_page_lowercase(pytestconfig):
         expected_data = json.loads(file.read())["links"]
     assert expected_data[0]["link_text"] == actual_data[0]["link_text"]
     assert expected_data[0]["link_target"] == actual_data[0]["link_target"]
+
+
+def test_get_wiki_url():
+    actual_wiki_url = get_wiki_url("bat_smgwiki")
+    expected_wiki_url = "https://bat-smg.wikipedia.org/w/api.php"
+    assert actual_wiki_url == expected_wiki_url
+
+
+def test_get_language_code():
+    actual_language_code = get_language_code("https://bat-smg.wikipedia.org/w/api.php")
+    expected_language_code = "sgs"
+    assert actual_language_code == expected_language_code

@@ -9,6 +9,8 @@ import xgboost as xgb
 from math import nan
 from utils import getLinks
 from utils import process_page
+from utils import get_wiki_url
+from utils import get_language_code
 
 """
 backtesting evlauation of trained model on held-out testset
@@ -57,8 +59,9 @@ def main():
 
     args = parser.parse_args()
     threshold = args.threshold
-    language_code = args.language_code
     wiki_id = args.wiki_id
+    wiki_url = get_wiki_url(wiki_id)
+    language_code = args.language_code or get_language_code(wiki_url)
     N_max = args.nmax
     # N_interval = args.nint
 
