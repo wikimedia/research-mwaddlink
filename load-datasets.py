@@ -3,6 +3,7 @@ import functools
 import io
 import os
 import sys
+import re
 
 import requests
 import random
@@ -196,7 +197,13 @@ def run(args: argparse.Namespace):
             all_datasets_url,
             cache_bust_url_query_params(),
         ) as all_datasets_req:
-            wiki_ids = list(filter(None, all_datasets_req.text.split("\n")))
+            all_datasets_req.raise_for_status()
+            wiki_ids = list(
+                filter(
+                    lambda wiki: re.match(r"^[\w_-]+$", wiki),
+                    all_datasets_req.text.split("\n"),
+                )
+            )
     else:
         wiki_ids = [args.wiki_id]
 
