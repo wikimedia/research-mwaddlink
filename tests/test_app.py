@@ -75,7 +75,18 @@ def provide_query_get():
             None,  # Threshold
             None,  # Max link recommendations
             None,  # Sections to exclude
-            400,
+            400,  # HTTP status code
+        ],
+        [
+            3,  # Fixture number
+            "wikipedia",  # Project
+            "bat_smg",  # Domain
+            "Somepagethatwontbefound",  # Page title
+            None,  # Revision ID
+            None,  # Threshold
+            None,  # Max link recommendations
+            None,  # Sections to exclude
+            404,  # HTTP status code
         ],
     ]
 

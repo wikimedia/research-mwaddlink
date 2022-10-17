@@ -7,8 +7,12 @@ def test_init():
         wiki_domain="cs", api_url="https://api/", proxy_api_url="https://proxy_api/"
     )
     assert mw_api.api_url == "https://proxy_api/"
+
     mw_api = MediaWikiApi(wiki_domain="cs", api_url="https://api/")
     assert mw_api.api_url == "https://api/"
+
+    mw_api = MediaWikiApi(wiki_domain="bat_smg", api_url="https://api/")
+    assert mw_api.wiki_domain == "bat-smg"
 
 
 def test_get_article():

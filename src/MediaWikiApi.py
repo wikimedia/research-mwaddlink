@@ -22,7 +22,8 @@ class MediaWikiApi:
         self.api_url = api_url
         self.proxy_api_url = proxy_api_url
         self.project = project
-        self.wiki_domain = wiki_domain
+        # Ensure that wiki IDs like bat_smg are converted to bat-smg for domain resolution.
+        self.wiki_domain = wiki_domain.replace("_", "-")
         # In production, API queries should go to the proxy URL
         if self.proxy_api_url:
             self.api_url = self.proxy_api_url

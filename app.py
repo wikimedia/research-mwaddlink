@@ -220,7 +220,7 @@ def query(
         wiki_id = "%swiki" % wiki_domain
     else:
         wiki_id = "%s%s" % (wiki_domain, project)
-    wiki_id = wiki_id.replace("_", "-")
+
     revision = (
         revision if revision is not None else request.args.get("revision", 0, int)
     )
