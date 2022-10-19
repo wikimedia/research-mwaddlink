@@ -201,14 +201,6 @@ paths:
                 format_version: 1
               body:
                 page_title: "Lipsko"
-        - request:
-            params:
-              project: wikipedia
-              # Verifies that redirect handling works correctly with MediaWikiApi in production
-              domain: be_x_old
-              page_title: SomePageThatShouldNotBeFound
-            response:
-              status: 404
       parameters:
       - name: project
         type: string
