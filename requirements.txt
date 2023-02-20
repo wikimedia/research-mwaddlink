@@ -89,6 +89,6 @@ wcwidth==0.2.5
 webencodings==0.5.1
 widgetsnbextension==3.5.1
 wikipedia2vec==1.0.4
-wikitextparser==0.45.1
+wikitextparser==0.51.1
 xgboost==1.2.0
 zipp==3.2.0

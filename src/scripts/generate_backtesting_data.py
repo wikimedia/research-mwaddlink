@@ -154,10 +154,12 @@ combined = "(" + ")|(".join(regexes) + ")"
 def linked_sents_extractor(title, wikicode):
     # An approximate solution to identify sentences, without a sentence tokenizer
 
-    # bengali has special character for full stop https://en.wikipedia.org/wiki/Bengali_language
+    # Bengali and Armenian languages have special characters for full stop:
+    # 1. https://en.wiktionary.org/wiki/%E0%A5%A4
+    # 2. https://en.wiktionary.org/wiki/%D6%89
     # replace by .\n to ensure that sentence gets split (problems with \w{3,} in bengali script)
     try:
-        wikicode = wikicode.replace("।", ".\n")
+        wikicode = wikicode.replace("।", ".\n").replace("։", ".\n")
         filter_wtp = re.sub(r"<\s*ref.*(<\s*/ref\s*>|/\s*>)", "", wikicode)
         wtp_code = wtp.parse(filter_wtp)
         filter_wtp = re.sub(
