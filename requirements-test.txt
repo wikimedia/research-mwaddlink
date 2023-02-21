@@ -1,6 +1,6 @@
 # also needs requirements-query.txt, but can't depend on it here
 # due to https://github.com/pypa/pip/issues/3772
-black
+black==23.*
 flake8
 tox
 PyICU==2.9
