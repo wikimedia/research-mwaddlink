@@ -56,6 +56,7 @@ df_ent_claims = (
     .withColumnRenamed("claims_exploded", "claim")
 )
 
+
 # extract the statement-values and the statement-properties of the claims
 @F.udf(returnType=T.StringType())
 def get_value_from_statement_dict(x):

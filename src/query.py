@@ -30,7 +30,6 @@ class Query:
         max_recommendations: int,
         sections_to_exclude: list,
     ) -> dict:
-
         start = perf_counter()
         self.model.load_model(self.datasetloader.get_model_path()[0])
         anchors = self.datasetloader.get("anchors")

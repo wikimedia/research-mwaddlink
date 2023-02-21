@@ -211,7 +211,6 @@ def query(
     sections_to_exclude=None,
     language_code=None,
 ):
-
     if sections_to_exclude is None:
         sections_to_exclude = []
     if project == "wikipedia":

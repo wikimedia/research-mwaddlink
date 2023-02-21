@@ -52,6 +52,8 @@ if len(paths) == 0:
 print("Processing the following Wikipedia dump files:")
 for p in paths:
     print(p)
+
+
 ######################################################
 #### get the pageids and redirects dictionaries
 ######################################################
