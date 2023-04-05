@@ -75,4 +75,4 @@ for a, dict_a in anchors.items():
 ## dump as pickle
 output_path = "../../data/{0}/{0}.anchors".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
-    pickle.dump(anchors_filtered, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(anchors_filtered, handle, protocol=4)

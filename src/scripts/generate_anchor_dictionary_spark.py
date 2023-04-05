@@ -2,6 +2,7 @@ import os, sys
 import pickle
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F, types as T, Window
+from wmfdata.spark import create_session
 import mwparserfromhell
 import pyarrow.parquet as pq
 import urllib
@@ -129,12 +130,12 @@ else:
 PATH_local = "../../data/%s/" % wiki_id
 PATH_hadoop = "/tmp/%s/mwaddlink/" % (os.environ["USER"])  # "/tmp/$USER/mwaddlink
 
-# start spark session
-spark = (
-    SparkSession.builder.master("yarn")
-    .appName("generating-anchors")
-    .enableHiveSupport()
-    .getOrCreate()
+# use wmfdata to create new Spark session
+spark = create_session(
+    type="yarn-regular",
+    app_name="generating-anchors",
+    extra_settings={},
+    ship_python_env=True,
 )
 
 # find the latest snapshot of the wikitext-table in hive (format "YYYY-MM", e.g. "2021-01")
@@ -306,7 +307,7 @@ dict_anchors = df_agg["candidates"].to_dict()
 # store the dictionaries into the language data folder
 output_path = PATH_local + "{0}.anchors".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
-    pickle.dump(dict_anchors, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(dict_anchors, handle, protocol=4)
 
 os.system("rm -rf %s" % (FILE_local))
 os.system("hdfs dfs -rm -r %s" % (FILE_hadoop))
@@ -330,7 +331,7 @@ with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(
         df_articles.set_index("title")["pid"].to_dict(),
         handle,
-        protocol=pickle.HIGHEST_PROTOCOL,
+        protocol=4,
     )
 
 os.system("rm -rf %s" % (FILE_local))
@@ -354,7 +355,7 @@ with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(
         df_redirects.set_index("title_from")["title_to"].to_dict(),
         handle,
-        protocol=pickle.HIGHEST_PROTOCOL,
+        protocol=4,
     )
 
 os.system("rm -rf %s" % (FILE_local))

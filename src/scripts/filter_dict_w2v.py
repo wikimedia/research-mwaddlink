@@ -31,7 +31,7 @@ for title in pageids.keys():
 ## dump as pickle
 output_path = "../../data/{0}/{0}.w2vfiltered".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
-    pickle.dump(word2vec_filter, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(word2vec_filter, handle, protocol=4)
 
 # delete unused files
 for FILENAME in glob.glob(w2file[:-4] + "*"):

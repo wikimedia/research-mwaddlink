@@ -22,7 +22,7 @@ ipywidgets==7.5.1
 jedi==0.17.2
 jieba==0.42.1
 Jinja2==3.0.3
-joblib==0.16.0
+joblib==1.1.1
 json-logging==1.2.10
 jsonable==0.3.1
 jsonschema==3.2.0
@@ -31,9 +31,9 @@ jupyter-client==6.1.7
 jupyter-console==6.2.0
 jupyter-core==4.6.3
 jupyterlab-pygments==0.1.2
-line-profiler==3.0.2
+line-profiler===4.0.3
 lmdb==1.0.0
-marisa-trie==0.7.5
+marisa-trie==0.8.0
 MarkupSafe==2.1.0
 mistune==0.8.4
 mwcli==0.0.3
@@ -49,7 +49,7 @@ nltk==3.5
 notebook==6.1.4
 numpy==1.21.4
 packaging==20.4
-pandas==1.1.2
+pandas==1.4.3
 pandocfilters==1.4.2
 para==0.0.8
 parso==0.7.1
@@ -61,6 +61,7 @@ ptyprocess==0.6.0
 pybind11==2.5.0
 pycparser==2.20
 Pygments==2.7.1
+pyicu===2.10.2
 pyparsing==2.4.7
 pyrsistent==0.17.3
 python-dateutil==2.8.1
@@ -70,9 +71,9 @@ pytz==2020.1
 pyzmq==19.0.2
 qtconsole==4.7.7
 QtPy==1.9.0
-regex==2020.9.27
+regex==2023.3.23
 requests==2.24.0
-scikit-learn==0.23.2
+scikit-learn==1.2.2
 scipy==1.7.3
 Send2Trash==1.5.0
 six==1.15.0
@@ -88,7 +89,8 @@ urllib3==1.25.10
 wcwidth==0.2.5
 webencodings==0.5.1
 widgetsnbextension==3.5.1
-wikipedia2vec==1.0.4
+wikipedia2vec==1.0.5
 wikitextparser==0.51.1
+wmfdata==2.0.0
 xgboost==1.2.0
 zipp==3.2.0

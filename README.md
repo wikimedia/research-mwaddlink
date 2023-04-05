@@ -12,9 +12,11 @@ to learn from.
 
 We need to set up a python virtual environment to have all necessary packages:
 ```
-virtualenv -p /usr/bin/python3 venv/
-source venv/bin/activate
-pip install -r requirements.txt
+$ conda-analytics-clone link-recommendation-env
+$ source conda-analytics-activate link-recommendation-env
+$ export http_proxy=http://webproxy.eqiad.wmnet:8080
+$ export https_proxy=http://webproxy.eqiad.wmnet:8080
+$ pip install -r requirements.txt
 ```
 
 There are a few caveats:
@@ -22,6 +24,7 @@ There are a few caveats:
 - some parts in the script rely on using the spark cluster using a specific conda-environment from a specific stat-machine (stat1008).
 - on the stat-machines, make sure you have the http-proxy set up https://wikitech.wikimedia.org/wiki/HTTP_proxy
 - you might have to install the following nltk-package manually: ```python -m nltk.downloader punkt```
+- in case of [wikipedia2vec](https://github.com/wikipedia2vec/wikipedia2vec) installation issues, refer to: https://wikipedia2vec.github.io/wikipedia2vec/install/
 - [PyICU](https://gitlab.pyicu.org/main/pyicu) has its own installation process; see [#installing-pyicu](https://gitlab.pyicu.org/main/pyicu#installing-pyicu) for up-to-date instructions.
 
 ## Training the model

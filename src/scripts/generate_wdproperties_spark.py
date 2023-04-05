@@ -6,6 +6,7 @@ import pyarrow.parquet as pq
 import json
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F, types as T, Window
+from wmfdata.spark import create_session
 
 if len(sys.argv) >= 2:
     wiki_id = sys.argv[1]
@@ -17,11 +18,12 @@ else:
 # TODO: make this custopmizable
 list_properties_keep = ["P31"]
 
-spark = (
-    SparkSession.builder.master("yarn")
-    .appName("generating-wdproperties")
-    .enableHiveSupport()
-    .getOrCreate()
+# use wmfdata to create new Spark session
+spark = create_session(
+    type="yarn-regular",
+    app_name="generating-anchors",
+    extra_settings={},
+    ship_python_env=True,
 )
 
 # get the lastest available snapshot (static snapshots will be outdated and not available in hive anymore)

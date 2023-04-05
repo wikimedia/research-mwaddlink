@@ -14,19 +14,12 @@ mkdir -p "$DATASET_PATH/testing"
 
 echo 'GETTING THE ANCHOR DICTIONARY'
 # for the anchor dictionary we use the conda-environment on stats
-source /usr/lib/anaconda-wmf/bin/activate
-PYSPARK_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 PYSPARK_DRIVER_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G --conf spark.dynamicAllocation.maxExecutors=128 generate_anchor_dictionary_spark.py $WIKI_ID
+source conda-analytics-activate link-recommendation-env
+PYSPARK_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 PYSPARK_DRIVER_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 spark3-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G --conf spark.dynamicAllocation.maxExecutors=128 generate_anchor_dictionary_spark.py $WIKI_ID
 # get wikidata-properties to filter, e.g., disambiguation pages as links
-PYSPARK_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 PYSPARK_DRIVER_PYTHON=/usr/lib/anaconda-wmf/bin/python3.7 spark2-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  --conf spark.dynamicAllocation.maxExecutors=128 generate_wdproperties_spark.py $WIKI_ID
+PYSPARK_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 PYSPARK_DRIVER_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 spark3-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  --conf spark.dynamicAllocation.maxExecutors=128 generate_wdproperties_spark.py $WIKI_ID
 python filter_dict_anchor.py $WIKI_ID
-conda deactivate
 
-# activate the custom virtual environment, unless it's already active
-VENV_ACTIVATED=0
-if [ -z "$VIRTUAL_ENV" ]; then
-  VENV_ACTIVATED=1
-  source ../../venv/bin/activate
-fi
 # alternatively, one can get the anchor-dictionary by processing the xml-dumps
 # note that this does not filter by link-probability
 # python generate_anchor_dictionary.py $WIKI_ID
@@ -89,9 +82,7 @@ python export-tables.py -id "$WIKI_ID" --path "$DATASET_PATH"
 echo "Generated datasets in $DATASET_PATH"
 echo "To publish the datasets, run \"WIKI_ID=$WIKI_ID ./publish-datasets.sh\""
 
-if [ $VENV_ACTIVATED -ne 0 ]; then
-  deactivate
-fi
+conda deactivate
 
 # Remove the old linkmodel.json file from /tmp, in case we are testing
 # out queries on stat1008.
