@@ -96,6 +96,12 @@ def create_app():
         "swagger_ui": True,
         "specs_route": "/apidocs/",
         "basePath": url_prefix,
+        # Load 3.52.5 versions of Swagger (T338094)
+        "swagger_ui_bundle_js": "/static/swagger-ui-bundle.js",
+        "swagger_ui_standalone_preset_js": "/static/swagger-ui-standalone-preset.js",
+        "swagger_ui_css": "/static/swagger-ui.css",
+        # Might as well also load a pinned version of jQuery 2.2.4 (T338094)
+        "jquery_js": "/static/jquery.min.js",
     }
     Swagger(
         flask_app,
