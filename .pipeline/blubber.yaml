@@ -1,8 +1,12 @@
+# syntax=docker-registry.wikimedia.org/repos/releng/blubber:v0.17.0
 version: v4
 base: docker-registry.wikimedia.org/python3
 variants:
-  build:
+  preparation:
     base: docker-registry.wikimedia.org/python3-build-buster
+    copies: [local]
+  build:
+    includes: [preparation]
     runs:
       environment:
         NLTK_DATA: '/home/somebody/nltk_data'
@@ -11,7 +15,10 @@ variants:
     apt:
       # python3-icu is installed here and not via pip / requirements.txt, see https://gitlab.pyicu.org/main/pyicu
       packages: [python3-icu, python3-setuptools, default-libmysqlclient-dev, python3-dev, build-essential, python3-pip, curl]
-    copies: [local]
+    copies:
+      - from: preparation
+        source: /srv/app/.gitconfig
+        destination: /home/runuser/.gitconfig
     python:
       version: python3
   test:
