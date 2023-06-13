@@ -1,2 +1,7 @@
+# This config file is copied to ~/.gitconfig in the Docker container
+# which runs the mwaddlink app. Add user-specific git configuration
+# that needs to be applied while running the app here.
+
+# T338094#8904520: disable git's ownership checks
 [safe]
 	directory = *
