@@ -26,6 +26,7 @@ for WIKI_ID in simplewiki bat_smgwiki; do
     # Get rid of the relative path to the checksum
     CHECKSUM=$(cat $1| cut -d ' ' -f1)
     echo "$CHECKSUM  $2" > $1
+    echo "$2 checksum: $CHECKSUM"
     shasum -a 256 -c $1
     gunzip --force $2
   }
