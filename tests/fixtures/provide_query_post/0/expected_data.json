@@ -7,29 +7,29 @@
       "link_target": "Hunting",
       "link_text": "hunting",
       "match_index": 0,
-      "score": 0.5160561203956604,
+      "score": 0.5133472084999084,
       "wikitext_offset": 3334
     },
     {
       "context_after": " cat that ",
-      "context_before": " A ",
+      "context_before": ". A ",
       "link_index": 1,
-      "link_target": "Female",
-      "link_text": "female",
-      "match_index": 0,
-      "score": 0.5170595645904541,
-      "wikitext_offset": 4443
+      "link_target": "Male",
+      "link_text": "male",
+      "match_index": 1,
+      "score": 0.5318674445152283,
+      "wikitext_offset": 4532
     }
   ],
   "links_count": 2,
   "meta": {
-    "application_version": "2b19309",
+    "application_version": "not checked",
     "dataset_checksums": {
-      "anchors": "0ee38697e1bb61df56c52b0a2617ceb33660e941238e65499acf96266639e9d6",
-      "model": "3de13ab5975aabe92fbb06453f17ca2b5605907fba5eaf5bc2f0b0c65677af93",
-      "pageids": "a1c8fd9e73b998c8a77310104278e2d94c4a60e49dab644fefcafea5d19b20d6",
-      "redirects": "842fe2a920a34c48d86427ec4cbae7f5ca736642303af3969e1479f7f8e8a258",
-      "w2vfiltered": "5ca140e629dbd882c8b02d5e9cc69571bef1146408eff31cd9ecff3c3af10608"
+      "anchors": "not checked",
+      "model": "not checked",
+      "pageids": "not checked",
+      "redirects": "not checked",
+      "w2vfiltered": "not checked"
     },
     "format_version": 1
   },
