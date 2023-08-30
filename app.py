@@ -77,8 +77,8 @@ def create_app():
     flask_app.url_map.converters["title"] = TitleConverter
     flask_app.register_blueprint(blueprint)
     flask_app.config["JSON_AS_ASCII"] = False
-    url_prefix = os.environ.get("URL_PREFIX", "/")
-    if url_prefix != "/":
+    url_prefix = os.environ.get("URL_PREFIX", "")
+    if url_prefix != "":
         flask_app.wsgi_app = ProxyPassMiddleware(flask_app.wsgi_app, url_prefix)
 
     swagger_config = {
