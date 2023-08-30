@@ -160,12 +160,12 @@ print("Number of anchors", len(anchors))
 # store the dictionaries into the language data folder
 output_path = "../data/{0}/{0}.pageids".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
-    pickle.dump(pageids, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(pageids, handle, protocol=4)
 
 # store the dictionaries into the language data folder
 output_path = "../data/{0}/{0}.redirects".format(wiki_id)
 with open(output_path + ".pkl", "wb") as handle:
-    pickle.dump(redirects, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(redirects, handle, protocol=4)
 
 # turn redundant pairs into Count
 # e.g., ['wmf', 'wmf', 'wmf'] -> {'wmf':3}
@@ -176,4 +176,4 @@ for k, v in tqdm(anchors.items()):
 ##################
 # store the dictionary into the language data folder
 with open(output_path + ".pkl", "wb") as handle:
-    pickle.dump(anchors, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(anchors, handle, protocol=4)

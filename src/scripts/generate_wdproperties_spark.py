@@ -120,7 +120,7 @@ with open(output_path + ".pkl", "wb") as handle:
     pickle.dump(
         pd_wdproperties.set_index("page_id")["statement_value_qid"].to_dict(),
         handle,
-        protocol=pickle.HIGHEST_PROTOCOL,
+        protocol=4,
     )
 
 os.system("rm -rf %s" % (FILE_local))
