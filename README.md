@@ -10,13 +10,23 @@ to learn from.
 
 ## Setting up the virtual environment
 
-We need to set up a python virtual environment to have all necessary packages:
+We need to set up two python virtual environments to have all necessary packages:
+
+#### 1. python3.10 conda env to run spark jobs
 ```
 $ conda-analytics-clone link-recommendation-env
 $ source conda-analytics-activate link-recommendation-env
 $ export http_proxy=http://webproxy.eqiad.wmnet:8080
 $ export https_proxy=http://webproxy.eqiad.wmnet:8080
-$ pip install -r requirements.txt
+$ pip install $(grep -ivE "wikipedia2vec" requirements.txt)
+```
+
+#### 2. python3.7 env to run `wikipedia2vec` and `sqlitedict`
+```
+# assumes you are still working from the directory that you downloaded from the project repo
+$ virtualenv -p python3.7 venv
+$ source venv/bin/activate
+$ pip install $(grep -ivE "wmfdata" requirements.txt)
 ```
 
 There are a few caveats:

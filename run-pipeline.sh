@@ -13,16 +13,29 @@ mkdir -p "$DATASET_PATH/training"
 mkdir -p "$DATASET_PATH/testing"
 
 echo 'GETTING THE ANCHOR DICTIONARY'
-# for the anchor dictionary we use the conda-environment on stats
+# activate conda env (python3.10) to run spark jobs
 source conda-analytics-activate link-recommendation-env
-PYSPARK_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 PYSPARK_DRIVER_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 spark3-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G --conf spark.dynamicAllocation.maxExecutors=128 generate_anchor_dictionary_spark.py $WIKI_ID
+conda list
+if [ ! -f environment.tar.gz ]; then
+  conda pack -o environment.tar.gz
+fi
+PYSPARK_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 PYSPARK_DRIVER_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 spark3-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G --conf spark.dynamicAllocation.maxExecutors=128 --archives environment.tar.gz#environment generate_anchor_dictionary_spark.py $WIKI_ID
 # get wikidata-properties to filter, e.g., disambiguation pages as links
-PYSPARK_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 PYSPARK_DRIVER_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 spark3-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  --conf spark.dynamicAllocation.maxExecutors=128 generate_wdproperties_spark.py $WIKI_ID
+PYSPARK_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 PYSPARK_DRIVER_PYTHON=~/.conda/envs/link-recommendation-env/bin/python3.10 spark3-submit --master yarn --executor-memory 8G --executor-cores 4 --driver-memory 2G  --conf spark.dynamicAllocation.maxExecutors=128 --archives environment.tar.gz#environment generate_wdproperties_spark.py $WIKI_ID
 python filter_dict_anchor.py $WIKI_ID
 
 # alternatively, one can get the anchor-dictionary by processing the xml-dumps
 # note that this does not filter by link-probability
 # python generate_anchor_dictionary.py $WIKI_ID
+
+# deactivate conda env
+conda deactivate
+
+# activate python3.7 env to:
+#   - train wikipedia2vec and filter its output
+#   - run sqlitedict which sets pickle protocol using HIGHEST_PROTOCOL
+#     the goal is to have sqlitedict use protocol 4 instead of 5
+source ../../venv/bin/activate
 
 echo 'RUNNING wikipedia2vec on dump'
 ionice wikipedia2vec train \
@@ -82,7 +95,8 @@ python export-tables.py -id "$WIKI_ID" --path "$DATASET_PATH"
 echo "Generated datasets in $DATASET_PATH"
 echo "To publish the datasets, run \"WIKI_ID=$WIKI_ID ./publish-datasets.sh\""
 
-conda deactivate
+# deactivate python3.7 env
+deactivate
 
 # Remove the old linkmodel.json file from /tmp, in case we are testing
 # out queries on stat1008.
