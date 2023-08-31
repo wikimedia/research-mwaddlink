@@ -19,6 +19,9 @@ variants:
       - from: preparation
         source: /srv/app/.gitconfig
         destination: /home/runuser/.gitconfig
+      - from: preparation
+        source: /srv/app/.gitconfig
+        destination: /home/somebody/.gitconfig
     python:
       version: python3
   test:
