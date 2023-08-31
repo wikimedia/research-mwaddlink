@@ -166,6 +166,15 @@ All relevant files will be copied to ```/srv/published/datasets/one-off/research
 
 The datasets from the trained model (see training) get published in https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/. The production instance imports the tables from there.
 
+## Unpublishing the model/datasets
+**Be very cautious about this step -- make sure someone in the [Growth Team](https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_a_link) knows about the model being removed.**
+
+To unpublish a given wiki's datasets from the [published datasets repo](https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/) and delist it from from the [index](https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/wikis.txt) run:
+
+```
+WIKI_ID=<WIKI_ID> ./unpublish-datasets.sh
+```
+
 ## Querying the model
 Once the model has been trained, one can make queries to generate link recommendations for individual articles.
 
