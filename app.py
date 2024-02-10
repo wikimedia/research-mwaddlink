@@ -341,7 +341,7 @@ json_logging.init_request_instrument(
     app=app, custom_formatter=LogstashAwareJSONRequestLogFormatter
 )
 logger = logging.getLogger("logger")
-loglevel = os.environ.get("FLASK_LOGLEVEL", logging.WARNING)
+loglevel = int(os.environ.get("FLASK_LOGLEVEL", logging.WARNING))
 logger.setLevel(loglevel)
 json_logging.get_request_logger().setLevel(loglevel)
 logger.addHandler(logging.StreamHandler(sys.stdout))

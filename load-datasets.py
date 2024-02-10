@@ -22,7 +22,7 @@ ANALYTICS_BASE_URL = os.getenv(
     "ANALYTICS_BASE_URL",
     "https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/",
 )
-LOGLEVEL = os.environ.get("FLASK_LOGLEVEL", logging.INFO)
+LOGLEVEL = int(os.environ.get("FLASK_LOGLEVEL", logging.INFO))
 cli_ok_status = "[OK]"
 output_buffer: io.StringIO
 

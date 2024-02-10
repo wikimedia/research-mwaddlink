@@ -8,6 +8,7 @@ services:
     ports:
       - 8000:8000
     environment:
+      FLASK_LOGLEVEL: 10   # logging.DEBUG
       FLASK_DEBUG: 1
       FLASK_APP: "app"
       FLASK_RUN_PORT: 8000
