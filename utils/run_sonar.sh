@@ -17,11 +17,6 @@ if [ ! -z ${SONAR_BRANCH_TARGET+x} ]; then
   args+=( "-Dsonar.branch.target=$SONAR_BRANCH_TARGET" )
 fi
 
-# FIXME: Copy the coverage reports from the test phase
-# when T277777 is done. For now, since tox checks are
-# fast, just re-run here.
-tox -e pytest
-
 # Initialize analysis, send data to SonarQube
 /opt/sonar-scanner/bin/sonar-scanner "${args[@]}" \
   -Dsonar.login="$SONAR_API_KEY" \

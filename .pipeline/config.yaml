@@ -5,6 +5,11 @@ pipelines:
       - name: run-test
         build: test
         run: true
+        copy:
+          - source: /srv/app/coverage-reports
+            destination: coverage-reports
+          - source: /srv/app/xunit-reports
+            destination: xunit-reports
       - name: codehealth_built
         build: codehealth
       - name: coverage
