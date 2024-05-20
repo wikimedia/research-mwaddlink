@@ -1,4 +1,4 @@
-# syntax=docker-registry.wikimedia.org/repos/releng/blubber:v0.17.0
+# syntax=docker-registry.wikimedia.org/repos/releng/blubber/buildkit:v0.22.0
 version: v4
 base: docker-registry.wikimedia.org/python3
 variants:
@@ -16,11 +16,11 @@ variants:
       # python3-icu is installed here and not via pip / requirements.txt, see https://gitlab.pyicu.org/main/pyicu
       packages: [python3-icu, python3-setuptools, default-libmysqlclient-dev, python3-dev, build-essential, python3-pip, curl]
     copies:
-      - from: preparation
-        source: /srv/app/.gitconfig
+      - from: local
+        source: .gitconfig
         destination: /home/runuser/.gitconfig
-      - from: preparation
-        source: /srv/app/.gitconfig
+      - from: local
+        source: .gitconfig
         destination: /home/somebody/.gitconfig
     python:
       version: python3
