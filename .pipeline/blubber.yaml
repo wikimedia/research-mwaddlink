@@ -35,7 +35,6 @@ variants:
       packages: [pkg-config, libicu-dev]
     python:
       requirements: [requirements-query.txt,requirements-test.txt]
-      use-system-flag: false
   production-build:
     includes: [build]
     apt:
