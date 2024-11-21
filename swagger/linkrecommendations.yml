@@ -147,7 +147,7 @@ paths:
             items:
               type: string
             type: array
-          description: 'Sections to exclude from link suggestion generation. Exact match is used. Up to 25 items can be set. Excluding the lead section can be done with the %LEAD%'
+          description: 'Sections to exclude from link suggestion generation. Exact match is used. Excluding the lead section can be done with the %LEAD%'
         - name: max_recommendations
           in: query
           required: false
@@ -177,7 +177,7 @@ paths:
                 type: array
                 items:
                   type: string
-                description: 'Sections to exclude from link suggestion generation. Exact match is used. Up to 25 items can be set. Excluding the lead section can be done with the %LEAD%'
+                description: 'Sections to exclude from link suggestion generation. Exact match is used. Excluding the lead section can be done with the %LEAD%'
       responses:
         200:
           description: LinkRecommendationSet
@@ -240,7 +240,7 @@ paths:
           items:
             type: string
           type: array
-        description: 'Sections to exclude from link suggestion generation. Exact match is used. Up to 25 items can be set. Excluding the lead section can be done with the %LEAD%'
+        description: 'Sections to exclude from link suggestion generation. Exact match is used. Excluding the lead section can be done with the %LEAD%'
       - name: max_recommendations
         in: query
         required: false

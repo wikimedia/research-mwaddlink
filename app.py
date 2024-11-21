@@ -299,8 +299,7 @@ def query(
             language_code=data["language_code"],
             page_title=normalise_title(page_title),
             max_recommendations=data["max_recommendations"],
-            # Cap the list of sections to exclude at 25.
-            sections_to_exclude=data["sections_to_exclude"][:25],
+            sections_to_exclude=data["sections_to_exclude"],
         )
         result["meta"]["application_version"] = (
             subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
