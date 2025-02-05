@@ -6,3 +6,5 @@ __pycache__
 coverage-reports
 .coverage
 xunit-reports
+src/scripts/environment.tar.gz
+/venv
