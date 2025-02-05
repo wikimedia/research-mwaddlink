@@ -189,7 +189,7 @@ flask mwaddlink query --page-title Garnet_Carter --project=wikipedia --wiki-doma
 DB_USER=research \
 DB_BACKEND=mysql \
 DB_DATABASE=staging \
-DB_HOST=dbstore1005.eqiad.wmnet \
+DB_HOST=staging-db-analytics.eqiad.wmnet \
 DB_PORT=3350 DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf \
 flask mwaddlink query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de --revision=0
 ```
