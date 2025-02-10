@@ -67,7 +67,7 @@ cd ../../
 
 DB_USER=${DB_USER:-research}
 DB_DATABASE=${DB_DATABASE:-staging}
-DB_HOST=${DB_HOST:-dbstore1005.eqiad.wmnet}
+DB_HOST=${DB_HOST:-staging-db-analytics.eqiad.wmnet}
 DB_PORT=${DB_PORT:-3350}
 DB_READ_DEFAULT_FILE=${DB_READ_DEFAULT_FILE:-/etc/mysql/conf.d/analytics-research-client.cnf}
 
