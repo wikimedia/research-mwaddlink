@@ -1,6 +1,5 @@
 import argparse
 import functools
-import io
 import os
 import sys
 import re
@@ -24,7 +23,6 @@ ANALYTICS_BASE_URL = os.getenv(
 )
 LOGLEVEL = int(os.environ.get("FLASK_LOGLEVEL", logging.INFO))
 cli_ok_status = "[OK]"
-output_buffer: io.StringIO
 
 
 def handle_exception(logger, exc_type, exc_value, exc_traceback):
@@ -34,7 +32,6 @@ def handle_exception(logger, exc_type, exc_value, exc_traceback):
     logger.error(
         "Uncaught exception",
         exc_info=(exc_type, exc_value, exc_traceback),
-        extra={"props": {"output": output_buffer.getvalue()}},
     )
 
 
@@ -419,6 +416,23 @@ def run(args: argparse.Namespace):
         print("Finished importing datasets for %s" % ", ".join(wiki_ids))
 
 
+class OutputLogger:
+    """
+    Direct all non-empty messages to a logger instance
+    """
+
+    def __init__(self, logger, level):
+        self.logger = logger
+        self.level = level
+
+    def write(self, msg):
+        if msg and not msg.isspace() and msg.strip() != cli_ok_status:
+            self.logger.log(self.level, msg)
+
+    def flush(self):
+        pass
+
+
 def main():
     args = handle_args()
     if args.output_format == "json":
@@ -427,11 +441,8 @@ def main():
         logger.addHandler(logging.StreamHandler(sys.stdout))
         json_logging.init_non_web(enable_json=True)
         sys.excepthook = functools.partial(handle_exception, logger)
-        with redirect_stdout(io.StringIO()) as output:
-            global output_buffer
-            output_buffer = output
+        with redirect_stdout(OutputLogger(logger, logging.INFO)):
             run(args)
-            logger.info(output_buffer.getvalue())
     else:
         run(args)
 
