@@ -21,10 +21,10 @@ $ export https_proxy=http://webproxy.eqiad.wmnet:8080
 $ pip install $(grep -ivE "wikipedia2vec" requirements.txt)
 ```
 
-#### 2. python3.7 env to run `wikipedia2vec` and `sqlitedict`
+#### 2. python3.9 env to run `wikipedia2vec` and `sqlitedict`
 ```
 # assumes you are still working from the directory that you downloaded from the project repo
-$ virtualenv -p python3.7 venv
+$ virtualenv -p python3.9 venv
 $ source venv/bin/activate
 $ pip install $(grep -ivE "wmfdata" requirements.txt)
 ```
