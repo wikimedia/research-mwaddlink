@@ -41,6 +41,16 @@ list_qid_filter = [
     "Q12308941",  # male given name
     "Q11879590",  # female given name
 ]
+per_wiki_qid_filter = {
+    "enwiki": [
+        "Q6256",  # country names (T386867)
+    ]
+}
+
+for special_wiki, extra_filters in per_wiki_qid_filter.items():
+    if wiki_id == special_wiki:
+        list_qid_filter = list_qid_filter + extra_filters
+        break
 
 anchors = pickle.load(open("../../data/{0}/{0}.anchors.pkl".format(wiki_id), "rb"))
 pageids = pickle.load(open("../../data/{0}/{0}.pageids.pkl".format(wiki_id), "rb"))
