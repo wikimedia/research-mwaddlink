@@ -45,7 +45,7 @@ WIKI_ID=<WIKI_ID> ./run-pipeline.sh
 ```
 For example, for the Czech Wikipedia use \<WIKI_ID\>=cswiki
 
-This pipeline exectues the following scripts
+This pipeline executes the following scripts
 
 #### Creating the directories in data/
 The first step generates the following directories
