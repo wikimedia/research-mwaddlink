@@ -44,6 +44,7 @@ list_qid_filter = [
 per_wiki_qid_filter = {
     "enwiki": [
         "Q6256",  # country names (T386867)
+        "Q5107",  # continent names (T386867#10861665)
     ]
 }
 
