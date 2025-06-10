@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -ex
 
 # on stat-machine you might have to "kinit" first
 
