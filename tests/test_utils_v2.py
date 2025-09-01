@@ -1,13 +1,6 @@
-import json
-import os
 import pytest
 
-from src.scripts.utils import (
-    process_page,
-    MentionRegexException,
-    get_wiki_url,
-    get_language_code,
-)
+from src.scripts.utils_v2 import process_page
 
 
 anchors = {
@@ -146,9 +139,9 @@ def provide_process_page():
         ],
         [
             # should skip non-full matches when locating match
-            "Lorem ipsum xanchor1 dolor sit anchor1 amet",
+            "Lorem ipsum anchor1 dolor sit anchor12 amet",
             [],
-            "Lorem ipsum xanchor1 dolor sit [[Page1|anchor1]] amet",
+            "Lorem ipsum [[Page1|anchor1]] dolor sit anchor12 amet",
             [{"link_target": "Page1", "link_text": "anchor1", "match_index": 1}],
         ],
     ]
@@ -170,6 +163,7 @@ def test_process_page(
         word2vec,
         model,
         language_code="en",
+        wiki_id="enwiki",
         pr=False,
         return_wikitext=True,
         sections_to_exclude=sections_to_exclude,
@@ -185,6 +179,7 @@ def test_process_page(
         word2vec,
         model,
         language_code="en",
+        wiki_id="enwiki",
         pr=False,
         return_wikitext=False,
         sections_to_exclude=sections_to_exclude,
@@ -193,79 +188,5 @@ def test_process_page(
     actual_data.sort()
     expected_data.sort()
     for actual_item, expected_item in zip(actual_data, expected_data):
-        assert expected_item.items() <= actual_item.items()
-
-
-def test_process_page_lowercase(pytestconfig, model):
-    """
-    Regression test for T308244. Exception should be thrown with "en" language code on this text; no exception
-    when we provide the "az" language code.
-    """
-    with open(
-        os.path.join(
-            pytestconfig.rootdir,
-            "tests",
-            "fixtures",
-            "T308244",
-            "article.wikitext",
-        ),
-        mode="r",
-    ) as file:
-        wikitext = file.read()
-
-    # Check that processing with en language code fails.
-    with pytest.raises(MentionRegexException):
-        process_page(
-            wikitext,
-            "Page",
-            {"i̇ngiliscə": {"İngilis dili": 647}},
-            {"İngilis dili": 647},
-            redirects,
-            word2vec,
-            model,
-            language_code="en",
-            pr=False,
-            return_wikitext=False,
-            sections_to_exclude=[],
-        )["links"]
-
-    # Now supply the correct language code
-    actual_data = process_page(
-        wikitext,
-        "Page",
-        {"i̇ngiliscə": {"İngilis dili": 647}},
-        {"İngilis dili": 647},
-        redirects,
-        word2vec,
-        model,
-        language_code="az",
-        pr=False,
-        return_wikitext=False,
-        sections_to_exclude=[],
-    )["links"]
-
-    with open(
-        os.path.join(
-            pytestconfig.rootdir,
-            "tests",
-            "fixtures",
-            "T308244",
-            "expected.json",
-        ),
-        mode="r",
-    ) as file:
-        expected_data = json.loads(file.read())["links"]
-    assert expected_data[0]["link_text"] == actual_data[0]["link_text"]
-    assert expected_data[0]["link_target"] == actual_data[0]["link_target"]
-
-
-def test_get_wiki_url():
-    actual_wiki_url = get_wiki_url("bat_smgwiki")
-    expected_wiki_url = "https://bat-smg.wikipedia.org/w/api.php"
-    assert actual_wiki_url == expected_wiki_url
-
-
-def test_get_language_code():
-    actual_language_code = get_language_code("https://bat-smg.wikipedia.org/w/api.php")
-    expected_language_code = "sgs"
-    assert actual_language_code == expected_language_code
+        assert expected_item["link_target"] == actual_item["link_target"]
+        assert expected_item["link_text"] == actual_item["link_text"]

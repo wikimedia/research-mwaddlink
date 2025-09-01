@@ -23,6 +23,9 @@ ANALYTICS_BASE_URL = os.getenv(
 )
 LOGLEVEL = int(os.environ.get("FLASK_LOGLEVEL", logging.INFO))
 cli_ok_status = "[OK]"
+headers = {
+    "User-Agent": "Add Link service (https://wikitech.wikimedia.org/wiki/Add_Link)"
+}
 
 
 def handle_exception(logger, exc_type, exc_value, exc_traceback):
@@ -166,23 +169,17 @@ def ensure_table_exists(dataset_name_for_table, connection, wiki_id_for_table=No
 
 def verify_checksum(dataset_name, wiki_id, table_prefix):
     print("  ", "Verifying checksum for %s..." % dataset_name, end="", flush=True)
-    devnull = open(os.devnull, "w")
-    checksum_verification_result = subprocess.run(
-        [
-            "shasum",
-            "-a",
-            "256",
-            "-c",
-            "%s.checksum" % get_dataset_filename(dataset_name, wiki_id, table_prefix),
-        ],
-        stdout=devnull,
+    filename = get_dataset_filename(dataset_name, wiki_id, table_prefix)
+    result = subprocess.run(
+        ["shasum", "-a", "256", filename], stdout=subprocess.PIPE, text=True, check=True
     )
-    if checksum_verification_result.returncode != 0:
-        raise AssertionError(
-            "Failed to verify checksum for %s"
-            % get_dataset_filename(dataset_name, wiki_id, table_prefix)
-        )
-    print(cli_ok_status)
+    original_checksum, _ = result.stdout.strip().split(maxsplit=1)
+    with open(f"{filename}.checksum", "r") as f:
+        file = f.read().strip()
+    saved_checksum, _ = file.split(maxsplit=1)
+
+    if original_checksum != saved_checksum:
+        raise AssertionError(f"Failed to verify checksum for {filename}")
 
 
 def run(args: argparse.Namespace):
@@ -245,6 +242,7 @@ def run(args: argparse.Namespace):
                             get_dataset_filename(dataset, wiki_id, table_prefix),
                         ),
                         cache_bust_url_query_params(),
+                        headers=headers,
                     ) as remote_checksum:
                         if remote_checksum.status_code != 200:
                             raise RuntimeError(
@@ -296,6 +294,7 @@ def run(args: argparse.Namespace):
                                 remote_dataset_url,
                                 stream=True,
                                 params=cache_bust_url_query_params(),
+                                headers=headers,
                             ) as remote_dataset:
                                 if remote_dataset.status_code != 200:
                                     raise RuntimeError(

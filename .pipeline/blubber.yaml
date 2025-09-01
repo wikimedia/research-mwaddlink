@@ -1,9 +1,12 @@
-# syntax=docker-registry.wikimedia.org/repos/releng/blubber/buildkit:v0.22.0
+# syntax=docker-registry.wikimedia.org/repos/releng/blubber/buildkit:v0.23.0
 version: v4
-base: docker-registry.wikimedia.org/python3
+base: docker-registry.wikimedia.org/python3-build-bookworm:0.2.0-20250831
+runs:
+  insecurely: true
+  environment:
+    PYTHONPATH: /opt/lib/python/site-packages:/opt/lib/venv/lib/python3.11/site-packages
 variants:
   preparation:
-    base: docker-registry.wikimedia.org/python3-build-buster
     copies: [local]
   build:
     includes: [preparation]
@@ -11,10 +14,22 @@ variants:
       environment:
         NLTK_DATA: '/home/somebody/nltk_data'
     builder:
-      command: [ "PYTHONPATH=/opt/lib/python/site-packages", "python3.7", "-m", "nltk.downloader", "punkt" ]
+      command: [ "PYTHONPATH=/opt/lib/python/site-packages", "python3", "-m", "nltk.downloader", "punkt" ]
     apt:
-      # python3-icu is installed here and not via pip / requirements.txt, see https://gitlab.pyicu.org/main/pyicu
-      packages: [python3-icu, python3-setuptools, default-libmysqlclient-dev, python3-dev, build-essential, python3-pip, curl]
+      packages:
+       - python3-venv
+       - python3-icu
+       - python3-setuptools
+       - default-libmysqlclient-dev
+       - python3-dev
+       - build-essential
+       - python3-pip
+       - curl
+       - pkg-config
+       - libicu-dev
+       - libffi-dev
+       - libssl-dev
+       - git
     copies:
       - from: local
         source: .gitconfig
@@ -34,16 +49,16 @@ variants:
     apt:
       packages: [pkg-config, libicu-dev]
     python:
-      requirements: [requirements-query.txt,requirements-test.txt]
+      requirements: [requirements.txt,requirements-test.txt]
   production-build:
     includes: [build]
     apt:
-      packages: [python3.7,build-essential,mariadb-client,cmake]
+      packages: [python3,build-essential,mariadb-client,cmake]
   production:
     includes: [production-build]
     entrypoint: ["gunicorn", "app:app"]
     python:
-      requirements: [requirements-query.txt]
+      requirements: [requirements.txt]
   codehealth:
     base: docker-registry.wikimedia.org/releng/sonar-scanner:4.6.0.2311-s1
     includes: [preparation]

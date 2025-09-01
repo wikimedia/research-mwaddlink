@@ -1,11 +1,12 @@
 # also needs requirements-query.txt, but can't depend on it here
 # due to https://github.com/pypa/pip/issues/3772
-black==23.*
+black==25.1.0
 flake8
-tox
-PyICU==2.9
+tox==4.18.1
+pyicu==2.15.2
 python-dotenv~=0.15.0
 pytest==6.2.5
 pytest-cov==3.0.0
 pytest-cases==3.6.11
 requests-mock==1.8.0
+pyproject-api==1.9.1

@@ -1,8 +1,10 @@
-import MySQLdb
-import os
-from dotenv import load_dotenv
+import pymysql
+import os  # noqa: E402
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv()
+pymysql.install_as_MySQLdb()
+import MySQLdb  # noqa: E402
 
 
 def get_mysql_connection():

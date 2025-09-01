@@ -191,26 +191,26 @@ DB_BACKEND=mysql \
 DB_DATABASE=staging \
 DB_HOST=staging-db-analytics.eqiad.wmnet \
 DB_PORT=3350 DB_READ_DEFAULT_FILE=/etc/mysql/conf.d/analytics-research-client.cnf \
-flask mwaddlink query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de --revision=0
+flask mwaddlink query --page-title Garnet_Carter --project=wikipedia --wiki-domain=de --revision=0 --language-code de
 ```
 Alternatively, you can query the model using the MySQL-tables. Note that this requires that the checksums are available as MySQL-tables. This happens only when calling ```load-dataset.py```. This step is typically only performed in production and not on stat1008. Thus, by default this will not work at this stage.
 
 - HTTP API
 ``` bash
 DB_USER=root \
-DB_PASSWORD=password \
+DB_PASSWORD=root \
 DB_PORT=3306 \
 DB_HOST=127.0.0.1 \
 DB_DATABASE=addlink \
 DB_BACKEND=mysql \
-MEDIAWIKI_API_URL=https://my.wiki.url/w/rest.php \
 MEDIAWIKI_API_BASE_URL=https://my.wiki.url/w/ \
 FLASK_APP=app \
 FLASK_DEBUG=1 \
+FLASK_RUN_PORT=8000 \
 flask run
 ```
 
-In production, we use `gunicorn` to serve the Flask app, and the MEDIAWIKI_API_URL parameter is omitted, making the app
+In production, we use `gunicorn` to serve the Flask app, and the MEDIAWIKI_API_BASE_URL parameter is omitted, making the app
 select the right Wikipedia URL automatically.
 
 The Swagger UI is enabled resulting in API docs at `http://localhost:5000{$URL_PREFIX}apidocs`.
@@ -239,11 +239,3 @@ services:
     environment:
       DB_BACKEND: 'sqlite'
 ```
-
-Note that on macOS hosts there is currently an issue with XGBoost when loading the JSON model:
-
-```
-xgboost.core.XGBoostError: [09:00:14] ../src/common/json.cc:449: Unknown construct, around character position: 71
-```
-
-See [T275358](https://phabricator.wikimedia.org/T275358) for more information.

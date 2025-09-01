@@ -1,6 +1,7 @@
 import xgboost as xgb
 from typing import List
-from src.scripts.utils import process_page
+from src.scripts.model_utils import get_model_version
+from src.scripts import utils, utils_v2
 from src.DatasetLoader import DatasetLoader
 import multiprocessing
 from time import perf_counter
@@ -40,20 +41,39 @@ class Query:
         self.datasets = [anchors, pageids, redirects, word2vec, model]
         self.wiki_id = wiki_id
 
-        response = process_page(
-            wikitext=wikitext,
-            page=page_title,
-            anchors=anchors,
-            pageids=pageids,
-            redirects=redirects,
-            word2vec=word2vec,
-            model=self.model,
-            language_code=language_code,
-            threshold=threshold,
-            return_wikitext=False,
-            maxrec=max_recommendations,
-            sections_to_exclude=sections_to_exclude,
-        )
+        if get_model_version(self.model) == "v2":
+            response = utils_v2.process_page(
+                wikitext=wikitext,
+                page=page_title,
+                anchors=anchors,
+                pageids=pageids,
+                redirects=redirects,
+                word2vec=word2vec,
+                model=self.model,
+                wiki_id=wiki_id,
+                language_code=language_code,
+                threshold=threshold,
+                pr=True,
+                return_wikitext=False,
+                context=10,
+                maxrec=max_recommendations,
+                sections_to_exclude=sections_to_exclude,
+            )
+        else:
+            response = utils.process_page(
+                wikitext=wikitext,
+                page=page_title,
+                anchors=anchors,
+                pageids=pageids,
+                redirects=redirects,
+                word2vec=word2vec,
+                model=self.model,
+                language_code=language_code,
+                threshold=threshold,
+                return_wikitext=False,
+                maxrec=max_recommendations,
+                sections_to_exclude=sections_to_exclude,
+            )
 
         stop = perf_counter()
 

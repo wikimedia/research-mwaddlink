@@ -1,28 +1,42 @@
-from Levenshtein import jaro as levenshtein_score
-from icu import UnicodeString, Locale
-from scipy.stats import kurtosis
-import os
+import operator
+import re
+import time
 
 from src.MySqlDict import MySqlDict
-import time
-import operator
-import numpy as np
+
 import urllib.parse as up
-import wikitextparser as wtp
-import mwparserfromhell
-import re
-import requests
-import nltk
+from collections.abc import Generator
+from typing import Any, cast
+
+import mwparserfromhell  # type: ignore[import-untyped]
+import numpy as np
+import wikitextparser as wtp  # type: ignore[import-untyped]
+import xgboost
+from Levenshtein import jaro as levenshtein_score
+from mwtokenizer import Tokenizer  # type: ignore[import-untyped]
+from mwtokenizer.config.symbols import (  # type: ignore[import-untyped]
+    ALL_UNICODE_PUNCTUATION,
+)
+from scipy.stats import kurtosis  # type: ignore[import-untyped]
+
+
+from src.scripts.ngram_utils import (
+    get_ngrams,
+    get_tokens,
+    tokenize_sentence,
+)
+
+FREQUENCY = 10
 
 
 class MentionRegexException(Exception):
     status_code = 400
 
-    def __init__(self, mention, wikitext):
+    def __init__(self, mention: str, wikitext: str):
         super().__init__()
-        self.message = 'Unable to find match for "%s" in "%s"' % (mention, wikitext)
+        self.message = f'Unable to find match for "{mention}" in "{wikitext}"'
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, str]:
         return {"message": self.message}
 
 
@@ -31,7 +45,7 @@ class MentionRegexException(Exception):
 ######################
 
 
-def normalise_title(title):
+def normalise_title(title: str) -> str:
     """
     Normalising title (links)
     - deal with quotes
@@ -49,19 +63,20 @@ def normalise_title(title):
     return n_title
 
 
-def normalise_anchor(anchor):
+def normalise_anchor(anchor: str) -> str:
     """
     Normalising anchor  (text):
     - strip()
     - lowercase
-    Note that we do not do the other normalisations since we want to match the strings from the text
+    Note that we do not do the other normalisations since we want to match the strings
+    from the text
     """
     # anchor = up.unquote(anchor)
     n_anchor = anchor.strip()  # .replace("_", " ")
     return n_anchor.lower()
 
 
-def wtpGetLinkAnchor(wikilink):
+def wtpGetLinkAnchor(wikilink: wtp.WikiLink) -> tuple[str, str]:
     """
     extract anchor and link from a wikilink from wikitextparser.
     normalise title and anchor
@@ -75,14 +90,18 @@ def wtpGetLinkAnchor(wikilink):
     return link, anchor
 
 
-def getLinks(wikicode, redirects=None, pageids=None):
+def getLinks(
+    wikicode: str,
+    redirects: dict[str, str] | None = None,
+    pageids: dict[str, int] | None = None,
+) -> dict[str, str]:
     """
     get all links in a page
     """
     link_dict = {}
     linklist = wtp.parse(str(wikicode)).wikilinks
-    for l in linklist:
-        link, anchor = wtpGetLinkAnchor(l)
+    for lnk in linklist:
+        link, anchor = wtpGetLinkAnchor(lnk)
         # if redirects is not None, resolve the redirect
         if redirects is not None:
             link = resolveRedirect(link, redirects)
@@ -94,7 +113,7 @@ def getLinks(wikicode, redirects=None, pageids=None):
     return link_dict
 
 
-def resolveRedirect(link, redirects):
+def resolveRedirect(link: str, redirects: dict[str, str]) -> str:
     """
     resolve the redirect.
     check whether in pageids (main namespace)
@@ -103,49 +122,9 @@ def resolveRedirect(link, redirects):
     return redirects.get(link, link)
 
 
-# Split a MWPFH node <TEXT> into sentences
-def tokenizeSent(text):
-    for line in text.split("\n"):
-        for sent in nltk.sent_tokenize(line):
-            yield sent
-
-
-def get_tokens(sent):
-    """tokenize a sentence.
-    keep track of whether there was a whitespace between tokens or not.
-    for example, "Berlin, Germany" gets tokenized by nltk as
-    ["Berlin", ",", "Germany"].
-    this leads to ambiguity when generating strings from ngrams as to whether
-    to include whitespace or not.
-    here we return ["Berlin", ",", " ", "Germany"]
-    """
-    tokens = []
-    for w in sent.split(" "):
-        for w_ in nltk.word_tokenize(w, preserve_line=True):
-            tokens += [w_]
-        tokens += [" "]
-    # the last token will always be whitespace (can be removed)
-    return tokens[:-1]
-
-
-def get_ngrams(tokens, n):
-    """concatenate n non-whitespace tokens"""
-    for i_start, w_start in enumerate(tokens):
-        if w_start == " ":
-            continue
-        gram = w_start
-        gram_count = 1
-        for j in range(i_start, len(tokens) - 1):
-            if gram_count == n:
-                yield gram
-                break
-            w = tokens[j + 1]
-            gram += w
-            if w != " ":
-                gram_count += 1
-
-
-def ngram_iterator(text, gram_length_max, gram_length_min=1):
+def ngram_iterator(
+    text: str, tokenizer: Tokenizer, gram_length_max: int, gram_length_min: int = 1
+) -> Generator[str, None, None]:
     """
     iterator yields all n-grams from a text.
     - splits at newline
@@ -153,22 +132,14 @@ def ngram_iterator(text, gram_length_max, gram_length_min=1):
     - tokenizes
     - create string of n tokens for variable n
     """
-    lines = list(filter(None, text.split("\n")))
-    for line in lines:
-        for sent in tokenizeSent(line):
-            for gram_length in range(gram_length_max, gram_length_min - 1, -1):
-                tokens = get_tokens(sent)
-                for gram in get_ngrams(tokens, gram_length):
-                    yield gram
+    for sent in tokenize_sentence(text, tokenizer):
+        tokens = get_tokens(sent, tokenizer)
+        for gram_length in range(gram_length_max, gram_length_min - 1, -1):
+            yield from get_ngrams(tokens, gram_length)
 
 
-##########################
-# getting feature-dataset
-##########################
-
-
-def getDistEmb(ent_a, ent_b, embd):
-    dst = 0
+def getDistEmb(ent_a: str, ent_b: str, embd: dict[str, list[float]]) -> float:
+    dst = 0.0
     try:  # try if entities are in embd
         a = embd[ent_a]
         b = embd[ent_b]
@@ -179,18 +150,34 @@ def getDistEmb(ent_a, ent_b, embd):
         else:
             dst = np.dot(a, b) / norm_ab
     #         dst = (np.dot(a, b) / np.linalg.norm(a) / np.linalg.norm(b))
-    except BaseException:
+    except KeyError:
+        # Embedding not found, ignore key
+        pass
+    except Exception as e:
+        print("ERROR: ", type(e).__name__, e)
         pass
     if np.isnan(dst):
         dst = 0
     return dst
 
 
-# Return the features for each link candidate in the context of the text and the page
-
-
-def get_feature_set(page, text, link, anchors, word2vec):
-    ngram = len(text.split())  # simple space based tokenizer to compute n-grams
+def get_feature_set(
+    page: str,
+    text: str,
+    link: str,
+    anchors: dict[str, dict[str, int]],
+    word2vec: dict[str, list[float]],
+    wiki_id: str,
+    tokenizer: Tokenizer,
+) -> tuple[int, int, float, float, float, float, str]:
+    ngram = list(tokenizer.word_tokenize(text, use_abbreviation=True))  # tokenize text
+    ngram = list(
+        filter(lambda x: not x.startswith(" "), ngram)
+    )  # could be a single or multiple spaces that needs to be removed
+    ngram = list(
+        filter(lambda x: x not in ALL_UNICODE_PUNCTUATION, ngram)
+    )  # remove punctuation
+    ngram_len = len(ngram)
     freq = anchors[text][link]  # How many times was the link use with this text
     ambig = len(anchors[text])  # home many different links where used with this text
     kur = kurtosis(
@@ -200,29 +187,48 @@ def get_feature_set(page, text, link, anchors, word2vec):
         page, link, word2vec
     )  # W2V Distance between the source and target page
     leven = levenshtein_score(text.lower(), link.lower())
-    return (ngram, freq, ambig, kur, w2v, leven)
+    return (ngram_len, freq, ambig, float(kur), float(w2v), float(leven), wiki_id)
 
 
 ##########################
 # evaluation classification
 ##########################
 # Main decision function.
-# for a given page X and a piece of text "lipsum".. check all the candidate and make inference
-# Returns the most likely candidate according to the pre-trained link model
+# For a given page X and a piece of text "lipsum".. check all the candidate and make
+# inference. Returns the most likely candidate according to the pre-trained link model.
 # If the probability is below a certain threshold, return None
-def classify_links(page, text, anchors, word2vec, model, threshold=0.95):
+def classify_links(
+    page: str,
+    text: str,
+    anchors: dict[str, dict[str, int]],
+    word2vec: dict[str, list[float]],
+    model: xgboost.XGBClassifier,
+    wiki_id: str,
+    tokenizer: Tokenizer,
+    threshold: float = 0.95,
+) -> tuple[str, float] | None:
     # start_time = time.time()
     cand_prediction = {}
-    # Work with the 10 most frequent candidates
+    # Work with the `FREQUENCY` most frequent candidates
     limited_cands = anchors[text]
-    if len(limited_cands) > 10:
+    if len(limited_cands) > FREQUENCY:
         limited_cands = dict(
             sorted(anchors[text].items(), key=operator.itemgetter(1), reverse=True)[:10]
         )
     for cand in limited_cands:
         # get the features
-        #         cand_feats = get_feature_set(page, text, cand, anchors, word2vec,pageids)
-        cand_feats = get_feature_set(page, text, cand, anchors, word2vec)
+        ngram, freq, ambig, kur, w2v, leven, wiki_id = get_feature_set(
+            page, text, cand, anchors, word2vec, wiki_id, tokenizer
+        )
+        cand_feats = (
+            ngram,
+            freq,
+            ambig,
+            kur,
+            w2v,
+            leven,
+            0.0,
+        )
 
         # compute the model probability
         cand_prediction[cand] = model.predict_proba(
@@ -241,7 +247,8 @@ def classify_links(page, text, anchors, word2vec, model, threshold=0.95):
     return top_candidate
 
 
-# helper class to break out of nested for-loop when reaching set number of recommendations
+# helper class to break out of nested for-loop when reaching set number of
+# recommendations
 class MaxRecError(Exception):
     pass
 
@@ -253,58 +260,66 @@ class MaxTimeError(Exception):
 
 
 # Actual Linking function
-def process_page(
-    wikitext,
-    page,
-    anchors,
-    pageids,
-    redirects,
-    word2vec,
-    model,
-    language_code,
-    threshold=0.8,
-    pr=True,
-    return_wikitext=True,
-    context=10,
-    maxrec=-1,
-    sections_to_exclude=None,
-):
+def process_page(  # noqa: PLR0915, PLR0912
+    wikitext: str,
+    page: str,
+    anchors: dict[str, dict[str, int]],
+    pageids: dict[str, int],
+    redirects: dict[str, str],
+    word2vec: dict[str, list[float]],
+    model: xgboost.XGBClassifier,
+    wiki_id: str,
+    language_code: str,
+    threshold: float = 0.8,
+    pr: bool = True,
+    return_wikitext: bool = True,
+    context: int = 10,
+    maxrec: int = -1,
+    sections_to_exclude: list[str] | None = None,
+) -> dict[str, Any] | mwparserfromhell.wikicode.Wikicode:
     """
     Recommend links for a given wikitext.
 
     :param str wikitext: Page source
     :param str page: Page title
-    :param dict anchors: Anchor dataset for the wiki (link text -> {link target title -> frequency})
+    :param dict anchors: Anchor dataset for the wiki
+    (link text -> {link target title -> frequency})
     :param dict pageids: Pageid dataset for the wiki (title -> id)
-    :param dict redirects: Redirect dataset for the wiki (original title -> redirect target)
+    :param dict redirects: Redirect dataset for the wiki
+    (original title -> redirect target)
     :param dict word2vec: word2vec dataset for the wiki (word -> vector)
-    :param xgboost.XGBClassifier model: The wiki's model for predicting link targets for words
+    :param xgboost.XGBClassifier model: The wiki's model for predicting link targets
+    for words.
     :param string language_code: The ISO 639 language code to use with processing.
     :param float threshold: Minimum probability score required to include a prediction
-    :param bool pr: Whether to include probability scores in the wikitext as 'pr' link parameters
+    :param bool pr: Whether to include probability scores in the wikitext as 'pr' link
+    parameters.
     :param bool return_wikitext: Whether to return wikitext or data.
-    :param int context: The number of characters before/after the link to include when returning data
+    :param int context: The number of characters before/after the link to include when
+    returning data.
     :param int maxrec: Maximum number of recommendations to return (-1 for unlimited)
-    :param list sections_to_exclude: List of section names to exclude from link suggestion generation,
-    e.g. "References"
-    :return: When return_wikitext is true, return updated wikitext with the new links added (or
-    pseudo-wikitext with the custom 'pr' parameters if pr=True). Otherwise, return a data structure
-    suitable for returning from the API.
+    :param list sections_to_exclude: List of section names to exclude from link
+    suggestion generation, e.g. "References"
+    :return: When return_wikitext is true, return updated wikitext with the new links
+    added (or pseudo-wikitext with the custom 'pr' parameters if pr=True).
+    Otherwise, return a data structure suitable for returning from the API.
     :rtype: string or dict
     """
+    from icu import Locale, UnicodeString  # type: ignore[import-untyped]
+
     if sections_to_exclude is None:
         sections_to_exclude = []
     sections_to_exclude_nocase = list(
         section.casefold() for section in sections_to_exclude
     )
-    response = {"links": [], "info": ""}
+    tokenizer = Tokenizer(language_code=language_code)
+
+    response = {"links": cast(list[dict[str, Any]], []), "info": ""}
     init_time = time.time()
     # Give ourselves a one second buffer to return the response after the
     # configured timeout limit has been reached.
     max_page_process_time_buffer = 1
-    max_page_process_time = (
-        int(os.environ.get("GUNICORN_TIMEOUT", 30)) - max_page_process_time_buffer
-    )
+    max_page_process_time = 30 - max_page_process_time_buffer
     page_wikicode = mwparserfromhell.parse(wikitext)
 
     page_wikicode_init = str(page_wikicode)  # save the initial state
@@ -329,7 +344,8 @@ def process_page(
         ):
             if not section:
                 # This means the section is empty; one instance where this occurs
-                # is in articles that have no lead and instead begin with a section heading
+                # is in articles that have no lead and instead begin with a section
+                # heading
                 continue
             # Special-handling for lead section, which doesn't have a name.
             if (
@@ -347,22 +363,32 @@ def process_page(
                 node_val = node.value
                 i1_node_init = page_wikicode_init.find(node_val)
                 i2_node_init = i1_node_init + len(node_val)
-                # The ngram_iterator generates substrings from the text of the article to check as candidate-anchors
-                # for links. It will do that by concatenating individual word-tokens (roughly speaking everything that
-                # is separated by a whitespace) to ngrams (strings that consist of n tokens); for example "Atlantic Ocean"
-                # would be a 2-gram. The arguments gram_length_max, gram_length_min define the range in which we vary n
-                # The current range n=5,...,1 means we first check all substrings of length 5, then 4, and so on until we
-                # reach 1. This range is defined by looking at the typical size of existing links in the anchor-dictionary.
-                # There are text-anchors that are not covered by this; they have much larger values for n; however,
-                # most anchors have small values of n.
-                # Reducing the range of the ngram-iterator we have fewer substrings for which we check the
-                # anchor-dictionary (and subsequently other lookups from checking whether to put a link).
-                grams = ngram_iterator(text=node, gram_length_max=5, gram_length_min=1)
+                # The ngram_iterator generates substrings from the text of the article
+                # to check as candidate-anchors for links. It will do that by
+                # concatenating individual word-tokens to ngrams (strings that consist
+                # of n tokens); for example "Atlantic Ocean" would be a 2-gram.
+                # The arguments gram_length_max, gram_length_min define the range
+                #  in which we vary n The current range n=5,...,1 means we first check
+                # all substrings of length 5, then 4, and so on until we reach 1.
+                # This range is defined by looking at the typical size of existing
+                # links in the anchor-dictionary. There are text-anchors that are not
+                # covered by this; they have much larger values for n; however, most
+                # anchors have small values of n. Reducing the range of the
+                # ngram-iterator we have fewer substrings for which we check the
+                # anchor-dictionary (and subsequently other lookups from checking
+                # whether to put a link).
+                grams = ngram_iterator(
+                    text=node,
+                    tokenizer=tokenizer,
+                    gram_length_max=5,
+                    gram_length_min=1,
+                )
                 for gram in grams:
                     if time.time() > init_time + max_page_process_time:
                         response["info"] = (
-                            "Stopping page processing as maximum processing time %d seconds reached"
-                            % (max_page_process_time + max_page_process_time_buffer)
+                            "Stopping page processing as maximum processing time "
+                            f"{max_page_process_time + max_page_process_time_buffer}"
+                            "seconds reached"
                         )
                         raise MaxTimeError
                     mentions[gram.lower()] = gram
@@ -370,8 +396,6 @@ def process_page(
                 if not mentions:
                     continue
 
-                # Get the subset of anchors that contain a mention; this batches a SELECT ... IN query rather
-                # than performing (thousands of) individual SELECT queries.
                 if isinstance(anchors, MySqlDict):
                     anchors_with_mentions = anchors.filter(list(mentions))
                     if not anchors_with_mentions:
@@ -401,6 +425,8 @@ def process_page(
                             anchors_with_mentions,
                             word2vec,
                             model,
+                            wiki_id,
+                            tokenizer,
                             threshold=threshold,
                         )
                         if candidate:
@@ -409,9 +435,7 @@ def process_page(
                             ############## Critical ##############
                             # Insert The Link in the current wikitext
                             mention_regex = re.compile(
-                                r"(?<!\[\[)(?<!-->)\b{}\b(?![\w\s]*[\]\]])".format(
-                                    re.escape(mention_original)
-                                )
+                                rf"(?<!\[\[)(?<!-->){re.escape(mention_original)}(?![\w\s]*[\]\]])"
                             )
                             mention_regex_i = re.compile(
                                 mention_regex.pattern, re.IGNORECASE
@@ -431,9 +455,10 @@ def process_page(
                                 page_wikicode_init_substr = page_wikicode_init[
                                     i1_node_init:i2_node_init
                                 ]
-                                # Handle lower-casing of characters in some languages, e.g.
-                                # in Azeri, İnsan should be lowercased to insan, but the default lower-casing
-                                # in python will change the İ to an i with two dots.
+                                # Handle lower-casing of characters in some languages,
+                                # e.g. in Azeri, İnsan should be lowercased to insan,
+                                # but the default lower-casing in python will change
+                                # the İ to an i with two dots.
                                 page_wikicode_init_substr_lower = str(
                                     UnicodeString(page_wikicode_init_substr).toLower(
                                         Locale(language_code)
@@ -449,8 +474,9 @@ def process_page(
                                 i1_sub = match.start()
                                 start_offset = i1_node_init + i1_sub
                                 end_offset = start_offset + len(mention)
-                                ## provide context of the mention (+/- c characters in substring and wikitext)
-                                if context == None:
+                                # provide context of the mention (+/- c characters in
+                                # substring and wikitext)
+                                if context is None:
                                     context_wikitext = mention_original
                                     context_substring = mention_original
                                 else:
@@ -484,9 +510,10 @@ def process_page(
                                             i1_sub + len(mention_original) : i2_c
                                         ],
                                     ]
-                                # Find 0-based index of anchor text match in a way that hopefully mostly survives
-                                # wikitext -> HTML transformation: count occurrences of the text in top-level
-                                # text nodes u
+                                # Find 0-based index of anchor text match in a way that
+                                # hopefully mostly survives wikitext to HTML
+                                # transformation: count occurrences of the text
+                                # in top-level text nodes u
                                 preceding_nodes = page_wikicode_text_nodes[
                                     : page_wikicode_text_nodes.index(node)
                                 ]
@@ -496,7 +523,7 @@ def process_page(
                                 ) + page_wikicode_init_substr[:i1_sub].count(
                                     mention_original
                                 )
-                                new_link = {
+                                new_link: dict[str, Any] = {
                                     "link_target": candidate_link,
                                     "link_text": mention_original,
                                     "score": float(candidate_proba),
@@ -506,18 +533,22 @@ def process_page(
                                     "context_wikitext": context_wikitext,
                                     "context_plaintext": context_substring,
                                 }
-                                response["links"] += [new_link]
-                                # stop iterating the wikitext to generate link recommendations
-                                # as soon as we have maxrec link-recommendations
+                                prev_links = list(response["links"])
+                                prev_links.append(new_link)
+                                response["links"] = prev_links
+                                # stop iterating the wikitext to generate link
+                                # recommendations as soon as we have maxrec
+                                # link-recommendations
                                 if len(response["links"]) == maxrec:
                                     response["info"] = (
-                                        "Stopping page processing as max recommendations limit %d reached."
-                                        % maxrec
+                                        "Stopping page processing as max "
+                                        "recommendations limit {maxrec} reached."
                                     )
                                     raise MaxRecError
                         # More Book-keeping
                         tested_mentions.add(mention)
-    except (MaxRecError, MaxTimeError):
+    except (MaxRecError, MaxTimeError) as e:
+        print("ERROR: ", type(e).__name__, e)
         pass
     # if yes, we return the adapted wikitext
     # else just return list of links with offsets
@@ -525,36 +556,3 @@ def process_page(
         return page_wikicode
     else:
         return response
-
-
-def get_wiki_url(wiki_id):
-    """
-    generate a wiki's url by replacing underscores "_" with hyphen "-" and
-        matching wikipedia domain e.g "bat_smgwiki" becomes
-        "https://bat-smg.wikipedia.org/w/api.php"
-
-    :param str wiki_id: Wikipedia wiki ID
-    """
-    chars_to_replace = {"_": "-", "wiki": ".wikipedia.org"}
-    for k, v in chars_to_replace.items():
-        wiki_id = wiki_id.replace(k, v)
-    wiki_url = "https://" + wiki_id + "/w/api.php"
-    return wiki_url
-
-
-def get_language_code(wiki_url):
-    """
-    use a wiki's url to get its language code via API siteinfo
-
-    :param str wiki_url: Wikipedia API URL
-    """
-    params = {
-        "action": "query",
-        "meta": "siteinfo",
-        "formatversion": "2",
-        "format": "json",
-    }
-    response = requests.get(url=wiki_url, params=params)
-    data = response.json()
-    language_code = data["query"]["general"]["lang"]
-    return language_code

@@ -69,7 +69,9 @@ class InvalidAPIUsage(Exception):
 class TitleConverter(PathConverter):
     # copy of $wgLegalTitleChars in MediaWiki's DefaultSettings.php,
     # slightly modified since it will be applied to a Unicode string
+    # fmt: off
     regex = "[ %!\"$&'()*,\\-.\\/0-9:;=?@A-Z\\\\^_`a-z~\u0080-\U0010FFFF+]+"
+    # fmt: on
 
 
 def create_app():

@@ -25,6 +25,8 @@ services:
     environment:
       MYSQL_DATABASE: "addlink"
       MYSQL_ROOT_PASSWORD: "root"
+    ports:
+      - 3306:3306
 volumes:
   dbdata:
     driver: local
