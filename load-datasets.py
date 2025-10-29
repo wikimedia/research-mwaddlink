@@ -17,10 +17,15 @@ from contextlib import redirect_stdout
 from src.mysql import get_mysql_connection, import_model_to_table
 from create_tables import create_tables
 
-ANALYTICS_BASE_URL = os.getenv(
-    "ANALYTICS_BASE_URL",
+ANALYTICS_BASE_URL_LEGACY = os.getenv(
+    "ANALYTICS_BASE_URL_LEGACY",
     "https://analytics.wikimedia.org/published/datasets/one-off/research-mwaddlink/",
 )
+ANALYTICS_BASE_URL = os.getenv(
+    "ANALYTICS_BASE_URL",
+    "https://analytics.wikimedia.org/published/wmf-ml-models/addalink/v2/",
+)
+
 LOGLEVEL = int(os.environ.get("FLASK_LOGLEVEL", logging.INFO))
 cli_ok_status = "[OK]"
 headers = {
@@ -182,24 +187,32 @@ def verify_checksum(dataset_name, wiki_id, table_prefix):
         raise AssertionError(f"Failed to verify checksum for {filename}")
 
 
+def _get_wikis(base_url: str) -> dict[str, str]:
+    all_datasets_url = requests.compat.urljoin(base_url, "wikis.txt")
+    with requests.get(
+        all_datasets_url,
+        cache_bust_url_query_params(),
+        headers=headers,
+    ) as all_datasets_req:
+        all_datasets_req.raise_for_status()
+        wiki_ids = list(
+            filter(
+                lambda wiki: re.match(r"^[\w_-]+$", wiki),
+                all_datasets_req.text.split("\n"),
+            )
+        )
+    return {wiki: base_url for wiki in wiki_ids}
+
+
 def run(args: argparse.Namespace):
     table_prefix = "lr"
     checksum_table = "%s_checksum" % table_prefix
-    all_datasets_url = requests.compat.urljoin(ANALYTICS_BASE_URL, "wikis.txt")
     if not args.wiki_id:
-        with requests.get(
-            all_datasets_url,
-            cache_bust_url_query_params(),
-        ) as all_datasets_req:
-            all_datasets_req.raise_for_status()
-            wiki_ids = list(
-                filter(
-                    lambda wiki: re.match(r"^[\w_-]+$", wiki),
-                    all_datasets_req.text.split("\n"),
-                )
-            )
+        wiki_ids = _get_wikis(ANALYTICS_BASE_URL_LEGACY) | _get_wikis(
+            ANALYTICS_BASE_URL
+        )
     else:
-        wiki_ids = [args.wiki_id]
+        wiki_ids = {args.wiki_id: ANALYTICS_BASE_URL}
 
     datasets = args.datasets
 
@@ -209,7 +222,7 @@ def run(args: argparse.Namespace):
             dataset_name_for_table="checksum", connection=mysql_connection
         )
         ensure_table_exists(dataset_name_for_table="model", connection=mysql_connection)
-        for wiki_id in wiki_ids:
+        for wiki_id in wiki_ids.keys():
             for dataset in datasets:
                 ensure_table_exists(
                     dataset_name_for_table=dataset,
@@ -217,9 +230,12 @@ def run(args: argparse.Namespace):
                     wiki_id_for_table=wiki_id,
                 )
 
-        print("  ", "Beginning process to load datasets for %s" % ", ".join(wiki_ids))
+        print(
+            "  ",
+            "Beginning process to load datasets for %s" % ", ".join(wiki_ids.keys()),
+        )
 
-        for wiki_id in wiki_ids:
+        for wiki_id, analytics_base_url in wiki_ids.items():
             datasets_to_import = []
             # Start a transaction for each wiki. COMMIT happens after all datasets for the wiki have been updated.
             mysql_connection.begin()
@@ -229,7 +245,7 @@ def run(args: argparse.Namespace):
                     "== Attempting to download datasets (%s) for %s =="
                     % (", ".join(datasets), wiki_id)
                 )
-                base_url = requests.compat.urljoin(ANALYTICS_BASE_URL, wiki_id)
+                base_url = requests.compat.urljoin(analytics_base_url, wiki_id)
 
                 if not os.path.exists(local_dataset_directory):
                     os.makedirs(local_dataset_directory)
@@ -412,7 +428,7 @@ def run(args: argparse.Namespace):
                 print(cli_ok_status)
                 print("  ", "Finished importing for %s!" % wiki_id)
 
-        print("Finished importing datasets for %s" % ", ".join(wiki_ids))
+        print("Finished importing datasets for %s" % ", ".join(wiki_ids.keys()))
 
 
 class OutputLogger:
