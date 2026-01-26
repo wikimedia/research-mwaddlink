@@ -6,27 +6,34 @@ definitions:
       anchors:
         type: string
         description: "Checksum value for the anchors dataset"
+        example: ab0a4c3fc5dcf9e6404c45eaad1eb463b38673a4936ab3f80e7dcdbf8130dee5
       w2vfiltered:
         type: string
         description: "Checksum value for the w2vfiltered dataset"
+        example: 59cb88563ca2e0d1992d71d28921f04e902880a9bc9d03081360cbef69fa229c
       redirects:
         type: string
         description: "Checksum value for the redirects dataset"
+        example: 56e8089b9d930b4ff77dbc9495c6a2e67c48d8d8a023f9b148e3bbfe5a98665f
       pageids:
         type: string
         description: "Checksum value for the pageids dataset"
+        example: 05391e1229aefc087c5076bea2042cddcc0d23bded0f6262cc474898a954c96e
       model:
         type: string
         description: "Checksum value for the model dataset"
+        example: c25a9fb36577a272dd7ca101655d6169bf8a86dbfb1edce7c9b6ee445dec8e71
   Meta:
     type: object
     properties:
       format_version:
         type: integer
-        description: "The format version for the response."
+        description: "Format version for the response"
+        example: 1
       application_version:
         type: string
-        description: "The git commit hash associated with the application that generated the response"
+        description: "Git commit hash associated with the application that generated the response"
+        example: 2fe11bb
       dataset_checksums:
         $ref: '#/definitions/DatasetChecksums'
   LinkRecommendationSet:
@@ -36,57 +43,74 @@ definitions:
         $ref: '#/definitions/Meta'
       links:
         type: array
-        description: 'An array of link recommendation objects.'
+        description: 'Array of link recommendation objects'
         items:
           $ref: '#/definitions/LinkRecommendation'
       links_count:
         type: integer
-        description: 'The number of link recommendations.'
+        description: 'Number of link recommendations'
+        example: 5
       page_title:
         type: string
-        description: 'The page title'
+        description: 'Wiki page title'
+        example: Lipsko
       pageid:
         type: integer
-        description: 'The page ID'
+        description: 'Page identifier'
+        example: 23151
       revid:
         type: integer
-        description: 'The revision ID'
+        description: 'Revision identifier'
+        example: 25567649
   LinkRecommendation:
     type: object
     properties:
       link_text:
         type: string
-        description: 'The phrase to link in the article text.'
+        description: 'Phrase to link in the article text'
+        example: 'povrchových dolech'
       wikitext_offset:
         type: integer
-        description: 'The character offset describing where the anchor begins.'
+        description: 'Character offset describing where the anchor begins'
+        example: 2379
       context_before:
         type: string
-        description: 'The immediate preceding context for the anchor, in plaintext.'
+        description: 'Characters immediately preceding the link text, in plain text. May include spaces, punctuation, and partial words'
+        example: ' v '
       context_after:
         type: string
-        description: 'The immediate succeeding context for the anchor, in plaintext.'
+        description: 'Characters immediately succeeding the link text, in plain text. May include spaces, punctuation, and partial words'
+        example: ', které js'
       link_target:
         type: string
-        description: 'The article title that the anchor text should be linked to.'
+        description: 'Article title to link to'
+        example: 'Povrchový důl'
       match_index:
         type: integer
         description: >
-          The 0-based index of the link anchor within the list of matches when searching for the phrase to link
-          within simple wikitext (top-level wikitext that's not part of any kind of wikitext construct).
+          0-based index of the link anchor within the list of matches when searching for the phrase to link
+          within simple wikitext (top-level wikitext that's not part of any kind of wikitext construct)
+        example: 0
       score:
         type: number
-        description: 'The probability score that the link should be added.'
+        description: 'Probability score that the link should be added'
+        example: 0.5150544047355652
       link_index:
         type: integer
-        description: "The 0-based index of the link recommendation within all link recommendations, sorted by wikitext offset."
+        description: "0-based index of the link recommendation within all link recommendations, sorted by wikitext offset"
+        example: 1
 info:
-  description: Provide link recommendations for articles on Wikimedia projects. See https://api.wikimedia.org/wiki/API_reference/Service/Link_recommendation for further information.
-  title: Wikimedia Link Recommendation Service
+  description: >
+    Link Recommendation API suggests places in an article where a link could be added.
+    This helps guide editors in the important work of creating connections between different topics.
+    For more information, see the [wiki page](https://www.mediawiki.org/wiki/Special:MyLanguage/Link_Recommendation_API).
+  title: Wikimedia Link Recommendation API
   version: 1.0.0
 paths:
   "/v1/linkrecommendations/{project}/{domain}/{page_title}":
     post:
+      summary: Get link recommendations for revision
+      description: Given a specific page source, get a set of possible links that can be added to improve an article on Wikipedia.
       x-monitor: true
       x-amples:
         - request:
@@ -97,9 +121,9 @@ paths:
             headers:
               Content-Type: "application/json"
             body:
-              pageid: 0
-              revid: 0
-              wikitext: "Foo"
+              pageid: 23151
+              revid: 25567649
+              wikitext: "{{Infobox - sídlo světa..."
             query:
               max_recommendations: 1
               threshold: 0.1
@@ -107,31 +131,31 @@ paths:
             response:
               status: 200
               body:
-                links_count: 0
+                links_count: 1
                 page_title: "Lipsko"
-                pageid: 0
-                revid: 0
+                pageid: 23151
+                revid: 25567649
                 meta:
                   format_version: 1
       parameters:
         - name: project
           type: string
           in: path
-          description: 'Project that is being queried, e.g. "wikipedia" or "wiktionary"'
+          description: 'Project name. Only "wikipedia" is supported'
           required: true
         - name: domain
           type: string
-          description: 'Subdomain of the wiki for processing, e.g. "de" or "simple". If the project does not have a subdomain (e.g. wikitech.org) then use the language code of the wiki in the request, e.g. "en" for mediawiki.org'
+          description: 'Project subdomain, usually the language code. For example: "en" for English Wikipedia. The majority of [Wikipedia subdomains](https://meta.wikimedia.org/wiki/Special:SiteMatrix) are supported. Unsupported subdomains return a 404 error'
           in: path
           required: true
         - name: page_title
           type: string
-          description: 'Page title of the article'
+          description: 'Wiki page title'
           in: path
           required: true
         - name: language_code
           type: string
-          description: 'ISO Language Code (ISO-639) language code to use with the request. If not provided, defaults to the "subdomain".'
+          description: 'Language code (ISO-639) to use with the request. Defaults to the domain parameter'
           in: query
           required: false
         - name: threshold
@@ -139,7 +163,7 @@ paths:
           required: false
           type: number
           default: 0.5
-          description: 'Number between 0 and 1 for the threshold to use.'
+          description: 'Number between 0 and 1 for the threshold to use'
         - name: sections_to_exclude
           in: query
           required: false
@@ -147,7 +171,7 @@ paths:
             items:
               type: string
             type: array
-          description: 'Sections to exclude from link suggestion generation. Exact match is used. Excluding the lead section can be done with the %LEAD%'
+          description: 'Sections to exclude from link suggestion generation. Exact match is used. To exclude the lead section, use %LEAD%'
         - name: max_recommendations
           in: query
           required: false
@@ -166,24 +190,26 @@ paths:
             properties:
               wikitext:
                 type: string
-                description: 'Raw wikitext of the article'
+                description: 'Raw wikitext of the page'
               revid:
                 type: integer
-                description: 'Revision ID of the article'
+                description: 'Revision identifier'
               pageid:
                 type: integer
-                description: 'Page ID of the article'
+                description: 'Page identifier'
               sections_to_exclude:
                 type: array
                 items:
                   type: string
-                description: 'Sections to exclude from link suggestion generation. Exact match is used. Excluding the lead section can be done with the %LEAD%'
+                description: 'Sections to exclude from link suggestion generation. Exact match is used. To exclude the lead section, use %LEAD%'
       responses:
         200:
-          description: LinkRecommendationSet
+          description: 'Success: Page found'
           schema:
             $ref: '#/definitions/LinkRecommendationSet'
     get:
+      summary: Get link recommendations
+      description: Returns a set of possible links that can be added to improve an article on Wikipedia.
       x-monitor: true
       x-amples:
         - request:
@@ -205,34 +231,34 @@ paths:
       - name: project
         type: string
         in: path
-        description: 'Project that is being queried, e.g. "wikipedia" or "wiktionary"'
+        description: 'Project name. Only "wikipedia" is supported'
         required: true
       - name: domain
         type: string
-        description: 'Subdomain of the wiki for processing, e.g. "de" or "simple". If the project does not have a subdomain (e.g. wikitech.org) then use the language code of the wiki in the request, e.g. "en" for mediawiki.org'
+        description: 'Project subdomain, usually the language code. For example: "en" for English Wikipedia. The majority of [Wikipedia subdomains](https://meta.wikimedia.org/wiki/Special:SiteMatrix) are supported. Unsupported subdomains return a 404 error.'
         in: path
         required: true
       - name: page_title
         in: path
         required: true
         type: string
-        description: 'Page title of the article'
+        description: 'Wiki page title'
       - name: language_code
         type: string
-        description: 'ISO Language Code (ISO-639) language code to use with the request. If not provided, defaults to the "subdomain".'
+        description: 'Language code (ISO-639) to use with the request. Defaults to the domain parameter'
         in: query
         required: false
       - name: revision
         in: query
         required: false
         type: number
-        description: 'Page revision to use (defaults to latest)'
+        description: 'Revision identifier. Defaults to the latest revision'
       - name: threshold
         in: query
         required: false
         type: number
         default: 0.5
-        description: 'Number between 0 and 1 for the threshold to use.'
+        description: 'Number between 0 and 1 for the threshold to use'
       - name: sections_to_exclude
         in: query
         required: false
@@ -240,7 +266,7 @@ paths:
           items:
             type: string
           type: array
-        description: 'Sections to exclude from link suggestion generation. Exact match is used. Excluding the lead section can be done with the %LEAD%'
+        description: 'Sections to exclude from link suggestion generation. Exact match is used. To exclude the lead section, use %LEAD%'
       - name: max_recommendations
         in: query
         required: false
@@ -249,7 +275,7 @@ paths:
         description: 'Maximum number of recommendations to return'
       responses:
         200:
-          description: LinkRecommendationSet
+          description: 'Success: Page found'
           schema:
             $ref: '#/definitions/LinkRecommendationSet'
 swagger: '2.0'
