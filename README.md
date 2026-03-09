@@ -2,7 +2,7 @@
 
 This is the repository that backs the [Wikimedia Link Recommendation service](https://wikitech.wikimedia.org/wiki/Add_Link).
 
-It contains code for powering the [Link Recommendation service](https://api.wikimedia.org/service/linkrecommendation/) only, not for training
+It contains code for powering the [Link Recommendation service](https://www.mediawiki.org/wiki/Special:MyLanguage/Link_Recommendation_API) only, not for training
 the models that backs the service up.
 
 ## Model summary
