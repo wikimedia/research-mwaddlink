@@ -139,7 +139,7 @@ paths:
     post:
       summary: Get link recommendations for revision
       operationId: getLinkRecommendationsForRevision
-      description: Returns a set of possible links that can be added to improve an article on Wikipedia based on a specific page source and (or?) custom wikitext input.
+      description: Returns a set of possible links that can be added to improve an article on Wikipedia based on information about the page, revision, or custom wikitext input.
       security:
         - Authorization: []
       x-monitor: true
