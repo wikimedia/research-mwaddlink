@@ -125,9 +125,6 @@ info:
     name: Link Recommendation API Talk Page
     url: https://www.mediawiki.org/wiki/Talk:Link_Recommendation_API
   version: 1.0.0
-host: api.wikimedia.org
-schemes: ['https']
-basePath: /service/linkrecommendation
 securityDefinitions:
   Authorization:
     type: apiKey
