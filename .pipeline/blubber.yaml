@@ -1,4 +1,4 @@
-# syntax=docker-registry.wikimedia.org/repos/releng/blubber/buildkit:v0.23.0
+# syntax=docker-registry.wikimedia.org/repos/releng/blubber/buildkit:v1.8.0
 version: v4
 base: docker-registry.wikimedia.org/python3-build-bookworm:0.2.0-20250831
 runs:
