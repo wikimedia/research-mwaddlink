@@ -437,9 +437,6 @@ def process_page(  # noqa: PLR0915, PLR0912
                             mention_regex = re.compile(
                                 rf"(?<!\[\[)(?<!-->){re.escape(mention_original)}(?![\w\s]*[\]\]])"
                             )
-                            mention_regex_i = re.compile(
-                                mention_regex.pattern, re.IGNORECASE
-                            )
                             new_str = "[[" + candidate_link + "|" + mention_original
                             # add the probability
                             if pr:
@@ -464,6 +461,14 @@ def process_page(  # noqa: PLR0915, PLR0912
                                         Locale(language_code)
                                     )
                                 )
+                                mention_original_lower = str(
+                                    UnicodeString(mention_original).toLower(
+                                        Locale(language_code)
+                                    )
+                                )
+                                mention_regex_i = re.compile(
+                                    rf"(?<!\[\[)(?<!-->){re.escape(mention_original_lower)}(?![\w\s]*[\]\]])"
+                                )
                                 match = mention_regex_i.search(
                                     page_wikicode_init_substr_lower
                                 )
@@ -471,9 +476,16 @@ def process_page(  # noqa: PLR0915, PLR0912
                                     raise MentionRegexException(
                                         mention, page_wikicode_init_substr_lower
                                     )
-                                i1_sub = match.start()
+                                match_original = mention_regex.search(
+                                    page_wikicode_init_substr
+                                )
+                                i1_sub = (
+                                    match_original.start()
+                                    if match_original is not None
+                                    else match.start()
+                                )
                                 start_offset = i1_node_init + i1_sub
-                                end_offset = start_offset + len(mention)
+                                end_offset = start_offset + len(mention_original)
                                 # provide context of the mention (+/- c characters in
                                 # substring and wikitext)
                                 if context is None:

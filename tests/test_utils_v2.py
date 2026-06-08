@@ -1,3 +1,6 @@
+import json
+import os
+
 import pytest
 
 from src.scripts.utils_v2 import process_page
@@ -190,3 +193,98 @@ def test_process_page(
     for actual_item, expected_item in zip(actual_data, expected_data):
         assert expected_item["link_target"] == actual_item["link_target"]
         assert expected_item["link_text"] == actual_item["link_text"]
+
+
+def test_process_page_lowercase(pytestconfig, model):
+    """
+    Regression test for T308244. Offset lookup must succeed even when language_code
+    does not match the text locale (e.g. "en" on Azerbaijani text).
+    """
+    with open(
+        os.path.join(
+            pytestconfig.rootdir,
+            "tests",
+            "fixtures",
+            "T308244",
+            "article.wikitext",
+        ),
+        mode="r",
+    ) as file:
+        wikitext = file.read()
+
+    anchor_data = {"i̇ngiliscə": {"İngilis dili": 647}}
+    pageid_data = {"İngilis dili": 647}
+
+    actual_data = process_page(
+        wikitext,
+        "Page",
+        anchor_data,
+        pageid_data,
+        redirects,
+        word2vec,
+        model,
+        language_code="en",
+        wiki_id="azwiki",
+        pr=False,
+        return_wikitext=False,
+        sections_to_exclude=[],
+    )["links"]
+
+    with open(
+        os.path.join(
+            pytestconfig.rootdir,
+            "tests",
+            "fixtures",
+            "T308244",
+            "expected.json",
+        ),
+        mode="r",
+    ) as file:
+        expected_data = json.loads(file.read())["links"]
+    assert expected_data[0]["link_text"] == actual_data[0]["link_text"]
+    assert expected_data[0]["link_target"] == actual_data[0]["link_target"]
+
+    actual_data_az = process_page(
+        wikitext,
+        "Page",
+        anchor_data,
+        pageid_data,
+        redirects,
+        word2vec,
+        model,
+        language_code="az",
+        wiki_id="azwiki",
+        pr=False,
+        return_wikitext=False,
+        sections_to_exclude=[],
+    )["links"]
+    assert expected_data[0]["link_text"] == actual_data_az[0]["link_text"]
+    assert expected_data[0]["link_target"] == actual_data_az[0]["link_target"]
+
+
+def test_process_page_azerbaijani_induizm(model):
+    """
+    Regression test for MentionRegexException on Azerbaijani İnduizm with en language code.
+    """
+    wikitext = "den. Onı İnduizm dini bayramlarında ve festivallarinde sıq pişireler.\n"
+    mention_key = "İnduizm".lower()
+    actual_data = process_page(
+        wikitext,
+        "Page",
+        {mention_key: {"İnduizm": 10}},
+        {"İnduizm": 10},
+        redirects,
+        word2vec,
+        model,
+        language_code="en",
+        wiki_id="azwiki",
+        pr=False,
+        return_wikitext=False,
+        sections_to_exclude=[],
+    )["links"]
+
+    assert len(actual_data) == 1
+    assert actual_data[0]["link_text"] == "İnduizm"
+    assert actual_data[0]["link_target"] == "İnduizm"
+    assert actual_data[0]["start_offset"] == wikitext.index("İnduizm")
+    assert actual_data[0]["end_offset"] == wikitext.index("İnduizm") + len("İnduizm")
