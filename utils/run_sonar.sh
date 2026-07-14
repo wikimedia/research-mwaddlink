@@ -19,6 +19,6 @@ fi
 
 # Initialize analysis, send data to SonarQube
 /opt/sonar-scanner/bin/sonar-scanner "${args[@]}" \
-  -Dsonar.login="$SONAR_API_KEY" \
+  -Dsonar.token="$SONAR_API_KEY" \
   -Dsonar.branch.name="${SONAR_BRANCH_NAME}" \
   "$@"
