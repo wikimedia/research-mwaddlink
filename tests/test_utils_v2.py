@@ -3,7 +3,12 @@ import os
 
 import pytest
 
-from src.scripts.utils_v2 import process_page
+from icu import Locale
+
+from src.scripts.utils_v2 import (
+    matches_reverted_capitalization_pattern,
+    process_page,
+)
 
 
 anchors = {
@@ -193,6 +198,102 @@ def test_process_page(
     for actual_item, expected_item in zip(actual_data, expected_data):
         assert expected_item["link_target"] == actual_item["link_target"]
         assert expected_item["link_text"] == actual_item["link_text"]
+
+
+@pytest.mark.parametrize(
+    "mention_original,candidate_link,language_code,expected",
+    [
+        # matches: multi-word Title-Cased target, lowercased text (the So Much Fun case)
+        ("so much fun", "So Much Fun", "en", True),
+        # matches: only one text word is lowercased
+        ("so Much Fun", "So Much Fun", "en", True),
+        # does not match: text is fully Title-Cased (legitimate mention)
+        ("So Much Fun", "So Much Fun", "en", False),
+        # does not match: not an exact (case-insensitive) match
+        ("so much", "So Much Fun", "en", False),
+        # does not match: single-word target
+        ("paris", "Paris", "en", False),
+        # does not match: target is not fully Title-Cased ("of" is lowercase)
+        ("united states of america", "United States of America", "en", False),
+        # language-aware casing: Turkish dotted-I. ICU lowercases "İ" to "i" for the
+        # tr locale, so this matches; naive str.lower() would produce "i̇" and miss it.
+        ("istanbul boğazı", "İstanbul Boğazı", "tr", True),
+    ],
+)
+def test_matches_reverted_capitalization_pattern(
+    mention_original, candidate_link, language_code, expected
+):
+    assert (
+        matches_reverted_capitalization_pattern(
+            mention_original, candidate_link, Locale(language_code)
+        )
+        is expected
+    )
+
+
+def test_process_page_filters_reverted_capitalization(model):
+    """The capitalization filter drops e.g. linking "so much fun" to "So Much Fun"."""
+    anchor_data = {"so much fun": {"So Much Fun": 100}}
+    pageid_data = {"So Much Fun": 100}
+
+    # A lowercased mention of a Title-Cased target is filtered out, even when the
+    # model score clears the threshold (threshold=0 forces it through the model gate).
+    filtered = process_page(
+        "I had so much fun today",
+        "Page",
+        anchor_data,
+        pageid_data,
+        redirects,
+        word2vec,
+        model,
+        language_code="en",
+        wiki_id="enwiki",
+        threshold=0,
+        pr=False,
+        return_wikitext=False,
+        sections_to_exclude=[],
+    )["links"]
+    assert filtered == []
+
+    # A properly Title-Cased mention of the same target is still linked.
+    kept = process_page(
+        "I listened to So Much Fun today",
+        "Page",
+        anchor_data,
+        pageid_data,
+        redirects,
+        word2vec,
+        model,
+        language_code="en",
+        wiki_id="enwiki",
+        threshold=0,
+        pr=False,
+        return_wikitext=False,
+        sections_to_exclude=[],
+    )["links"]
+    assert len(kept) == 1
+    assert kept[0]["link_text"] == "So Much Fun"
+    assert kept[0]["link_target"] == "So Much Fun"
+
+    # The filter is enabled per-wiki: a wiki that is not opted in still links the
+    # lowercased mention.
+    not_enabled = process_page(
+        "I had so much fun today",
+        "Page",
+        anchor_data,
+        pageid_data,
+        redirects,
+        word2vec,
+        model,
+        language_code="en",
+        wiki_id="frwiki",
+        threshold=0,
+        pr=False,
+        return_wikitext=False,
+        sections_to_exclude=[],
+    )["links"]
+    assert len(not_enabled) == 1
+    assert not_enabled[0]["link_text"] == "so much fun"
 
 
 def test_process_page_lowercase(pytestconfig, model):

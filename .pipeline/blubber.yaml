@@ -60,7 +60,7 @@ variants:
     python:
       requirements: [requirements.txt]
   codehealth:
-    base: docker-registry.wikimedia.org/releng/sonar-scanner:4.6.0.2311-s1
+    base: docker-registry.wikimedia.org/releng/sonar-scanner:4.6.0.2311-s18
     includes: [preparation]
     runs:
       environment: { SONAR_API_KEY: "SONAR_API_KEY" }

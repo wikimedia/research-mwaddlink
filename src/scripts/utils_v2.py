@@ -1,4 +1,5 @@
 import operator
+import os
 import re
 import time
 
@@ -27,6 +28,14 @@ from src.scripts.ngram_utils import (
 )
 
 FREQUENCY = 10
+
+# Wikis (by wiki_id) for which the reverted-capitalization filter is enabled. The
+# pattern was derived from English reverted add-a-link edits, so it is limited to
+# enwiki for now; add more wiki_ids here as the pattern is validated for them. The
+# matching logic itself is already language-aware (see the locale handling below).
+REVERTED_CAPITALIZATION_FILTER_WIKIS = set(
+    os.environ.get("REVERTED_CAPITALIZATION_FILTER_WIKIS", "enwiki").split(",")
+)
 
 
 class MentionRegexException(Exception):
@@ -192,6 +201,56 @@ def get_feature_set(
 
 ##########################
 # evaluation classification
+
+
+def matches_reverted_capitalization_pattern(
+    mention_original: str, candidate_link: str, locale
+) -> bool:
+    """Detect the capitalization pattern shared by many reverted add-a-link edits.
+
+    Reverted suggestions frequently share this structure: the mention text and the
+    target title are an exact match apart from case, the target is a multi-word
+    Title-Cased string (every word capitalized), but the text as it appears in the
+    article is not fully Title-Cased. For example, linking the running-text phrase
+    "so much fun" to the album article "So Much Fun".
+
+    :param mention_original: The anchor text exactly as it appears in the article.
+    :param candidate_link: The normalized target page title.
+    :param locale: An icu.Locale used for language-aware casing.
+    :return: True if the candidate matches the pattern and should be filtered out.
+    """
+    from icu import UnicodeString  # type: ignore[import-untyped]
+
+    def _lower(text: str) -> str:
+        return str(UnicodeString(text).toLower(locale))
+
+    def _starts_capital(word: str) -> bool:
+        # A word "starts with a capital letter" if lowercasing its first character
+        # changes it. This is true only for cased characters in uppercase form, so
+        # digits, punctuation and caseless scripts (e.g. CJK) count as not capital.
+        if not word:
+            return False
+        first = word[0]
+        return _lower(first) != first
+
+    # case-insensitive exact match between text and target
+    if _lower(mention_original) != _lower(candidate_link):
+        return False
+
+    target_words = candidate_link.split()
+    text_words = mention_original.split()
+
+    # target is multiple words
+    if len(target_words) < 2:
+        return False
+
+    # every word in the target starts with a capital letter, and
+    # at least one word in the text does not start with a capital letter
+    return all(_starts_capital(w) for w in target_words) and any(
+        not _starts_capital(w) for w in text_words
+    )
+
+
 ##########################
 # Main decision function.
 # For a given page X and a piece of text "lipsum".. check all the candidate and make
@@ -307,6 +366,7 @@ def process_page(  # noqa: PLR0915, PLR0912
     """
     from icu import Locale, UnicodeString  # type: ignore[import-untyped]
 
+    locale = Locale(language_code)
     if sections_to_exclude is None:
         sections_to_exclude = []
     sections_to_exclude_nocase = list(
@@ -432,6 +492,18 @@ def process_page(  # noqa: PLR0915, PLR0912
                         if candidate:
                             candidate_link, candidate_proba = candidate
                             # print(">> ", mention, candidate)
+                            # Skip candidates matching the capitalization pattern
+                            # shared by many reverted add-a-link edits, e.g. linking
+                            # the text "so much fun" to the article "So Much Fun".
+                            # Enabled per-wiki (enwiki only for now).
+                            if (
+                                wiki_id in REVERTED_CAPITALIZATION_FILTER_WIKIS
+                                and matches_reverted_capitalization_pattern(
+                                    mention_original, candidate_link, locale
+                                )
+                            ):
+                                tested_mentions.add(mention)
+                                continue
                             ############## Critical ##############
                             # Insert The Link in the current wikitext
                             mention_regex = re.compile(
