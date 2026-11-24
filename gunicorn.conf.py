@@ -13,3 +13,6 @@ timeout = os.environ.get("GUNICORN_TIMEOUT", 30)
 graceful_timeout = os.environ.get("GUNICORN_TIMEOUT", 30)
 loglevel = os.environ.get("GUNICORN_LOGLEVEL", "warning")
 preload_app = True
+# restart workers after a while
+max_requests = 500
+max_requests_jitter = 50
